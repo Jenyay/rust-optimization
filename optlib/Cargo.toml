@@ -1,0 +1,6 @@
+[package]
+name = "optlib"
+version = "0.1.0"
+authors = ["Jenyay <jenyay.ilin@gmail.com>"]
+
+[dependencies]
