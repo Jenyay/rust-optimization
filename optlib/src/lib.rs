@@ -1,1 +1,1 @@
-mod genetic;
+pub mod genetic;

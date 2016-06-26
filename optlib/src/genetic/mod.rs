@@ -1,14 +1,17 @@
+extern crate rand;
+
+
 /// Struct for single specimen
 /// with type of chromosomes is `T`, type of fitness is `F`.
-struct Specimen<T, F: Fitness<T>> {
+pub struct Specimen<T> {
     chromosomes: Vec<T>,
-    fitness: F,
+    fitness: f64,
 }
 
 
-impl <T, F: Fitness<T>> Specimen<T, F> {
+impl<T> Specimen<T> {
     /// Create a new `Specimen<T, F>`.
-    pub fn new(chromosomes: Vec<T>, fitness: F) -> Specimen<T, F> {
+    pub fn new(chromosomes: Vec<T>, fitness: f64) -> Specimen<T> {
         Specimen {
             chromosomes: chromosomes,
             fitness: fitness,
@@ -18,56 +21,65 @@ impl <T, F: Fitness<T>> Specimen<T, F> {
 
 
 /// Fitness calculator for speciments.
-trait Fitness<T> {
+pub trait Fitness<T> {
     fn calc(&mut self, chromo: Vec<T>) -> f64;
 }
 
 
 /// Mutation algorithm for speciments
-trait MutationAlgorithm<T> {
-    fn mutate(chromo: Vec<T>) -> Vec<T>;
+pub trait MutationAlgorithm<T> {
+    fn mutate(&self, chromo: Vec<T>) -> Vec<T>;
 }
 
 
 
 /// Cross algorithm for speciments
-trait CrossAlgorithm<T, F: Fitness<T>> {
-    fn cross(parents: Vec<Specimen<T, F>>) -> Vec<Specimen<T, F>>;
+pub trait CrossAlgorithm<T> {
+    fn cross(&self, parents: Vec<Specimen<T>>) -> Vec<Specimen<T>>;
 }
 
 
 /// Pairing algorithm for speciments.
-trait PairingAlgorithm<T, F: Fitness<T>> {
+pub trait PairingAlgorithm<T> {
     /// `candidates` - vertor of the speciments for pair selection.
     /// Return nested vector of the future parents.
     /// The first index - parents number,
     /// the internal vector store indexes of the speciments from `candidates`.
-    fn pairing(candidates: Vec<Specimen<T, F>>) -> Vec<Vec<i32>>;
+    fn pairing(&self, candidates: Vec<Specimen<T>>) -> Vec<Vec<i32>>;
 }
 
 
 /// Selection algorithm for speciments
-trait SelectionAlgorithm<T, F: Fitness<T>> {
+pub trait SelectionAlgorithm<T> {
     /// Return indexes dead speciments.
     /// The dead speciments must be removed from population
     /// on the next iteration.
-    fn get_dead(population: Vec<Specimen<T, F>>) -> Vec<i32>;
+    fn get_dead(&self, population: Vec<Specimen<T>>) -> Vec<i32>;
 }
 
 
-struct HyperSphereFitness {
-    value: Option<f64>,
+/// Genetic algorithm realization
+pub struct Genetic<T> {
+    population: Vec<Specimen<T>>,
+    mutation: Box<MutationAlgorithm<T>>,
+    cross: Box<CrossAlgorithm<T>>,
+    pairing: Box<PairingAlgorithm<T>>,
+    selection: Box<SelectionAlgorithm<T>>,
 }
 
-impl Fitness<f64> for HyperSphereFitness {
-    fn calc(&mut self, chromo: Vec<f64>) -> f64 {
-        match self.value {
-            None => {
-                let new_value = chromo.iter().fold(0.0, |sum, &x| sum + x * x);
-                self.value = Some(new_value);
-                new_value
-            },
-            Some(x) => x,
+
+impl<T> Genetic<T> {
+    pub fn new(population: Vec<Specimen<T>>,
+               mutation: Box<MutationAlgorithm<T>>,
+               cross: Box<CrossAlgorithm<T>>,
+               pairing: Box<PairingAlgorithm<T>>,
+               selection: Box<SelectionAlgorithm<T>>) -> Genetic<T> {
+        Genetic {
+            population: population,
+            mutation: mutation,
+            cross: cross,
+            pairing: pairing,
+            selection: selection,
         }
     }
 }
