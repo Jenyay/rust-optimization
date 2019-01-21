@@ -1,85 +1,67 @@
-extern crate rand;
+pub mod cross;
+pub mod mutation;
+
+use super::Optimizer;
 
 
-/// Struct for single specimen
-/// with type of chromosomes is `T`, type of fitness is `F`.
-pub struct Specimen<T> {
-    chromosomes: Vec<T>,
-    fitness: f64,
+pub struct Individual<T> {
+    pub is_alive: bool,
+    pub chromosomes: T,
 }
 
 
-impl<T> Specimen<T> {
-    /// Create a new `Specimen<T, F>`.
-    pub fn new(chromosomes: Vec<T>, fitness: f64) -> Specimen<T> {
-        Specimen {
-            chromosomes: chromosomes,
-            fitness: fitness,
+impl <T> Individual<T> {
+    pub fn new(chromosomes: T) -> Individual<T> {
+        Individual {
+            is_alive: true,
+            chromosomes,
         }
     }
 }
 
 
-/// Fitness calculator for speciments.
-pub trait Fitness<T> {
-    fn calc(&mut self, chromo: Vec<T>) -> f64;
+pub trait Goal<T> {
+    fn get(&self, chromosomes: &T) -> f64;
 }
 
 
-/// Mutation algorithm for speciments
-pub trait MutationAlgorithm<T> {
-    fn mutate(&self, chromo: Vec<T>) -> Vec<T>;
+pub trait Cross<T> {
+    fn cross(&self, individuals: &Vec<Individual<T>>) -> Vec<Individual<T>>;
 }
 
 
-
-/// Cross algorithm for speciments
-pub trait CrossAlgorithm<T> {
-    fn cross(&self, parents: Vec<Specimen<T>>) -> Vec<Specimen<T>>;
+pub trait Mutation<T> {
+    fn mutation(&self, individual: &mut Individual<T>);
 }
 
 
-/// Pairing algorithm for speciments.
-pub trait PairingAlgorithm<T> {
-    /// `candidates` - vertor of the speciments for pair selection.
-    /// Return nested vector of the future parents.
-    /// The first index - parents number,
-    /// the internal vector store indexes of the speciments from `candidates`.
-    fn pairing(&self, candidates: Vec<Specimen<T>>) -> Vec<Vec<i32>>;
+pub struct GeneticOptimizer<'a, T> {
+    population_size: usize,
+    goal: &'a Goal<T>,
+    cross: &'a Cross<T>,
+    mutation: &'a Mutation<T>,
+    // pairing: &'a Fn(&Vec<Individual<T>>) -> Vec<Individual<'a, T>>,
+    // selection: &'a Fn(&mut Vec<Individual<T>>),
 }
 
 
-/// Selection algorithm for speciments
-pub trait SelectionAlgorithm<T> {
-    /// Return indexes dead speciments.
-    /// The dead speciments must be removed from population
-    /// on the next iteration.
-    fn get_dead(&self, population: Vec<Specimen<T>>) -> Vec<i32>;
-}
-
-
-/// Genetic algorithm realization
-pub struct Genetic<T> {
-    population: Vec<Specimen<T>>,
-    mutation: Box<MutationAlgorithm<T>>,
-    cross: Box<CrossAlgorithm<T>>,
-    pairing: Box<PairingAlgorithm<T>>,
-    selection: Box<SelectionAlgorithm<T>>,
-}
-
-
-impl<T> Genetic<T> {
-    pub fn new(population: Vec<Specimen<T>>,
-               mutation: Box<MutationAlgorithm<T>>,
-               cross: Box<CrossAlgorithm<T>>,
-               pairing: Box<PairingAlgorithm<T>>,
-               selection: Box<SelectionAlgorithm<T>>) -> Genetic<T> {
-        Genetic {
-            population: population,
-            mutation: mutation,
-            cross: cross,
-            pairing: pairing,
-            selection: selection,
+impl <'a, T>GeneticOptimizer<'a, T> {
+    pub fn new(population_size: usize,
+               goal: &'a Goal<T>,
+               cross: &'a Cross<T>,
+               mutation: &'a Mutation<T>
+               ) -> GeneticOptimizer<'a, T> {
+        GeneticOptimizer {
+            population_size,
+            goal,
+            cross,
+            mutation,
         }
+    }
+}
+
+
+impl <'a, T>Optimizer for GeneticOptimizer<'a, T> {
+    fn run(&self) {
     }
 }
