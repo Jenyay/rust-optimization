@@ -4,7 +4,7 @@ use rand::distributions::{Distribution, Uniform};
 
 
 pub fn mutation_f64(value: f64, count: usize) -> f64 {
-    let size = mem::size_of::<f64>() * 8;
+    let size = mem::size_of_val(&value) * 8;
     let between = Uniform::new(0, size);
     let mut rng = rand::thread_rng();
 

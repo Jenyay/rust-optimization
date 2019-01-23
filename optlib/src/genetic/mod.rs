@@ -1,20 +1,22 @@
 pub mod cross;
 pub mod mutation;
 
+use std::f64;
+
 use super::Optimizer;
 
 
 pub struct Individual<T> {
-    pub is_alive: bool,
     pub chromosomes: T,
+    pub fitness: f64,
 }
 
 
 impl <T> Individual<T> {
     pub fn new(chromosomes: T) -> Individual<T> {
         Individual {
-            is_alive: true,
             chromosomes,
+            fitness: f64::NAN,
         }
     }
 }
@@ -35,27 +37,41 @@ pub trait Mutation<T> {
 }
 
 
+pub trait Selection<T> {
+    fn get_dead(&self, population: &Vec<Individual<T>>) -> Vec<usize>;
+}
+
+
+pub trait Pairing<T> {
+    fn get_pairs(&self, population: &Vec<Individual<T>>) -> Vec<Vec<usize>>;
+}
+
+
 pub struct GeneticOptimizer<'a, T> {
     population_size: usize,
     goal: &'a Goal<T>,
+    pairing: &'a Pairing<T>,
     cross: &'a Cross<T>,
     mutation: &'a Mutation<T>,
-    // pairing: &'a Fn(&Vec<Individual<T>>) -> Vec<Individual<'a, T>>,
-    // selection: &'a Fn(&mut Vec<Individual<T>>),
+    selection: &'a Selection<T>,
 }
 
 
 impl <'a, T>GeneticOptimizer<'a, T> {
     pub fn new(population_size: usize,
                goal: &'a Goal<T>,
+               pairing: &'a Pairing<T>,
                cross: &'a Cross<T>,
-               mutation: &'a Mutation<T>
+               mutation: &'a Mutation<T>,
+               selection: &'a Selection<T>
                ) -> GeneticOptimizer<'a, T> {
         GeneticOptimizer {
             population_size,
             goal,
+            pairing,
             cross,
             mutation,
+            selection,
         }
     }
 }

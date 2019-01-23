@@ -45,12 +45,12 @@ impl genetic::Cross<Chromosomes> for Cross {
 
 // Mutation
 struct Mutation {
-    pub probability: usize,
+    pub probability: f64,
 }
 
 
 impl Mutation {
-    pub fn new(probability: usize) -> Mutation {
+    pub fn new(probability: f64) -> Mutation {
         Mutation { probability }
     }
 }
@@ -58,7 +58,7 @@ impl Mutation {
 impl genetic::Mutation<Chromosomes> for Mutation {
     fn mutation(&self, individual: &mut genetic::Individual<Chromosomes>) {
         let mut rng = rand::thread_rng();
-        let mutate = Uniform::new(0, self.probability + 1);
+        let mutate = Uniform::new(0.0, 100.0);
         let mutation_count = 1;
 
         for n in 0..individual.chromosomes.len() {
@@ -71,15 +71,54 @@ impl genetic::Mutation<Chromosomes> for Mutation {
 }
 
 
+// Selection
+struct Selection {
+    population_size: usize,
+}
+
+impl Selection {
+    pub fn new(population_size: usize) -> Selection {
+        Selection { population_size }
+    }
+}
+
+
+impl genetic::Selection<Chromosomes> for Selection {
+    fn get_dead(&self, population: &Vec<genetic::Individual<Chromosomes>>) -> Vec<usize> {
+        let dead_indexes: Vec<usize> = vec![];
+
+        dead_indexes
+    }
+}
+
+
+// Pairing
+
+struct Pairing;
+
+impl genetic::Pairing<Chromosomes> for Pairing {
+    fn get_pairs(&self, population: &Vec<genetic::Individual<Chromosomes>>) -> Vec<Vec<usize>> {
+        let pairs: Vec<Vec<usize>> = vec![];
+
+        pairs
+    }
+}
+
+
 fn main() {
     let size = 50;
+    let mutation_probability = 5.0;
     let goal = Goal{};
-    let cross = Cross {};
-    let mutation = Mutation::new(5);
+    let cross = Cross{};
+    let mutation = Mutation::new(mutation_probability);
+    let selection = Selection::new(size);
+    let pairing = Pairing{};
     let optimizer = genetic::GeneticOptimizer::new(size,
                                                    &goal,
+                                                   &pairing,
                                                    &cross,
-                                                   &mutation);
+                                                   &mutation,
+                                                   &selection);
 
     optimizer.run();
 }
