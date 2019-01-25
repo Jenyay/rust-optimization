@@ -4,6 +4,6 @@ pub mod genetic;
 
 
 /// Common Optimizer trait.
-pub trait Optimizer {
-    fn run(&mut self);
+pub trait Optimizer<T> {
+    fn find_min(&mut self) -> Option<T>;
 }

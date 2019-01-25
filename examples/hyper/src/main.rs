@@ -180,5 +180,5 @@ fn main() {
                                                        &mut selection,
                                                        &mut stop_checker);
 
-    optimizer.run();
+    optimizer.find_min();
 }
