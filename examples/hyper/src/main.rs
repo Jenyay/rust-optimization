@@ -11,7 +11,7 @@ type Chromosomes = Vec<f64>;
 struct Goal;
 
 impl genetic::Goal<Chromosomes> for Goal {
-    fn get(&self, chromosomes: &Chromosomes) -> f64 {
+    fn get(&mut self, chromosomes: &Chromosomes) -> f64 {
         let mut result = 0.0;
         for val in chromosomes {
             result += val * val;
@@ -22,11 +22,37 @@ impl genetic::Goal<Chromosomes> for Goal {
 }
 
 
+// Creator
+struct Creator {
+    size: usize,
+    chromo_count: usize,
+    xmin: f64,
+    xmax: f64,
+}
+
+
+impl Creator {
+    pub fn new(size: usize, chromo_count: usize,
+               xmin: f64, xmax: f64) -> Creator {
+        Creator { size, chromo_count, xmin, xmax }
+    }
+}
+
+
+impl genetic::Creator<Chromosomes> for Creator {
+    fn create(&mut self) -> Vec<genetic::Individual<Chromosomes>> {
+        let mut population = Vec::with_capacity(self.size * 2);
+
+        population
+    }
+}
+
+
 // Cross
 struct Cross;
 
 impl genetic::Cross<Chromosomes> for Cross {
-    fn cross(&self, individuals: &Vec<genetic::Individual<Chromosomes>>) -> Vec<genetic::Individual<Chromosomes>> {
+    fn cross(&mut self, individuals: &Vec<genetic::Individual<Chromosomes>>) -> Vec<genetic::Individual<Chromosomes>> {
         assert!(individuals.len() == 2);
 
         let chromo_count = individuals[0].chromosomes.len();
@@ -56,7 +82,7 @@ impl Mutation {
 }
 
 impl genetic::Mutation<Chromosomes> for Mutation {
-    fn mutation(&self, individual: &mut genetic::Individual<Chromosomes>) {
+    fn mutation(&mut self, individual: &mut genetic::Individual<Chromosomes>) {
         let mut rng = rand::thread_rng();
         let mutate = Uniform::new(0.0, 100.0);
         let mutation_count = 1;
@@ -84,7 +110,7 @@ impl Selection {
 
 
 impl genetic::Selection<Chromosomes> for Selection {
-    fn get_dead(&self, population: &Vec<genetic::Individual<Chromosomes>>) -> Vec<usize> {
+    fn get_dead(&mut self, population: &Vec<genetic::Individual<Chromosomes>>) -> Vec<usize> {
         let dead_indexes: Vec<usize> = vec![];
 
         dead_indexes
@@ -97,7 +123,7 @@ impl genetic::Selection<Chromosomes> for Selection {
 struct Pairing;
 
 impl genetic::Pairing<Chromosomes> for Pairing {
-    fn get_pairs(&self, population: &Vec<genetic::Individual<Chromosomes>>) -> Vec<Vec<usize>> {
+    fn get_pairs(&mut self, population: &Vec<genetic::Individual<Chromosomes>>) -> Vec<Vec<usize>> {
         let pairs: Vec<Vec<usize>> = vec![];
 
         pairs
@@ -105,20 +131,54 @@ impl genetic::Pairing<Chromosomes> for Pairing {
 }
 
 
+// Stop checker
+
+struct StopChecker {
+    max_iter: usize,
+    iteration: usize,
+}
+
+impl StopChecker {
+    pub fn new(max_iter: usize) -> StopChecker {
+        StopChecker {
+            max_iter,
+            iteration: 0,
+        }
+    }
+}
+
+
+impl genetic::StopChecker<Chromosomes> for StopChecker {
+    fn finish(&mut self, population: &Vec<genetic::Individual<Chromosomes>>) -> bool {
+        self.iteration += 1;
+        self.iteration == self.max_iter
+    }
+}
+
+
 fn main() {
+    let xmin = -100.0;
+    let xmax = 100.0;
     let size = 50;
+    let chromo_count = 5;
     let mutation_probability = 5.0;
-    let goal = Goal{};
-    let cross = Cross{};
-    let mutation = Mutation::new(mutation_probability);
-    let selection = Selection::new(size);
-    let pairing = Pairing{};
-    let optimizer = genetic::GeneticOptimizer::new(size,
-                                                   &goal,
-                                                   &pairing,
-                                                   &cross,
-                                                   &mutation,
-                                                   &selection);
+    let max_iterations = 250;
+
+    let mut goal = Goal{};
+    let mut creator = Creator::new(size, chromo_count, xmin, xmax);
+    let mut cross = Cross{};
+    let mut mutation = Mutation::new(mutation_probability);
+    let mut selection = Selection::new(size);
+    let mut pairing = Pairing{};
+    let mut stop_checker = StopChecker::new(max_iterations);
+
+    let mut optimizer = genetic::GeneticOptimizer::new(&mut goal,
+                                                       &mut creator,
+                                                       &mut pairing,
+                                                       &mut cross,
+                                                       &mut mutation,
+                                                       &mut selection,
+                                                       &mut stop_checker);
 
     optimizer.run();
 }

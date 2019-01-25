@@ -5,5 +5,5 @@ pub mod genetic;
 
 /// Common Optimizer trait.
 pub trait Optimizer {
-    fn run(&self);
+    fn run(&mut self);
 }

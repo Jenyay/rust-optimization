@@ -12,7 +12,7 @@ pub struct Individual<T> {
 }
 
 
-impl <T> Individual<T> {
+impl<T> Individual<T> {
     pub fn new(chromosomes: T) -> Individual<T> {
         Individual {
             chromosomes,
@@ -23,61 +23,77 @@ impl <T> Individual<T> {
 
 
 pub trait Goal<T> {
-    fn get(&self, chromosomes: &T) -> f64;
+    fn get(&mut self, chromosomes: &T) -> f64;
+}
+
+
+pub trait Creator<T> {
+    fn create(&mut self) -> Vec<Individual<T>>;
 }
 
 
 pub trait Cross<T> {
-    fn cross(&self, individuals: &Vec<Individual<T>>) -> Vec<Individual<T>>;
+    fn cross(&mut self, individuals: &Vec<Individual<T>>) -> Vec<Individual<T>>;
 }
 
 
 pub trait Mutation<T> {
-    fn mutation(&self, individual: &mut Individual<T>);
+    fn mutation(&mut self, individual: &mut Individual<T>);
 }
 
 
 pub trait Selection<T> {
-    fn get_dead(&self, population: &Vec<Individual<T>>) -> Vec<usize>;
+    fn get_dead(&mut self, population: &Vec<Individual<T>>) -> Vec<usize>;
 }
 
 
 pub trait Pairing<T> {
-    fn get_pairs(&self, population: &Vec<Individual<T>>) -> Vec<Vec<usize>>;
+    fn get_pairs(&mut self, population: &Vec<Individual<T>>) -> Vec<Vec<usize>>;
+}
+
+
+pub trait StopChecker<T> {
+    fn finish(&mut self, population: &Vec<Individual<T>>) -> bool;
 }
 
 
 pub struct GeneticOptimizer<'a, T> {
-    population_size: usize,
-    goal: &'a Goal<T>,
-    pairing: &'a Pairing<T>,
-    cross: &'a Cross<T>,
-    mutation: &'a Mutation<T>,
-    selection: &'a Selection<T>,
+    goal: &'a mut Goal<T>,
+    creator: &'a mut Creator<T>,
+    pairing: &'a mut Pairing<T>,
+    cross: &'a mut Cross<T>,
+    mutation: &'a mut Mutation<T>,
+    selection: &'a mut Selection<T>,
+    stop_checker: &'a mut StopChecker<T>,
 }
 
 
 impl <'a, T>GeneticOptimizer<'a, T> {
-    pub fn new(population_size: usize,
-               goal: &'a Goal<T>,
-               pairing: &'a Pairing<T>,
-               cross: &'a Cross<T>,
-               mutation: &'a Mutation<T>,
-               selection: &'a Selection<T>
+    pub fn new(goal: &'a mut Goal<T>,
+               creator: &'a mut Creator<T>,
+               pairing: &'a mut Pairing<T>,
+               cross: &'a mut Cross<T>,
+               mutation: &'a mut Mutation<T>,
+               selection: &'a mut Selection<T>,
+               stop_checker: &'a mut StopChecker<T>
                ) -> GeneticOptimizer<'a, T> {
         GeneticOptimizer {
-            population_size,
             goal,
+            creator,
             pairing,
             cross,
             mutation,
             selection,
+            stop_checker,
         }
     }
 }
 
 
-impl <'a, T>Optimizer for GeneticOptimizer<'a, T> {
-    fn run(&self) {
+impl<'a, T> Optimizer for GeneticOptimizer<'a, T> {
+    fn run(&mut self) {
+        let mut population = self.creator.create();
+        while !self.stop_checker.finish(&population) {
+        }
     }
 }
