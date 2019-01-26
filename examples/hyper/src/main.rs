@@ -69,22 +69,21 @@ impl genetic::Creator<Chromosomes> for Creator {
 struct Cross;
 
 impl genetic::Cross<Chromosomes> for Cross {
-    fn cross(&self, individuals: &Population, factory: &IndividualFactory) -> Population {
+    fn cross(&self, individuals: &Population) -> Vec<Chromosomes> {
         assert!(individuals.len() == 2);
 
         let chromo_count = individuals[0].chromosomes.len();
-        let mut new_chromosomes = Chromosomes::with_capacity(chromo_count);
+        let mut new_chromosomes: Vec<Chromosomes> = Vec::with_capacity(chromo_count);
 
         for n in 0..chromo_count {
             let new_chromo = cross::cross_middle(&vec![
                 individuals[0].chromosomes[n],
                 individuals[1].chromosomes[n],
             ]);
-            new_chromosomes.push(new_chromo);
+            new_chromosomes.push(vec![new_chromo]);
         }
 
-        let new_individual = factory.create(new_chromosomes);
-        vec![new_individual]
+        new_chromosomes
     }
 }
 
@@ -100,17 +99,20 @@ impl Mutation {
 }
 
 impl genetic::Mutation<Chromosomes> for Mutation {
-    fn mutation(&mut self, individual: &mut Individual) {
+    fn mutation(&mut self, chromosomes: &Chromosomes) -> Chromosomes {
         let mut rng = rand::thread_rng();
         let mutate = Uniform::new(0.0, 100.0);
         let mutation_count = 1;
+        let mut mutant: Chromosomes = Vec::with_capacity(chromosomes.len());
 
-        for n in 0..individual.chromosomes.len() {
+        for n in 0..chromosomes.len() {
             if mutate.sample(&mut rng) < self.probability {
-                let new_chromo = mutation::mutation_f64(individual.chromosomes[n], mutation_count);
-                individual.chromosomes[n] = new_chromo;
+                let new_chromo = mutation::mutation_f64(chromosomes[n], mutation_count);
+                mutant.push(new_chromo);
             }
         }
+
+        mutant
     }
 }
 

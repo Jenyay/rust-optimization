@@ -52,15 +52,11 @@ pub trait Creator<T: Clone> {
 }
 
 pub trait Cross<T: Clone> {
-    fn cross(
-        &self,
-        individuals: &Vec<Individual<T>>,
-        factory: &IndividualFactory<T>,
-    ) -> Vec<Individual<T>>;
+    fn cross(&self, individuals: &Vec<Individual<T>>) -> Vec<T>;
 }
 
 pub trait Mutation<T: Clone> {
-    fn mutation(&mut self, individual: &mut Individual<T>);
+    fn mutation(&mut self, chromosomes: &T) -> T;
 }
 
 pub trait Selection<T: Clone> {
@@ -116,11 +112,14 @@ impl<'a, T: Clone> Optimizer<T> for GeneticOptimizer<'a, T> {
         let mut population = self.creator.create(&self.factory);
         while !self.stop_checker.finish(&population) {
             // Pairing
-            let mut new_individuals = self.run_pairing(&population);
+            let children_chromo = self.run_pairing(&population);
 
             // Mutation
-            self.run_mutation(&mut new_individuals);
-            population.append(&mut new_individuals);
+            let mutants_chromo = self.run_mutation(&children_chromo);
+            for mutant in mutants_chromo {
+                let individual = self.factory.create(mutant);
+                population.push(individual);
+            }
 
             // Selection
             self.run_selection(&mut population);
@@ -137,27 +136,31 @@ impl<'a, T: Clone> Optimizer<T> for GeneticOptimizer<'a, T> {
 }
 
 impl<'a, T: Clone> GeneticOptimizer<'a, T> {
-    fn run_pairing(&mut self, population: &Vec<Individual<T>>) -> Vec<Individual<T>> {
+    fn run_pairing(&mut self, population: &Vec<Individual<T>>) -> Vec<T> {
         let pairs: Vec<Vec<usize>> = self.pairing.get_pairs(&population);
-        let mut new_individuals: Vec<Individual<T>> = Vec::with_capacity(pairs.len());
+        let mut new_chromosomes: Vec<T> = Vec::with_capacity(pairs.len());
 
         for pair in pairs {
-            let mut cross_individuals = Vec::with_capacity(pair.len());
+            let mut cross_chromosomes = Vec::with_capacity(pair.len());
             for i in pair {
-                cross_individuals.push(population[i].clone());
+                cross_chromosomes.push(population[i].clone());
             }
 
-            let mut individuals = self.cross.cross(&cross_individuals, &self.factory);
-            new_individuals.append(&mut individuals);
+            let mut child_chromosomes = self.cross.cross(&cross_chromosomes);
+            new_chromosomes.append(&mut child_chromosomes);
         }
 
-        new_individuals
+        new_chromosomes
     }
 
-    fn run_mutation(&mut self, individuals: &mut Vec<Individual<T>>) {
-        for n in 0..individuals.len() {
-            self.mutation.mutation(&mut individuals[n]);
+    fn run_mutation(&mut self, chromosomes: &Vec<T>) -> Vec<T> {
+        let mut mutants: Vec<T> = Vec::with_capacity(chromosomes.len());
+        for n in 0..chromosomes.len() {
+            let mutant = self.mutation.mutation(&chromosomes[n]);
+            mutants.push(mutant);
         }
+
+        mutants
     }
 
     fn run_selection(&mut self, population: &mut Vec<Individual<T>>) {
