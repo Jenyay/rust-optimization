@@ -7,8 +7,7 @@ use rand::distributions::{Distribution, Uniform};
 use rand::rngs::ThreadRng;
 
 type Chromosomes = Vec<f64>;
-type Individual = genetic::Individual<Chromosomes>;
-type Population = Vec<Individual>;
+type Population<'a> = genetic::Population<'a, Chromosomes>;
 
 // Goal function
 struct Goal;
@@ -68,16 +67,16 @@ impl genetic::Creator<Chromosomes> for Creator {
 struct Cross;
 
 impl genetic::Cross<Chromosomes> for Cross {
-    fn cross(&self, individuals: &Population) -> Vec<Chromosomes> {
+    fn cross(&self, individuals: &Vec<Chromosomes>) -> Vec<Chromosomes> {
         assert!(individuals.len() == 2);
 
-        let chromo_count = individuals[0].get_chromosomes().len();
+        let chromo_count = individuals[0].len();
         let mut new_chromosomes: Vec<Chromosomes> = Vec::with_capacity(chromo_count);
 
         for n in 0..chromo_count {
             let new_chromo = cross::cross_middle(&vec![
-                individuals[0].get_chromosomes()[n],
-                individuals[1].get_chromosomes()[n],
+                individuals[0][n],
+                individuals[1][n],
             ]);
             new_chromosomes.push(vec![new_chromo]);
         }
@@ -98,7 +97,7 @@ impl Mutation {
 }
 
 impl genetic::Mutation<Chromosomes> for Mutation {
-    fn mutation(&mut self, chromosomes: &Chromosomes) -> Chromosomes {
+    fn mutation(&mut self, chromosomes: &mut Chromosomes) {
         let mut rng = rand::thread_rng();
         let mutate = Uniform::new(0.0, 100.0);
         let mutation_count = 1;
@@ -110,27 +109,29 @@ impl genetic::Mutation<Chromosomes> for Mutation {
                 mutant.push(new_chromo);
             }
         }
-
-        mutant
     }
 }
 
 // Selection
 struct Selection {
     population_size: usize,
+    xmin: f64,
+    xmax: f64,
 }
 
 impl Selection {
-    pub fn new(population_size: usize) -> Selection {
-        Selection { population_size }
+    pub fn new(population_size: usize, xmin: f64, xmax: f64) -> Selection {
+        Selection {
+            population_size,
+            xmin,
+            xmax,
+        }
     }
 }
 
 impl genetic::Selection<Chromosomes> for Selection {
-    fn get_dead(&mut self, population: &Population) -> Vec<usize> {
-        let dead_indexes: Vec<usize> = vec![];
+    fn kill(&mut self, population: &mut Population) {
 
-        dead_indexes
     }
 }
 
@@ -150,22 +151,19 @@ impl genetic::Pairing<Chromosomes> for Pairing {
 
 struct StopChecker {
     max_iter: usize,
-    iteration: usize,
 }
 
 impl StopChecker {
     pub fn new(max_iter: usize) -> StopChecker {
         StopChecker {
             max_iter,
-            iteration: 0,
         }
     }
 }
 
 impl genetic::StopChecker<Chromosomes> for StopChecker {
     fn finish(&mut self, population: &Population) -> bool {
-        self.iteration += 1;
-        self.iteration == self.max_iter
+        population.get_iteration() >= self.max_iter
     }
 }
 
@@ -181,7 +179,7 @@ fn main() {
     let mut creator = Creator::new(size, chromo_count, xmin, xmax);
     let mut cross = Cross {};
     let mut mutation = Mutation::new(mutation_probability);
-    let mut selection = Selection::new(size);
+    let mut selection = Selection::new(size, xmin, xmax);
     let mut pairing = Pairing {};
     let mut stop_checker = StopChecker::new(max_iterations);
 
