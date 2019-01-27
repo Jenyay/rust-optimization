@@ -7,7 +7,6 @@ use rand::distributions::{Distribution, Uniform};
 use rand::rngs::ThreadRng;
 
 type Chromosomes = Vec<f64>;
-type IndividualFactory<'a> = genetic::IndividualFactory<'a, Chromosomes>;
 type Individual = genetic::Individual<Chromosomes>;
 type Population = Vec<Individual>;
 
@@ -48,7 +47,7 @@ impl Creator {
 }
 
 impl genetic::Creator<Chromosomes> for Creator {
-    fn create(&mut self, factory: &IndividualFactory) -> Population {
+    fn create(&mut self) -> Vec<Chromosomes> {
         let between = Uniform::new(self.xmin, self.xmax);
         let mut population = Vec::with_capacity(self.population_size * 2);
 
@@ -58,7 +57,7 @@ impl genetic::Creator<Chromosomes> for Creator {
                 chromo.push(between.sample(&mut self.random));
             }
 
-            population.push(factory.create(chromo));
+            population.push(chromo);
         }
 
         population
@@ -72,13 +71,13 @@ impl genetic::Cross<Chromosomes> for Cross {
     fn cross(&self, individuals: &Population) -> Vec<Chromosomes> {
         assert!(individuals.len() == 2);
 
-        let chromo_count = individuals[0].chromosomes.len();
+        let chromo_count = individuals[0].get_chromosomes().len();
         let mut new_chromosomes: Vec<Chromosomes> = Vec::with_capacity(chromo_count);
 
         for n in 0..chromo_count {
             let new_chromo = cross::cross_middle(&vec![
-                individuals[0].chromosomes[n],
-                individuals[1].chromosomes[n],
+                individuals[0].get_chromosomes()[n],
+                individuals[1].get_chromosomes()[n],
             ]);
             new_chromosomes.push(vec![new_chromo]);
         }

@@ -6,10 +6,29 @@ use std::marker::PhantomData;
 
 use super::Optimizer;
 
-#[derive(Debug, Copy)]
+#[derive(Debug)]
 pub struct Individual<T: Clone> {
-    pub chromosomes: T,
-    pub fitness: f64,
+    chromosomes: T,
+    fitness: f64,
+}
+
+impl<T: Clone> Clone for Individual<T> {
+    fn clone(&self) -> Individual<T> {
+        Individual {
+            chromosomes: self.chromosomes.clone(),
+            fitness: self.fitness,
+        }
+    }
+}
+
+impl<T: Clone> Individual<T> {
+    pub fn get_chromosomes(&self) -> T {
+        self.chromosomes.clone()
+    }
+
+    pub fn get_fitness(&self) -> f64 {
+        self.fitness
+    }
 }
 
 pub struct IndividualFactory<'a, T> {
@@ -34,21 +53,12 @@ impl<'a, T: Clone> IndividualFactory<'a, T> {
     }
 }
 
-impl<T: Clone> Clone for Individual<T> {
-    fn clone(&self) -> Individual<T> {
-        Individual {
-            chromosomes: self.chromosomes.clone(),
-            fitness: self.fitness,
-        }
-    }
-}
-
 pub trait Goal<T> {
     fn get(&self, chromosomes: &T) -> f64;
 }
 
 pub trait Creator<T: Clone> {
-    fn create(&mut self, factory: &IndividualFactory<T>) -> Vec<Individual<T>>;
+    fn create(&mut self) -> Vec<T>;
 }
 
 pub trait Cross<T: Clone> {
@@ -109,17 +119,20 @@ impl<'a, T: Clone> GeneticOptimizer<'a, T> {
 
 impl<'a, T: Clone> Optimizer<T> for GeneticOptimizer<'a, T> {
     fn find_min(&mut self) -> Option<(T, f64)> {
-        let mut population = self.creator.create(&self.factory);
+        let mut population: Vec<Individual<T>> = self.creator
+            .create()
+            .iter()
+            .map(|chromo| self.factory.create(chromo.clone()))
+            .collect();
         while !self.stop_checker.finish(&population) {
             // Pairing
             let children_chromo = self.run_pairing(&population);
 
             // Mutation
             let mutants_chromo = self.run_mutation(&children_chromo);
-            for mutant in mutants_chromo {
-                let individual = self.factory.create(mutant);
-                population.push(individual);
-            }
+            mutants_chromo
+                .iter()
+                .for_each(|chromo| population.push(self.factory.create(chromo.clone())));
 
             // Selection
             self.run_selection(&mut population);
@@ -154,11 +167,10 @@ impl<'a, T: Clone> GeneticOptimizer<'a, T> {
     }
 
     fn run_mutation(&mut self, chromosomes: &Vec<T>) -> Vec<T> {
-        let mut mutants: Vec<T> = Vec::with_capacity(chromosomes.len());
-        for n in 0..chromosomes.len() {
-            let mutant = self.mutation.mutation(&chromosomes[n]);
-            mutants.push(mutant);
-        }
+        let mutants = chromosomes
+            .iter()
+            .map(|chromo| self.mutation.mutation(chromo))
+            .collect();
 
         mutants
     }
@@ -174,7 +186,7 @@ impl<'a, T: Clone> GeneticOptimizer<'a, T> {
     fn find_best(&self, population: &Vec<Individual<T>>) -> Individual<T> {
         let mut best_individual = population[0].clone();
         for n in 1..population.len() {
-            if population[n].fitness < best_individual.fitness {
+            if population[n].get_fitness() < best_individual.get_fitness() {
                 best_individual = population[n].clone();
             }
         }
