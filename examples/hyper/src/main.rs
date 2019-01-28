@@ -162,9 +162,11 @@ impl StopChecker {
 }
 
 impl genetic::StopChecker<Chromosomes> for StopChecker {
-    fn finish(&mut self, population: &Population) -> bool {
+    fn can_stop(&mut self, population: &Population) -> bool {
         population.get_iteration() >= self.max_iter
     }
+
+    fn init(&mut self, _population: &Population) {}
 }
 
 fn main() {
