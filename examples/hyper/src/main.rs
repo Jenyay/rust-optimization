@@ -159,14 +159,16 @@ impl StopChecker {
             max_iter,
         }
     }
+
+    pub fn add_iterations(&mut self, count: usize) {
+        self.max_iter += count;
+    }
 }
 
 impl genetic::StopChecker<Chromosomes> for StopChecker {
     fn can_stop(&mut self, population: &Population) -> bool {
         population.get_iteration() >= self.max_iter
     }
-
-    fn init(&mut self, _population: &Population) {}
 }
 
 fn main() {
@@ -195,7 +197,12 @@ fn main() {
         &mut stop_checker,
     );
 
-    match optimizer.find_min() {
+    optimizer.find_min();
+    let mut new_stop_checker = StopChecker::new(max_iterations);
+    optimizer.replace_stop_checker(&mut new_stop_checker);
+    let result = optimizer.next_iterations();
+
+    match result {
         None => println!("Решение не найдено"),
         Some((chromosomes, fitness)) => println!("Значение хромосом лучшей особи: {:?}\nЗначение целевой функции: {}",
                                      chromosomes, fitness),

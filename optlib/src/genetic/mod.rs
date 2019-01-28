@@ -129,7 +129,6 @@ pub trait Pairing<T: Clone> {
 }
 
 pub trait StopChecker<T: Clone> {
-    fn init(&mut self, population: &Population<T>);
     fn can_stop(&mut self, population: &Population<T>) -> bool;
 }
 
@@ -163,6 +162,26 @@ impl<'a, T: Clone> GeneticOptimizer<'a, T> {
             population: Population::new(goal),
         }
     }
+
+    pub fn replace_pairing(&mut self, pairing: &'a mut Pairing<T>) {
+        self.pairing = pairing;
+    }
+
+    pub fn replace_cross(&mut self, cross: &'a mut Cross<T>) {
+        self.cross = cross;
+    }
+
+    pub fn replace_mutation(&mut self, mutation: &'a mut Mutation<T>) {
+        self.mutation = mutation;
+    }
+
+    pub fn replace_selection(&mut self, selection: &'a mut Selection<T>) {
+        self.selection = selection;
+    }
+
+    pub fn replace_stop_checker(&mut self, stop_checker: &'a mut StopChecker<T>) {
+        self.stop_checker = stop_checker;
+    }
 }
 
 impl<'a, T: Clone> Optimizer<T> for GeneticOptimizer<'a, T> {
@@ -180,8 +199,6 @@ impl<'a, T: Clone> Optimizer<T> for GeneticOptimizer<'a, T> {
 
 impl<'a, T: Clone> GeneticOptimizer<'a, T> {
     pub fn next_iterations(&mut self) -> Option<(T, f64)> {
-        self.stop_checker.init(&self.population);
-
         while !self.stop_checker.can_stop(&self.population) {
             // Pairing
             let mut children_chromo = self.run_pairing();
