@@ -94,6 +94,18 @@ impl<'a, T: Clone> Population<'a, T> {
     pub fn get_iteration(&self) -> usize {
         self.iteration
     }
+
+    pub fn len(&self) -> usize {
+        self.individuals.len()
+    }
+
+    fn next_iteration(&mut self) {
+        self.iteration += 1;
+    }
+
+    fn remove(&mut self, index: usize) {
+        self.individuals.remove(index);
+    }
 }
 
 impl<'a, T: Clone> ops::Index<usize> for Population<'a, T> {
@@ -101,6 +113,12 @@ impl<'a, T: Clone> ops::Index<usize> for Population<'a, T> {
 
     fn index(&self, index: usize) -> &Individual<T> {
         &self.individuals[index]
+    }
+}
+
+impl<'a, T: Clone> ops::IndexMut<usize> for Population<'a, T> {
+    fn index_mut<'b>(&'b mut self, index: usize) -> &'b mut Individual<T> {
+        &mut self.individuals[index]
     }
 }
 
@@ -113,7 +131,7 @@ pub trait Creator<T: Clone> {
 }
 
 pub trait Cross<T: Clone> {
-    fn cross(&self, individuals: &Vec<T>) -> Vec<T>;
+    fn cross(&self, parents: &Vec<T>) -> Vec<T>;
 }
 
 pub trait Mutation<T: Clone> {
@@ -215,6 +233,17 @@ impl<'a, T: Clone> GeneticOptimizer<'a, T> {
 
             // Selection
             self.selection.kill(&mut self.population);
+
+            // Remove dead individuals
+            let mut dead_count = 0;
+            for n in 0..self.population.len() {
+                if !self.population[n - dead_count].is_alive() {
+                    self.population.remove(n - dead_count);
+                    dead_count += 1;
+                }
+            }
+
+            self.population.next_iteration();
         }
 
         match self.population.best_individual.clone() {
