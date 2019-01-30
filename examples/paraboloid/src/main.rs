@@ -1,7 +1,10 @@
+use optlib::Optimizer;
 use optlib::genetic;
 use optlib::genetic::cross;
 use optlib::genetic::mutation;
-use optlib::Optimizer;
+use optlib::genetic::selection;
+use optlib::genetic::stopchecker;
+use optlib::testfunctions;
 
 use rand::distributions::{Distribution, Uniform};
 use rand::rngs::ThreadRng;
@@ -14,12 +17,7 @@ struct Goal;
 
 impl genetic::Goal<Chromosomes> for Goal {
     fn get(&self, chromosomes: &Chromosomes) -> f64 {
-        let mut result = 0.0;
-        for val in chromosomes {
-            result += val * val;
-        }
-
-        result
+        testfunctions::paraboloid(chromosomes)
     }
 }
 
@@ -129,68 +127,15 @@ impl genetic::Selection<Chromosomes> for Selection {
     fn kill(&mut self, population: &mut Population) {
         // 1. Kill all individuals with chromosomes outside the interval [xmin; xmax]
         let mut kill_count = 0;
-        for individual in population.iter_mut() {
-            if !individual.get_fitness().is_finite() {
-                individual.kill();
-                continue;
-            }
-
-            for chromo in individual.get_chromosomes() {
-                if !chromo.is_finite() || chromo < self.xmin || chromo > self.xmax {
-                    individual.kill();
-                    kill_count += 1;
-                    break;
-                }
-            }
-        }
+        kill_count += selection::kill_fitness_nan(population);
+        kill_count += selection::kill_chromo_interval_vec_f64(population,
+                                                              self.xmin,
+                                                              self.xmax);
 
         // 2. Keep alive only population_size best individuals
-        if population.len() > self.population_size + kill_count {
+        if population.len() - kill_count > self.population_size {
             let to_kill = population.len() - self.population_size - kill_count;
-            self.kill_count(population, to_kill);
-        }
-    }
-}
-
-impl Selection {
-    fn kill_count(&self, population: &mut Population, count: usize) {
-        // List of indexes of individuals in population to be kill
-        let mut kill_list: Vec<usize> = Vec::with_capacity(count);
-        kill_list.push(0);
-
-        // Index of the items in kill_list with best fitness
-        let mut best_index = 0;
-        let mut best_fitness = population[kill_list[best_index]].get_fitness();
-
-        for n in 1..population.len() {
-            if !population[n].is_alive() {
-                continue;
-            }
-
-            if kill_list.len() < count {
-                kill_list.push(n);
-                if population[n].get_fitness() < best_fitness {
-                    best_index = kill_list.len() - 1;
-                }
-            } else {
-                if population[n].get_fitness() > best_fitness {
-                    kill_list[best_index] = n;
-
-                    // Find new best item
-                    best_index = 0;
-                    best_fitness = population[kill_list[best_index]].get_fitness();
-                    for m in 1..kill_list.len() {
-                        if population[kill_list[m]].get_fitness() < best_fitness {
-                            best_index = m;
-                            best_fitness = population[kill_list[best_index]].get_fitness();
-                        }
-                    }
-                }
-            }
-        }
-
-        for n in kill_list {
-            population[n].kill();
+            selection::kill_worst(population, to_kill);
         }
     }
 }
@@ -225,24 +170,6 @@ impl Pairing {
     }
 }
 
-// Stop checker
-
-struct StopChecker {
-    max_iter: usize,
-}
-
-impl StopChecker {
-    pub fn new(max_iter: usize) -> StopChecker {
-        StopChecker { max_iter }
-    }
-}
-
-impl genetic::StopChecker<Chromosomes> for StopChecker {
-    fn can_stop(&mut self, population: &Population) -> bool {
-        population.get_iteration() >= self.max_iter
-    }
-}
-
 fn main() {
     let xmin = -100.0;
     let xmax = 100.0;
@@ -257,7 +184,7 @@ fn main() {
     let mut mutation = Mutation::new(mutation_probability);
     let mut selection = Selection::new(size, xmin, xmax);
     let mut pairing = Pairing::new();
-    let mut stop_checker = StopChecker::new(max_iterations);
+    let mut stop_checker = stopchecker::MaxIterations::new(max_iterations);
 
     let mut optimizer = genetic::GeneticOptimizer::new(
         &mut goal,
@@ -270,7 +197,7 @@ fn main() {
     );
 
     optimizer.find_min();
-    let mut new_stop_checker = StopChecker::new(max_iterations);
+    let mut new_stop_checker = stopchecker::MaxIterations::new(max_iterations);
     optimizer.replace_stop_checker(&mut new_stop_checker);
     let result = optimizer.next_iterations();
 

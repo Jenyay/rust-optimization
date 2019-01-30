@@ -1,5 +1,7 @@
 pub mod cross;
 pub mod mutation;
+pub mod selection;
+pub mod stopchecker;
 
 use std::f64;
 use std::ops;
@@ -200,22 +202,7 @@ impl<'a, T: Clone> GeneticOptimizer<'a, T> {
     pub fn replace_stop_checker(&mut self, stop_checker: &'a mut StopChecker<T>) {
         self.stop_checker = stop_checker;
     }
-}
 
-impl<'a, T: Clone> Optimizer<T> for GeneticOptimizer<'a, T> {
-    fn find_min(&mut self) -> Option<(T, f64)> {
-        self.population.reset();
-        let start_chromo = self.creator.create();
-
-        start_chromo
-            .iter()
-            .for_each(|chromo| self.population.push(chromo.clone()));
-
-        self.next_iterations()
-    }
-}
-
-impl<'a, T: Clone> GeneticOptimizer<'a, T> {
     pub fn next_iterations(&mut self) -> Option<(T, f64)> {
         while !self.stop_checker.can_stop(&self.population) {
             // Pairing
@@ -267,5 +254,18 @@ impl<'a, T: Clone> GeneticOptimizer<'a, T> {
         }
 
         new_chromosomes
+    }
+}
+
+impl<'a, T: Clone> Optimizer<T> for GeneticOptimizer<'a, T> {
+    fn find_min(&mut self) -> Option<(T, f64)> {
+        self.population.reset();
+        let start_chromo = self.creator.create();
+
+        start_chromo
+            .iter()
+            .for_each(|chromo| self.population.push(chromo.clone()));
+
+        self.next_iterations()
     }
 }
