@@ -1,10 +1,10 @@
-use optlib::Optimizer;
 use optlib::genetic;
 use optlib::genetic::cross;
 use optlib::genetic::mutation;
 use optlib::genetic::selection;
 use optlib::genetic::stopchecker;
 use optlib::testfunctions;
+use optlib::Optimizer;
 
 use rand::distributions::{Distribution, Uniform};
 use rand::rngs::ThreadRng;
@@ -73,7 +73,7 @@ impl genetic::Cross<Chromosomes> for Cross {
         children.push(vec![]);
 
         for n in 0..chromo_count {
-            let new_chromo = cross::cross_middle(&vec![parents[0][n], parents[1][n]]);
+            let new_chromo = cross::vec_float::cross_middle(&vec![parents[0][n], parents[1][n]]);
             children[0].push(new_chromo);
         }
 
@@ -128,9 +128,7 @@ impl genetic::Selection<Chromosomes> for Selection {
         // 1. Kill all individuals with chromosomes outside the interval [xmin; xmax]
         let mut kill_count = 0;
         kill_count += selection::kill_fitness_nan(population);
-        kill_count += selection::kill_chromo_interval_vec_f64(population,
-                                                              self.xmin,
-                                                              self.xmax);
+        kill_count += selection::vec_float::kill_chromo_interval(population, self.xmin, self.xmax);
 
         // 2. Keep alive only population_size best individuals
         if population.len() - kill_count > self.population_size {

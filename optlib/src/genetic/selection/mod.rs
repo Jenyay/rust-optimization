@@ -1,3 +1,5 @@
+pub mod vec_float;
+
 use super::Population;
 
 pub fn kill_fitness_nan<T: Clone>(population: &mut Population<T>) -> usize {
@@ -14,23 +16,6 @@ pub fn kill_fitness_nan<T: Clone>(population: &mut Population<T>) -> usize {
     kill_count
 }
 
-
-pub fn kill_chromo_interval_vec_f64(population: &mut Population<Vec<f64>>, 
-                                    minval: f64, maxval: f64) -> usize {
-    let mut kill_count = 0;
-
-    for individual in population.iter_mut() {
-        for chromo in individual.get_chromosomes() {
-            if !chromo.is_finite() || chromo < minval || chromo > maxval {
-                individual.kill();
-                kill_count += 1;
-                break;
-            }
-        }
-    }
-
-    kill_count
-}
 
 pub fn kill_worst<T: Clone>(population: &mut Population<T>, count: usize) {
     // List of indexes of individuals in population to be kill
