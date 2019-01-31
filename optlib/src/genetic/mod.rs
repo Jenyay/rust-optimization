@@ -7,8 +7,7 @@ use std::f64;
 use std::ops;
 use std::slice;
 
-use super::{Agent, Optimizer};
-// use super::{Agent, AlgorithmWithAgents, Optimizer};
+use super::{AlgorithmWithAgents, Optimizer, Agent};
 
 #[derive(Debug)]
 pub struct Individual<T: Clone> {
@@ -281,14 +280,15 @@ impl<'a, T: Clone> Optimizer<T> for GeneticOptimizer<'a, T> {
     }
 }
 
-// impl<'a, T: Clone, A: Agent<T>> AlgorithmWithAgents<T, A> for GeneticOptimizer<'a, T> {
-//     fn get_agents(&self) -> Vec<Box<A>> {
-//         // self.population.iter().collect()
-//         let agents: Vec<Box<A>> = Vec::with_capacity(self.population.len());
-//         for individual in self.population.iter() {
-//             agents.push(Box::new(*individual));
-//         }
-//
-//         agents
-//     }
-// }
+impl<'a, T: Clone> AlgorithmWithAgents<T> for GeneticOptimizer<'a, T> {
+    type Agent = Individual<T>;
+
+    fn get_agents(&self) -> Vec<Self::Agent> {
+        let mut agents: Vec<Self::Agent> = Vec::with_capacity(self.population.len());
+        for individual in self.population.iter() {
+            agents.push(individual.clone());
+        }
+
+        agents
+    }
+}
