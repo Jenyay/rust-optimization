@@ -1,3 +1,4 @@
+pub mod creation;
 pub mod cross;
 pub mod mutation;
 pub mod selection;
@@ -7,7 +8,7 @@ use std::f64;
 use std::ops;
 use std::slice;
 
-use super::{AlgorithmWithAgents, Optimizer, Agent};
+use super::{Agent, AlgorithmWithAgents, Optimizer};
 
 #[derive(Debug)]
 pub struct Individual<T: Clone> {
@@ -109,6 +110,10 @@ impl<'a, T: Clone> Population<'a, T> {
 
     pub fn len(&self) -> usize {
         self.individuals.len()
+    }
+
+    pub fn get_best(&self) -> Option<Individual<T>> {
+        self.best_individual.clone()
     }
 
     fn next_iteration(&mut self) {

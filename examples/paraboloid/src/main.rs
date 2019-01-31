@@ -1,4 +1,5 @@
 use optlib::genetic;
+use optlib::genetic::creation;
 use optlib::genetic::cross;
 use optlib::genetic::mutation;
 use optlib::genetic::selection;
@@ -18,46 +19,6 @@ struct Goal;
 impl genetic::Goal<Chromosomes> for Goal {
     fn get(&self, chromosomes: &Chromosomes) -> f64 {
         testfunctions::paraboloid(chromosomes)
-    }
-}
-
-// Creator
-struct Creator {
-    population_size: usize,
-    chromo_count: usize,
-    xmin: f64,
-    xmax: f64,
-    random: ThreadRng,
-}
-
-impl Creator {
-    pub fn new(population_size: usize, chromo_count: usize, xmin: f64, xmax: f64) -> Creator {
-        let random = rand::thread_rng();
-        Creator {
-            population_size,
-            chromo_count,
-            xmin,
-            xmax,
-            random,
-        }
-    }
-}
-
-impl genetic::Creator<Chromosomes> for Creator {
-    fn create(&mut self) -> Vec<Chromosomes> {
-        let between = Uniform::new(self.xmin, self.xmax);
-        let mut population = Vec::with_capacity(self.population_size * 2);
-
-        for _ in 0..self.population_size {
-            let mut chromo = Vec::with_capacity(self.chromo_count);
-            for _ in 0..self.chromo_count {
-                chromo.push(between.sample(&mut self.random));
-            }
-
-            population.push(chromo);
-        }
-
-        population
     }
 }
 
@@ -100,7 +61,7 @@ impl genetic::Mutation<Chromosomes> for Mutation {
 
         for n in 0..chromosomes.len() {
             if mutate.sample(&mut rng) < self.probability {
-                chromosomes[n] = mutation::mutation_f64(chromosomes[n], mutation_count);;
+                chromosomes[n] = mutation::mutation_f64(chromosomes[n], mutation_count);
             }
         }
     }
@@ -109,26 +70,27 @@ impl genetic::Mutation<Chromosomes> for Mutation {
 // Selection
 struct Selection {
     population_size: usize,
-    xmin: f64,
-    xmax: f64,
+    minval: f64,
+    maxval: f64,
 }
 
 impl Selection {
-    pub fn new(population_size: usize, xmin: f64, xmax: f64) -> Selection {
+    pub fn new(population_size: usize, minval: f64, maxval: f64) -> Selection {
         Selection {
             population_size,
-            xmin,
-            xmax,
+            minval,
+            maxval,
         }
     }
 }
 
 impl genetic::Selection<Chromosomes> for Selection {
     fn kill(&mut self, population: &mut Population) {
-        // 1. Kill all individuals with chromosomes outside the interval [xmin; xmax]
+        // 1. Kill all individuals with chromosomes outside the interval [minval; maxval]
         let mut kill_count = 0;
         kill_count += selection::kill_fitness_nan(population);
-        kill_count += selection::vec_float::kill_chromo_interval(population, self.xmin, self.xmax);
+        kill_count +=
+            selection::vec_float::kill_chromo_interval(population, self.minval, self.maxval);
 
         // 2. Keep alive only population_size best individuals
         if population.len() - kill_count > self.population_size {
@@ -139,7 +101,6 @@ impl genetic::Selection<Chromosomes> for Selection {
 }
 
 // Pairing
-
 struct Pairing {
     random: ThreadRng,
 }
@@ -169,20 +130,26 @@ impl Pairing {
 }
 
 fn main() {
-    let xmin = -100.0;
-    let xmax = 100.0;
+    let minval = -100.0;
+    let maxval = 100.0;
     let size = 50;
-    let chromo_count = 5;
+    let chromo_count = 8;
     let mutation_probability = 5.0;
-    let max_iterations = 500;
+    let intervals = (0..chromo_count).map(|_| (minval, maxval)).collect();
+
+    // For stop checkers
+    let change_max_iterations = 50;
+    let change_delta = 1e-5;
+    // let max_iterations = 100;
 
     let mut goal = Goal {};
-    let mut creator = Creator::new(size, chromo_count, xmin, xmax);
+    let mut creator = creation::vec_float::RandomCreator::new(size, intervals);
     let mut cross = Cross {};
     let mut mutation = Mutation::new(mutation_probability);
-    let mut selection = Selection::new(size, xmin, xmax);
+    let mut selection = Selection::new(size, minval, maxval);
     let mut pairing = Pairing::new();
-    let mut stop_checker = stopchecker::MaxIterations::new(max_iterations);
+    let mut stop_checker = stopchecker::GoalNotChange::new(change_max_iterations, change_delta);
+    // let mut stop_checker = stopchecker::MaxIterations::new(max_iterations);
 
     let mut optimizer = genetic::GeneticOptimizer::new(
         &mut goal,
@@ -194,10 +161,10 @@ fn main() {
         &mut stop_checker,
     );
 
-    optimizer.find_min();
-    let mut new_stop_checker = stopchecker::MaxIterations::new(max_iterations);
-    optimizer.replace_stop_checker(&mut new_stop_checker);
-    let result = optimizer.next_iterations();
+    let result = optimizer.find_min();
+    // let mut new_stop_checker = stopchecker::MaxIterations::new(max_iterations);
+    // optimizer.replace_stop_checker(&mut new_stop_checker);
+    // let result = optimizer.next_iterations();
 
     match result {
         None => println!("Решение не найдено"),
