@@ -2,13 +2,13 @@ use optlib::genetic;
 use optlib::genetic::creation;
 use optlib::genetic::cross;
 use optlib::genetic::mutation;
+use optlib::genetic::pairing;
 use optlib::genetic::selection;
 use optlib::genetic::stopchecker;
 use optlib::testfunctions;
 use optlib::Optimizer;
 
 use rand::distributions::{Distribution, Uniform};
-use rand::rngs::ThreadRng;
 
 type Chromosomes = Vec<f64>;
 type Population<'a> = genetic::Population<'a, Chromosomes>;
@@ -100,35 +100,6 @@ impl genetic::Selection<Chromosomes> for Selection {
     }
 }
 
-// Pairing
-struct Pairing {
-    random: ThreadRng,
-}
-
-impl genetic::Pairing<Chromosomes> for Pairing {
-    fn get_pairs(&mut self, population: &Population) -> Vec<Vec<usize>> {
-        let mut pairs: Vec<Vec<usize>> = vec![];
-
-        let between = Uniform::new(0, population.len());
-        let count = population.len() / 2;
-        for _ in 0..count {
-            let first = between.sample(&mut self.random);
-            let second = between.sample(&mut self.random);
-            let pair = vec![first, second];
-            pairs.push(pair);
-        }
-
-        pairs
-    }
-}
-
-impl Pairing {
-    fn new() -> Self {
-        let random = rand::thread_rng();
-        Pairing { random }
-    }
-}
-
 fn main() {
     let minval = -100.0;
     let maxval = 100.0;
@@ -147,7 +118,7 @@ fn main() {
     let mut cross = Cross {};
     let mut mutation = Mutation::new(mutation_probability);
     let mut selection = Selection::new(size, minval, maxval);
-    let mut pairing = Pairing::new();
+    let mut pairing = pairing::RandomPairing::new();
     let mut stop_checker = stopchecker::GoalNotChange::new(change_max_iterations, change_delta);
     // let mut stop_checker = stopchecker::MaxIterations::new(max_iterations);
 

@@ -3,6 +3,7 @@ pub mod cross;
 pub mod mutation;
 pub mod selection;
 pub mod stopchecker;
+pub mod pairing;
 
 use std::f64;
 use std::ops;
