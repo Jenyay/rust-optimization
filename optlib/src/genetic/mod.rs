@@ -1,9 +1,10 @@
 pub mod creation;
 pub mod cross;
 pub mod mutation;
+pub mod pairing;
 pub mod selection;
 pub mod stopchecker;
-pub mod pairing;
+pub mod logging;
 
 use std::f64;
 use std::ops;
@@ -168,6 +169,13 @@ pub trait StopChecker<T: Clone> {
     fn can_stop(&mut self, population: &Population<T>) -> bool;
 }
 
+pub trait Logger<T: Clone> {
+    fn start(&mut self, _population: &Population<T>) {}
+    fn resume(&mut self, _population: &Population<T>) {}
+    fn next_iteration(&mut self, _population: &Population<T>) {}
+    fn finish(&mut self, _population: &Population<T>) {}
+}
+
 pub struct GeneticOptimizer<'a, T: Clone> {
     creator: &'a mut Creator<T>,
     pairing: &'a mut Pairing<T>,
@@ -175,6 +183,7 @@ pub struct GeneticOptimizer<'a, T: Clone> {
     mutation: &'a mut Mutation<T>,
     selection: &'a mut Selection<T>,
     stop_checker: &'a mut StopChecker<T>,
+    logger: Option<Box<Logger<T>>>,
     population: Population<'a, T>,
 }
 
@@ -187,6 +196,7 @@ impl<'a, T: Clone> GeneticOptimizer<'a, T> {
         mutation: &'a mut Mutation<T>,
         selection: &'a mut Selection<T>,
         stop_checker: &'a mut StopChecker<T>,
+        logger: Option<Box<Logger<T>>>,
     ) -> GeneticOptimizer<'a, T> {
         GeneticOptimizer {
             creator,
@@ -195,6 +205,7 @@ impl<'a, T: Clone> GeneticOptimizer<'a, T> {
             mutation,
             selection,
             stop_checker,
+            logger,
             population: Population::new(goal),
         }
     }
@@ -220,6 +231,10 @@ impl<'a, T: Clone> GeneticOptimizer<'a, T> {
     }
 
     pub fn next_iterations(&mut self) -> Option<(T, f64)> {
+        if let Some(ref mut logger) = self.logger {
+            logger.resume(&self.population);
+        }
+
         while !self.stop_checker.can_stop(&self.population) {
             // Pairing
             let mut children_chromo = self.run_pairing();
@@ -247,6 +262,14 @@ impl<'a, T: Clone> GeneticOptimizer<'a, T> {
             }
 
             self.population.next_iteration();
+
+            if let Some(ref mut logger) = self.logger {
+                logger.next_iteration(&self.population);
+            }
+        }
+
+        if let Some(ref mut logger) = self.logger {
+            logger.finish(&self.population);
         }
 
         match self.population.best_individual.clone() {
@@ -282,6 +305,9 @@ impl<'a, T: Clone> Optimizer<T> for GeneticOptimizer<'a, T> {
             .iter()
             .for_each(|chromo| self.population.push(chromo.clone()));
 
+        if let Some(ref mut logger) = self.logger {
+            logger.start(&self.population);
+        }
         self.next_iterations()
     }
 }

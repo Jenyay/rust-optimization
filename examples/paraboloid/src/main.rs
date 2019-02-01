@@ -5,6 +5,7 @@ use optlib::genetic::mutation;
 use optlib::genetic::pairing;
 use optlib::genetic::selection;
 use optlib::genetic::stopchecker;
+use optlib::genetic::logging;
 use optlib::testfunctions;
 use optlib::Optimizer;
 
@@ -84,7 +85,7 @@ fn main() {
     let minval = -100.0;
     let maxval = 100.0;
     let size = 50;
-    let chromo_count = 8;
+    let chromo_count = 5;
     let mutation_probability = 5.0;
     let intervals = (0..chromo_count).map(|_| (minval, maxval)).collect();
     let cross_function = cross::vec_float::cross_middle;
@@ -100,6 +101,7 @@ fn main() {
     let mut mutation = Mutation::new(mutation_probability);
     let mut selection = Selection::new(size, minval, maxval);
     let mut pairing = pairing::RandomPairing::new();
+    let logger = logging::vec_float::StdoutLogger::new(15);
     let mut stop_checker = stopchecker::GoalNotChange::new(change_max_iterations, change_delta);
     // let mut stop_checker = stopchecker::MaxIterations::new(max_iterations);
 
@@ -111,16 +113,8 @@ fn main() {
         &mut mutation,
         &mut selection,
         &mut stop_checker,
+        Some(Box::new(logger)),
     );
 
-    let result = optimizer.find_min();
-    // let mut new_stop_checker = stopchecker::MaxIterations::new(max_iterations);
-    // optimizer.replace_stop_checker(&mut new_stop_checker);
-    // let result = optimizer.next_iterations();
-
-    match result {
-        None => println!("Решение не найдено"),
-        Some((chromosomes, fitness)) => println!("Значение хромосом лучшей особи: {:?}\nЗначение целевой функции: {}",
-                                     chromosomes, fitness),
-    }
+    optimizer.find_min();
 }
