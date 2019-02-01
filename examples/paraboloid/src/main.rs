@@ -84,7 +84,7 @@ impl genetic::Selection<Chromosomes> for Selection {
 fn main() {
     let minval = -100.0;
     let maxval = 100.0;
-    let size = 50;
+    let size = 100;
     let chromo_count = 5;
     let mutation_probability = 5.0;
     let intervals = (0..chromo_count).map(|_| (minval, maxval)).collect();
@@ -93,7 +93,6 @@ fn main() {
     // For stop checkers
     let change_max_iterations = 50;
     let change_delta = 1e-5;
-    // let max_iterations = 100;
 
     let mut goal = Goal {};
     let mut creator = creation::vec_float::RandomCreator::new(size, intervals);
@@ -103,7 +102,7 @@ fn main() {
     let mut pairing = pairing::RandomPairing::new();
     let logger = logging::vec_float::StdoutLogger::new(15);
     let mut stop_checker = stopchecker::GoalNotChange::new(change_max_iterations, change_delta);
-    // let mut stop_checker = stopchecker::MaxIterations::new(max_iterations);
+    // let mut stop_checker = stopchecker::MaxIterations::new(500);
 
     let mut optimizer = genetic::GeneticOptimizer::new(
         &mut goal,
