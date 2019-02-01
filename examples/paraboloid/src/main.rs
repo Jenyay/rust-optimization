@@ -22,26 +22,6 @@ impl genetic::Goal<Chromosomes> for Goal {
     }
 }
 
-// Cross
-struct Cross;
-
-impl genetic::Cross<Chromosomes> for Cross {
-    fn cross(&self, parents: &Vec<Chromosomes>) -> Vec<Chromosomes> {
-        assert!(parents.len() == 2);
-
-        let chromo_count = parents[0].len();
-        let mut children: Vec<Chromosomes> = Vec::with_capacity(chromo_count);
-        children.push(vec![]);
-
-        for n in 0..chromo_count {
-            let new_chromo = cross::vec_float::cross_middle(&vec![parents[0][n], parents[1][n]]);
-            children[0].push(new_chromo);
-        }
-
-        children
-    }
-}
-
 // Mutation
 struct Mutation {
     pub probability: f64,
@@ -107,6 +87,7 @@ fn main() {
     let chromo_count = 8;
     let mutation_probability = 5.0;
     let intervals = (0..chromo_count).map(|_| (minval, maxval)).collect();
+    let cross_function = cross::vec_float::cross_middle;
 
     // For stop checkers
     let change_max_iterations = 50;
@@ -115,7 +96,7 @@ fn main() {
 
     let mut goal = Goal {};
     let mut creator = creation::vec_float::RandomCreator::new(size, intervals);
-    let mut cross = Cross {};
+    let mut cross = cross::vec_float::FuncCross::new(cross_function);
     let mut mutation = Mutation::new(mutation_probability);
     let mut selection = Selection::new(size, minval, maxval);
     let mut pairing = pairing::RandomPairing::new();
