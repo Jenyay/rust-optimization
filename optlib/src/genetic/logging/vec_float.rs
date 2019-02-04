@@ -47,3 +47,50 @@ impl<G: Float + Display> Logger<Vec<G>> for StdoutLogger {
         }
     }
 }
+
+pub struct StdoutResultOnlyLogger {
+    precision: usize,
+    start_time: Option<time::Instant>,
+}
+
+impl StdoutResultOnlyLogger {
+    pub fn new(precision: usize) -> Self {
+        Self {
+            precision,
+            start_time: None,
+        }
+    }
+}
+
+impl<G: Float + Display> Logger<Vec<G>> for StdoutResultOnlyLogger {
+    fn start(&mut self, _population: &Population<Vec<G>>) {}
+
+    fn resume(&mut self, _population: &Population<Vec<G>>) {
+        self.start_time = Some(time::Instant::now());
+    }
+
+    fn finish(&mut self, population: &Population<Vec<G>>) {
+        let duration = self.start_time.unwrap().elapsed();
+        let time_ms = duration.as_secs() * 1000 + duration.subsec_millis() as u64;
+
+        match population.get_best() {
+            None => println!("Solution not found"),
+            Some(individual) => {
+                let mut result = String::new();
+                result = result + "Solution:\n    ";
+
+                for chromo in individual.get_chromosomes() {
+                    result = result + &format!("  {:<20.*}", self.precision, chromo);
+                }
+
+                result = result + "\n";
+                println!("{}", result);
+                println!("Goal: {:.*}", self.precision, individual.get_goal());
+            }
+        }
+        println!("Iterations count: {}", population.get_iteration());
+        println!("Time elapsed: {} ms", time_ms);
+    }
+
+    fn next_iteration(&mut self, _population: &Population<Vec<G>>) {}
+}

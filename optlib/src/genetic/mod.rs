@@ -1,10 +1,11 @@
 pub mod creation;
 pub mod cross;
+pub mod goal;
+pub mod logging;
 pub mod mutation;
 pub mod pairing;
 pub mod selection;
 pub mod stopchecker;
-pub mod logging;
 
 use std::f64;
 use std::ops;

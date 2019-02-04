@@ -1,6 +1,7 @@
 use optlib::genetic;
 use optlib::genetic::creation;
 use optlib::genetic::cross;
+use optlib::genetic::goal;
 use optlib::genetic::logging;
 use optlib::genetic::mutation;
 use optlib::genetic::pairing;
@@ -11,15 +12,6 @@ use optlib::Optimizer;
 
 type Chromosomes = Vec<f64>;
 type Population<'a> = genetic::Population<'a, Chromosomes>;
-
-// Goal function
-struct Goal;
-
-impl genetic::Goal<Chromosomes> for Goal {
-    fn get(&self, chromosomes: &Chromosomes) -> f64 {
-        testfunctions::paraboloid(chromosomes)
-    }
-}
 
 // Selection
 struct Selection {
@@ -68,7 +60,7 @@ fn main() {
     let change_max_iterations = 50;
     let change_delta = 1e-5;
 
-    let mut goal = Goal {};
+    let mut goal = goal::vec_float::GoalFromFunction::new(testfunctions::paraboloid);
     let mut creator = creation::vec_float::RandomCreator::new(size, intervals);
     let mut cross = cross::vec_float::FuncCross::new(cross_function);
     let mut mutation = mutation::vec_float::RandomChromosomesMutation::new(
@@ -77,7 +69,8 @@ fn main() {
     );
     let mut selection = Selection::new(size, minval, maxval);
     let mut pairing = pairing::RandomPairing::new();
-    let logger = logging::vec_float::StdoutLogger::new(15);
+    let logger = logging::vec_float::StdoutResultOnlyLogger::new(15);
+    // let logger = logging::vec_float::StdoutLogger::new(15);
     let mut stop_checker = stopchecker::GoalNotChange::new(change_max_iterations, change_delta);
     // let mut stop_checker = stopchecker::MaxIterations::new(500);
 
