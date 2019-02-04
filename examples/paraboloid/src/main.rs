@@ -1,15 +1,13 @@
 use optlib::genetic;
 use optlib::genetic::creation;
 use optlib::genetic::cross;
+use optlib::genetic::logging;
 use optlib::genetic::mutation;
 use optlib::genetic::pairing;
 use optlib::genetic::selection;
 use optlib::genetic::stopchecker;
-use optlib::genetic::logging;
 use optlib::testfunctions;
 use optlib::Optimizer;
-
-use rand::distributions::{Distribution, Uniform};
 
 type Chromosomes = Vec<f64>;
 type Population<'a> = genetic::Population<'a, Chromosomes>;
@@ -20,31 +18,6 @@ struct Goal;
 impl genetic::Goal<Chromosomes> for Goal {
     fn get(&self, chromosomes: &Chromosomes) -> f64 {
         testfunctions::paraboloid(chromosomes)
-    }
-}
-
-// Mutation
-struct Mutation {
-    pub probability: f64,
-}
-
-impl Mutation {
-    pub fn new(probability: f64) -> Mutation {
-        Mutation { probability }
-    }
-}
-
-impl genetic::Mutation<Chromosomes> for Mutation {
-    fn mutation(&mut self, chromosomes: &mut Chromosomes) {
-        let mut rng = rand::thread_rng();
-        let mutate = Uniform::new(0.0, 100.0);
-        let mutation_count = 1;
-
-        for n in 0..chromosomes.len() {
-            if mutate.sample(&mut rng) < self.probability {
-                chromosomes[n] = mutation::mutation_f64(chromosomes[n], mutation_count);
-            }
-        }
     }
 }
 
@@ -86,7 +59,8 @@ fn main() {
     let maxval = 100.0;
     let size = 100;
     let chromo_count = 5;
-    let mutation_probability = 5.0;
+    let mutation_probability = 15.0;
+    let mutation_gene_count = 1;
     let intervals = (0..chromo_count).map(|_| (minval, maxval)).collect();
     let cross_function = cross::vec_float::cross_middle;
 
@@ -97,7 +71,10 @@ fn main() {
     let mut goal = Goal {};
     let mut creator = creation::vec_float::RandomCreator::new(size, intervals);
     let mut cross = cross::vec_float::FuncCross::new(cross_function);
-    let mut mutation = Mutation::new(mutation_probability);
+    let mut mutation = mutation::vec_float::RandomChromosomesMutation::new(
+        mutation_probability,
+        mutation_gene_count,
+    );
     let mut selection = Selection::new(size, minval, maxval);
     let mut pairing = pairing::RandomPairing::new();
     let logger = logging::vec_float::StdoutLogger::new(15);

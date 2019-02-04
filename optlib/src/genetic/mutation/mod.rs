@@ -1,3 +1,5 @@
+pub mod vec_float;
+
 use std::mem;
 
 use rand::distributions::{Distribution, Uniform};
