@@ -11,7 +11,7 @@ pub fn kill_chromo_interval<T: Float>(
 
     for individual in population.iter_mut() {
         for chromo in individual.get_chromosomes() {
-            if !chromo.is_finite() || chromo < minval || chromo > maxval {
+            if !chromo.is_finite() || *chromo < minval || *chromo > maxval {
                 individual.kill();
                 kill_count += 1;
                 break;

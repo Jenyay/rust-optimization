@@ -13,7 +13,7 @@ impl<G: Float> FuncCross<G> {
 }
 
 impl<G: Float> Cross<Vec<G>> for FuncCross<G> {
-    fn cross(&self, parents: &Vec<Vec<G>>) -> Vec<Vec<G>> {
+    fn cross(&self, parents: &Vec<&Vec<G>>) -> Vec<Vec<G>> {
         assert!(parents.len() == 2);
 
         let chromo_count = parents[0].len();

@@ -35,14 +35,14 @@ impl<T: Clone> Agent<T> for Individual<T> {
         self.fitness
     }
 
-    fn get_parameter(&self) -> T {
-        self.chromosomes.clone()
+    fn get_parameter(&self) -> &T {
+        &self.chromosomes
     }
 }
 
 impl<T: Clone> Individual<T> {
-    pub fn get_chromosomes(&self) -> T {
-        self.chromosomes.clone()
+    pub fn get_chromosomes(&self) -> &T {
+        &self.chromosomes
     }
 
     pub fn get_fitness(&self) -> f64 {
@@ -88,7 +88,7 @@ impl<'a, T: Clone> Population<'a, T> {
             fitness,
             alive: true,
         };
-        match self.best_individual.clone() {
+        match &self.best_individual {
             None => self.best_individual = Some(new_individual.clone()),
             Some(old_best) => {
                 if new_individual.get_fitness() < old_best.get_fitness() {
@@ -115,8 +115,8 @@ impl<'a, T: Clone> Population<'a, T> {
         self.individuals.len()
     }
 
-    pub fn get_best(&self) -> Option<Individual<T>> {
-        self.best_individual.clone()
+    pub fn get_best(&self) -> &Option<Individual<T>> {
+        &self.best_individual
     }
 
     fn next_iteration(&mut self) {
@@ -151,7 +151,7 @@ pub trait Creator<T: Clone> {
 }
 
 pub trait Cross<T: Clone> {
-    fn cross(&self, parents: &Vec<T>) -> Vec<T>;
+    fn cross(&self, parents: &Vec<&T>) -> Vec<T>;
 }
 
 pub trait Mutation<T: Clone> {
@@ -231,7 +231,7 @@ impl<'a, T: Clone> GeneticOptimizer<'a, T> {
         self.stop_checker = stop_checker;
     }
 
-    pub fn next_iterations(&mut self) -> Option<(T, f64)> {
+    pub fn next_iterations(&mut self) -> Option<(&T, f64)> {
         if let Some(ref mut logger) = self.logger {
             logger.resume(&self.population);
         }
@@ -273,9 +273,9 @@ impl<'a, T: Clone> GeneticOptimizer<'a, T> {
             logger.finish(&self.population);
         }
 
-        match self.population.best_individual.clone() {
+        match &self.population.best_individual {
             None => None,
-            Some(individual) => Some((individual.chromosomes, individual.fitness)),
+            Some(individual) => Some((&individual.chromosomes, individual.fitness)),
         }
     }
 
@@ -298,7 +298,7 @@ impl<'a, T: Clone> GeneticOptimizer<'a, T> {
 }
 
 impl<'a, T: Clone> Optimizer<T> for GeneticOptimizer<'a, T> {
-    fn find_min(&mut self) -> Option<(T, f64)> {
+    fn find_min(&mut self) -> Option<(&T, f64)> {
         self.population.reset();
         let start_chromo = self.creator.create();
 
@@ -316,10 +316,10 @@ impl<'a, T: Clone> Optimizer<T> for GeneticOptimizer<'a, T> {
 impl<'a, T: Clone> AlgorithmWithAgents<T> for GeneticOptimizer<'a, T> {
     type Agent = Individual<T>;
 
-    fn get_agents(&self) -> Vec<Self::Agent> {
-        let mut agents: Vec<Self::Agent> = Vec::with_capacity(self.population.len());
+    fn get_agents(&self) -> Vec<&Self::Agent> {
+        let mut agents: Vec<&Self::Agent> = Vec::with_capacity(self.population.len());
         for individual in self.population.iter() {
-            agents.push(individual.clone());
+            agents.push(individual);
         }
 
         agents
