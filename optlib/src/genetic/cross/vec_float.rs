@@ -1,4 +1,5 @@
 use super::super::*;
+
 use num::Float;
 
 // FuncCross
@@ -29,16 +30,13 @@ impl<G: Float> Cross<Vec<G>> for FuncCross<G> {
     }
 }
 
-pub fn cross_middle<T>(chromosomes: &Vec<T>) -> Vec<T>
-where
-    T: Float,
-{
-    assert!(chromosomes.len() >= 2);
-    let mut result = chromosomes[0].clone();
-    for n in 1..chromosomes.len() {
-        result = result + chromosomes[n].clone();
+pub fn cross_middle<G: Float>(gene: &Vec<G>) -> Vec<G> {
+    assert!(gene.len() >= 2);
+    let mut result = gene[0].clone();
+    for n in 1..gene.len() {
+        result = result + gene[n].clone();
     }
 
-    result = result / T::from(chromosomes.len()).unwrap();
+    result = result / G::from(gene.len()).unwrap();
     vec![result]
 }
