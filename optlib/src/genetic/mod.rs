@@ -99,6 +99,11 @@ impl<T: Clone> Population<T> {
         self.individuals.push(new_individual);
     }
 
+    pub fn append(&mut self, mut chromosomes_list: Vec<T>) {
+        (0..chromosomes_list.len())
+                .for_each(|_| self.push(chromosomes_list.remove(0)));
+    }
+
     pub fn iter(&self) -> slice::Iter<Individual<T>> {
         self.individuals.iter()
     }
@@ -238,17 +243,15 @@ impl<T: Clone> GeneticOptimizer<T> {
 
         while !self.stop_checker.can_stop(&self.population) {
             // Pairing
-            let mut children_chromo = self.run_pairing();
+            let mut children_chromo_list = self.run_pairing();
 
             // Mutation
-            children_chromo
+            children_chromo_list
                 .iter_mut()
                 .for_each(|chromo| self.mutation.mutation(chromo));
 
             // Add new individuals to population
-            children_chromo
-                .iter()
-                .for_each(|chromo| self.population.push(chromo.clone()));
+            self.population.append(children_chromo_list);
 
             // Selection
             self.selection.kill(&mut self.population);
@@ -300,11 +303,10 @@ impl<T: Clone> GeneticOptimizer<T> {
 impl<T: Clone> Optimizer<T> for GeneticOptimizer<T> {
     fn find_min(&mut self) -> Option<(&T, f64)> {
         self.population.reset();
-        let start_chromo = self.creator.create();
+        let start_chromo_list = self.creator.create();
 
-        start_chromo
-            .iter()
-            .for_each(|chromo| self.population.push(chromo.clone()));
+        // Create individuals from chromosomes
+        self.population.append(start_chromo_list);
 
         if let Some(ref mut logger) = self.logger {
             logger.start(&self.population);
