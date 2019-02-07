@@ -58,15 +58,15 @@ impl<T: Clone> Individual<T> {
     }
 }
 
-pub struct Population<'a, T: Clone> {
-    goal: &'a Goal<T>,
+pub struct Population<T: Clone> {
+    goal: Box<dyn Goal<T>>,
     individuals: Vec<Individual<T>>,
     best_individual: Option<Individual<T>>,
     iteration: usize,
 }
 
-impl<'a, T: Clone> Population<'a, T> {
-    pub fn new(goal: &'a Goal<T>) -> Self {
+impl<T: Clone> Population<T> {
+    pub fn new(goal: Box<dyn Goal<T>>) -> Self {
         Population {
             goal,
             individuals: vec![],
@@ -128,7 +128,7 @@ impl<'a, T: Clone> Population<'a, T> {
     }
 }
 
-impl<'a, T: Clone> ops::Index<usize> for Population<'a, T> {
+impl<T: Clone> ops::Index<usize> for Population<T> {
     type Output = Individual<T>;
 
     fn index(&self, index: usize) -> &Individual<T> {
@@ -136,7 +136,7 @@ impl<'a, T: Clone> ops::Index<usize> for Population<'a, T> {
     }
 }
 
-impl<'a, T: Clone> ops::IndexMut<usize> for Population<'a, T> {
+impl<T: Clone> ops::IndexMut<usize> for Population<T> {
     fn index_mut<'b>(&'b mut self, index: usize) -> &'b mut Individual<T> {
         &mut self.individuals[index]
     }
@@ -177,28 +177,28 @@ pub trait Logger<T: Clone> {
     fn finish(&mut self, _population: &Population<T>) {}
 }
 
-pub struct GeneticOptimizer<'a, T: Clone> {
-    creator: &'a mut Creator<T>,
-    pairing: &'a mut Pairing<T>,
-    cross: &'a mut Cross<T>,
-    mutation: &'a mut Mutation<T>,
-    selection: &'a mut Selection<T>,
-    stop_checker: &'a mut StopChecker<T>,
-    logger: Option<Box<Logger<T>>>,
-    population: Population<'a, T>,
+pub struct GeneticOptimizer<T: Clone> {
+    creator: Box<dyn Creator<T>>,
+    pairing: Box<dyn Pairing<T>>,
+    cross: Box<dyn Cross<T>>,
+    mutation: Box<dyn Mutation<T>>,
+    selection: Box<dyn Selection<T>>,
+    stop_checker: Box<dyn StopChecker<T>>,
+    logger: Option<Box<dyn Logger<T>>>,
+    population: Population<T>,
 }
 
-impl<'a, T: Clone> GeneticOptimizer<'a, T> {
+impl<T: Clone> GeneticOptimizer<T> {
     pub fn new(
-        goal: &'a Goal<T>,
-        creator: &'a mut Creator<T>,
-        pairing: &'a mut Pairing<T>,
-        cross: &'a mut Cross<T>,
-        mutation: &'a mut Mutation<T>,
-        selection: &'a mut Selection<T>,
-        stop_checker: &'a mut StopChecker<T>,
-        logger: Option<Box<Logger<T>>>,
-    ) -> GeneticOptimizer<'a, T> {
+        goal: Box<dyn Goal<T>>,
+        creator: Box<dyn Creator<T>>,
+        pairing: Box<dyn Pairing<T>>,
+        cross: Box<dyn Cross<T>>,
+        mutation: Box<dyn Mutation<T>>,
+        selection: Box<dyn Selection<T>>,
+        stop_checker: Box<dyn StopChecker<T>>,
+        logger: Option<Box<dyn Logger<T>>>,
+    ) -> GeneticOptimizer<T> {
         GeneticOptimizer {
             creator,
             pairing,
@@ -211,23 +211,23 @@ impl<'a, T: Clone> GeneticOptimizer<'a, T> {
         }
     }
 
-    pub fn replace_pairing(&mut self, pairing: &'a mut Pairing<T>) {
+    pub fn replace_pairing(&mut self, pairing: Box<dyn Pairing<T>>) {
         self.pairing = pairing;
     }
 
-    pub fn replace_cross(&mut self, cross: &'a mut Cross<T>) {
+    pub fn replace_cross(&mut self, cross: Box<dyn Cross<T>>) {
         self.cross = cross;
     }
 
-    pub fn replace_mutation(&mut self, mutation: &'a mut Mutation<T>) {
+    pub fn replace_mutation(&mut self, mutation: Box<dyn Mutation<T>>) {
         self.mutation = mutation;
     }
 
-    pub fn replace_selection(&mut self, selection: &'a mut Selection<T>) {
+    pub fn replace_selection(&mut self, selection: Box<dyn Selection<T>>) {
         self.selection = selection;
     }
 
-    pub fn replace_stop_checker(&mut self, stop_checker: &'a mut StopChecker<T>) {
+    pub fn replace_stop_checker(&mut self, stop_checker: Box<dyn StopChecker<T>>) {
         self.stop_checker = stop_checker;
     }
 
@@ -297,7 +297,7 @@ impl<'a, T: Clone> GeneticOptimizer<'a, T> {
     }
 }
 
-impl<'a, T: Clone> Optimizer<T> for GeneticOptimizer<'a, T> {
+impl<T: Clone> Optimizer<T> for GeneticOptimizer<T> {
     fn find_min(&mut self) -> Option<(&T, f64)> {
         self.population.reset();
         let start_chromo = self.creator.create();
@@ -313,7 +313,7 @@ impl<'a, T: Clone> Optimizer<T> for GeneticOptimizer<'a, T> {
     }
 }
 
-impl<'a, T: Clone> AlgorithmWithAgents<T> for GeneticOptimizer<'a, T> {
+impl<T: Clone> AlgorithmWithAgents<T> for GeneticOptimizer<T> {
     type Agent = Individual<T>;
 
     fn get_agents(&self) -> Vec<&Self::Agent> {

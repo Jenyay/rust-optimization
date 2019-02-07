@@ -11,7 +11,7 @@ use optlib::testfunctions;
 use optlib::Optimizer;
 
 type Chromosomes = Vec<f64>;
-type Population<'a> = genetic::Population<'a, Chromosomes>;
+type Population = genetic::Population<Chromosomes>;
 
 // Selection
 struct Selection {
@@ -60,28 +60,28 @@ fn main() {
     let change_max_iterations = 50;
     let change_delta = 1e-5;
 
-    let mut goal = goal::vec_float::GoalFromFunction::new(testfunctions::paraboloid);
-    let mut creator = creation::vec_float::RandomCreator::new(size, intervals);
-    let mut cross = cross::vec_float::FuncCross::new(cross_function);
-    let mut mutation = mutation::vec_float::RandomChromosomesMutation::new(
+    let goal = goal::vec_float::GoalFromFunction::new(testfunctions::paraboloid);
+    let creator = creation::vec_float::RandomCreator::new(size, intervals);
+    let cross = cross::vec_float::FuncCross::new(cross_function);
+    let mutation = mutation::vec_float::RandomChromosomesMutation::new(
         mutation_probability,
         mutation_gene_count,
     );
-    let mut selection = Selection::new(size, minval, maxval);
-    let mut pairing = pairing::RandomPairing::new();
+    let selection = Selection::new(size, minval, maxval);
+    let pairing = pairing::RandomPairing::new();
     let logger = logging::vec_float::StdoutResultOnlyLogger::new(15);
     // let logger = logging::vec_float::StdoutLogger::new(15);
-    let mut stop_checker = stopchecker::GoalNotChange::new(change_max_iterations, change_delta);
-    // let mut stop_checker = stopchecker::MaxIterations::new(500);
+    let stop_checker = stopchecker::GoalNotChange::new(change_max_iterations, change_delta);
+    // let stop_checker = stopchecker::MaxIterations::new(500);
 
     let mut optimizer = genetic::GeneticOptimizer::new(
-        &mut goal,
-        &mut creator,
-        &mut pairing,
-        &mut cross,
-        &mut mutation,
-        &mut selection,
-        &mut stop_checker,
+        Box::new(goal),
+        Box::new(creator),
+        Box::new(pairing),
+        Box::new(cross),
+        Box::new(mutation),
+        Box::new(selection),
+        Box::new(stop_checker),
         Some(Box::new(logger)),
     );
 
