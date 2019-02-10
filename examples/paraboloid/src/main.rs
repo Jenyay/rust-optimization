@@ -54,6 +54,7 @@ fn main() {
     let mutation_probability = 15.0;
     let mutation_gene_count = 1;
     let intervals = (0..chromo_count).map(|_| (minval, maxval)).collect();
+    // let cross_function = cross::vec_float::cross_bitwise;
     let cross_function = cross::vec_float::cross_middle;
 
     // For stop checkers
@@ -62,7 +63,7 @@ fn main() {
 
     let goal = goal::vec_float::GoalFromFunction::new(testfunctions::paraboloid);
     let creator = creation::vec_float::RandomCreator::new(size, intervals);
-    let cross = cross::vec_float::FuncCross::new(cross_function);
+    let cross = cross::vec_float::VecCrossAllGenes::new(Box::new(cross_function));
     let mutation = mutation::vec_float::RandomChromosomesMutation::new(
         mutation_probability,
         mutation_gene_count,

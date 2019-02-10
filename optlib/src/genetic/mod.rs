@@ -156,7 +156,7 @@ pub trait Creator<T: Clone> {
 }
 
 pub trait Cross<T: Clone> {
-    fn cross(&self, parents: &Vec<&T>) -> Vec<T>;
+    fn cross(&mut self, parents: &Vec<&T>) -> Vec<T>;
 }
 
 pub trait Mutation<T: Clone> {

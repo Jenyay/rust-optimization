@@ -1,32 +1,38 @@
 use super::super::*;
 
-use num::Float;
+use std::mem;
 
-// FuncCross
-pub struct FuncCross<G: Float> {
-    cross_function: fn(&Vec<G>) -> Vec<G>,
+use num::Float;
+use rand::distributions::{Distribution, Uniform};
+
+// VecCrossAllGenes
+pub struct VecCrossAllGenes<G: Float> {
+    gene_cross_function: Box<dyn FnMut(&Vec<G>) -> Vec<G>>,
 }
 
-impl<G: Float> FuncCross<G> {
-    pub fn new(cross_function: fn(&Vec<G>) -> Vec<G>) -> Self {
-        Self { cross_function }
+impl<G: Float> VecCrossAllGenes<G> {
+    pub fn new(gene_cross_function: Box<FnMut(&Vec<G>) -> Vec<G>>) -> Self {
+        Self {
+            gene_cross_function,
+        }
     }
 }
 
-impl<G: Float> Cross<Vec<G>> for FuncCross<G> {
-    fn cross(&self, parents: &Vec<&Vec<G>>) -> Vec<Vec<G>> {
+impl<G: Float> Cross<Vec<G>> for VecCrossAllGenes<G> {
+    fn cross(&mut self, parents: &Vec<&Vec<G>>) -> Vec<Vec<G>> {
         assert!(parents.len() == 2);
 
-        let chromo_count = parents[0].len();
-        let mut children: Vec<Vec<G>> = Vec::with_capacity(chromo_count);
-        children.push(vec![]);
+        let parent_1 = parents[0];
+        let parent_2 = parents[1];
 
-        for n in 0..chromo_count {
-            let mut new_chromo = (self.cross_function)(&vec![parents[0][n], parents[1][n]]);
-            children[0].append(&mut new_chromo);
+        let gene_count = parent_1.len();
+        let mut child = vec![];
+
+        for n in 0..gene_count {
+            let mut new_gene = (self.gene_cross_function)(&vec![parent_1[n], parent_2[n]]);
+            child.append(&mut new_gene);
         }
-
-        children
+        vec![child]
     }
 }
 
@@ -39,4 +45,23 @@ pub fn cross_middle<G: Float>(gene: &Vec<G>) -> Vec<G> {
 
     result = result / G::from(gene.len()).unwrap();
     vec![result]
+}
+
+pub fn cross_bitwise(gene: &Vec<f64>) -> Vec<f64> {
+    assert_eq!(gene.len(), 2);
+    let mut random = rand::thread_rng();
+    let size = mem::size_of_val(&gene) * 8;
+    let between = Uniform::new(1, size);
+
+    let pos = between.sample(&mut random);
+
+    let parent_1 = gene[0].to_bits();
+    let parent_2 = gene[1].to_bits();
+
+    let mask_parent_1 = (!(0 as u64)) << pos;
+    let mask_parent_2 = (!(0 as u64)) >> (size - pos);
+
+    let child_bits = (parent_1 & mask_parent_1) | (parent_2 & mask_parent_2);
+
+    vec![f64::from_bits(child_bits)]
 }
