@@ -1,8 +1,11 @@
-pub fn paraboloid(chromosomes: &Vec<f64>) -> f64 {
-    let mut result = 0.0;
+use num::{Float, NumCast};
+
+
+pub fn paraboloid<G: Float + NumCast>(chromosomes: &Vec<G>) -> f64 {
+    let mut result = G::from(0.0).unwrap();
     for (n, val) in chromosomes.iter().enumerate() {
-        result += (val - (n as f64 + 1.0)) * (val - (n as f64 + 1.0));
+        result = result + (*val - (G::from(n).unwrap() + G::from(1.0).unwrap())).powi(2);
     }
 
-    result
+    result.to_f64().unwrap()
 }

@@ -10,18 +10,19 @@ use optlib::genetic::stopchecker;
 use optlib::testfunctions;
 use optlib::Optimizer;
 
-type Chromosomes = Vec<f64>;
+type Gene = f32;
+type Chromosomes = Vec<Gene>;
 type Population = genetic::Population<Chromosomes>;
 
 // Selection
 struct Selection {
     population_size: usize,
-    minval: f64,
-    maxval: f64,
+    minval: Gene,
+    maxval: Gene,
 }
 
 impl Selection {
-    pub fn new(population_size: usize, minval: f64, maxval: f64) -> Selection {
+    pub fn new(population_size: usize, minval: Gene, maxval: Gene) -> Selection {
         Selection {
             population_size,
             minval,
@@ -47,19 +48,20 @@ impl genetic::Selection<Chromosomes> for Selection {
 }
 
 fn main() {
-    let minval = -100.0;
-    let maxval = 100.0;
-    let size = 100;
+    let minval: Gene = -100.0;
+    let maxval: Gene = 100.0;
+    let size = 800;
     let chromo_count = 5;
     let mutation_probability = 15.0;
     let mutation_gene_count = 1;
-    let intervals = (0..chromo_count).map(|_| (minval, maxval)).collect();
-    // let cross_function = cross::vec_float::cross_bitwise;
-    let cross_function = cross::vec_float::cross_middle;
+    let intervals: Vec<(Gene, Gene)> = (0..chromo_count).map(|_| (minval, maxval)).collect();
+    let cross_function = cross::cross_bitwise_float;
+    // let cross_function = cross::cross_mean_float;
+    // let cross_function = cross::cross_geometric_mean_float;
 
     // For stop checkers
     let change_max_iterations = 50;
-    let change_delta = 1e-5;
+    let change_delta = 1e-7;
 
     let goal = goal::vec_float::GoalFromFunction::new(testfunctions::paraboloid);
     let creator = creation::vec_float::RandomCreator::new(size, intervals);
