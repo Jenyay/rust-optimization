@@ -1,18 +1,16 @@
 use super::super::*;
-
+use super::FloatCross;
 
 use num::Float;
 
 // VecCrossAllGenes
 pub struct VecCrossAllGenes<G: Float> {
-    gene_cross_function: Box<dyn FnMut(&Vec<G>) -> Vec<G>>,
+    single_cross: Box<dyn FloatCross<G>>,
 }
 
 impl<G: Float> VecCrossAllGenes<G> {
-    pub fn new(gene_cross_function: Box<FnMut(&Vec<G>) -> Vec<G>>) -> Self {
-        Self {
-            gene_cross_function,
-        }
+    pub fn new(single_cross: Box<dyn FloatCross<G>>) -> Self {
+        Self { single_cross }
     }
 }
 
@@ -27,7 +25,7 @@ impl<G: Float> Cross<Vec<G>> for VecCrossAllGenes<G> {
         let mut child = vec![];
 
         for n in 0..gene_count {
-            let mut new_gene = (self.gene_cross_function)(&vec![parent_1[n], parent_2[n]]);
+            let mut new_gene = self.single_cross.cross(&vec![parent_1[n], parent_2[n]]);
             child.append(&mut new_gene);
         }
         vec![child]

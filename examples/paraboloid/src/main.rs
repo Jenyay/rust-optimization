@@ -48,34 +48,42 @@ impl genetic::Selection<Chromosomes> for Selection {
 }
 
 fn main() {
+    // General parameters
     let minval: Gene = -100.0;
     let maxval: Gene = 100.0;
     let size = 800;
     let chromo_count = 5;
+
+    // Mutation
     let mutation_probability = 15.0;
     let mutation_gene_count = 1;
-    let intervals: Vec<(Gene, Gene)> = (0..chromo_count).map(|_| (minval, maxval)).collect();
-    let cross_function = cross::cross_bitwise_float;
-    // let cross_function = cross::cross_mean_float;
-    // let cross_function = cross::cross_geometric_mean_float;
-
-    // For stop checkers
-    let change_max_iterations = 50;
-    let change_delta = 1e-7;
-
-    let goal = goal::vec_float::GoalFromFunction::new(testfunctions::paraboloid);
-    let creator = creation::vec_float::RandomCreator::new(size, intervals);
-    let cross = cross::vec_float::VecCrossAllGenes::new(Box::new(cross_function));
+    let single_mutation = mutation::BitwiseFloatMutation::new(mutation_gene_count);
+    // let single_cross = cross::FloatCrossMean::new();
+    // let single_cross = cross::FloatCrossGeometricMean::new();
     let mutation = mutation::vec_float::RandomChromosomesMutation::new(
         mutation_probability,
-        mutation_gene_count,
+        Box::new(single_mutation),
     );
-    let selection = Selection::new(size, minval, maxval);
-    let pairing = pairing::RandomPairing::new();
-    let logger = logging::vec_float::StdoutResultOnlyLogger::new(15);
-    // let logger = logging::vec_float::StdoutLogger::new(15);
+
+    // Cross
+    let single_cross = cross::FloatCrossBitwise::new();
+    let cross = cross::vec_float::VecCrossAllGenes::new(Box::new(single_cross));
+
+    // Stop checker
+    let change_max_iterations = 50;
+    let change_delta = 1e-7;
     let stop_checker = stopchecker::GoalNotChange::new(change_max_iterations, change_delta);
     // let stop_checker = stopchecker::MaxIterations::new(500);
+
+    let goal = goal::vec_float::GoalFromFunction::new(testfunctions::paraboloid);
+    let intervals: Vec<(Gene, Gene)> = (0..chromo_count).map(|_| (minval, maxval)).collect();
+    let creator = creation::vec_float::RandomCreator::new(size, intervals);
+    let selection = Selection::new(size, minval, maxval);
+    let pairing = pairing::RandomPairing::new();
+
+    // Logger
+    let logger = logging::vec_float::StdoutResultOnlyLogger::new(15);
+    // let logger = logging::vec_float::StdoutLogger::new(15);
 
     let mut optimizer = genetic::GeneticOptimizer::new(
         Box::new(goal),

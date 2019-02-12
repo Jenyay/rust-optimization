@@ -1,34 +1,34 @@
-
 use super::super::*;
+use super::*;
 
 use num::Float;
 use rand::distributions::{Distribution, Uniform};
 use rand::rngs;
 
-pub struct RandomChromosomesMutation {
+pub struct RandomChromosomesMutation<G: Float> {
     probability: f64,
-    gene_count: usize,
     random: rngs::ThreadRng,
+    single_mutation: Box<dyn FloatMutation<G>>,
 }
 
-impl RandomChromosomesMutation {
-    pub fn new(probability: f64, gene_count: usize) -> Self {
+impl<G: Float> RandomChromosomesMutation<G> {
+    pub fn new(probability: f64, single_mutation: Box<dyn FloatMutation<G>>) -> Self {
         let random = rand::thread_rng();
         Self {
             probability,
-            gene_count,
             random,
+            single_mutation,
         }
     }
 }
 
-impl<G: Float> Mutation<Vec<G>> for RandomChromosomesMutation {
+impl<G: Float> Mutation<Vec<G>> for RandomChromosomesMutation<G> {
     fn mutation(&mut self, chromosomes: &mut Vec<G>) {
         let mutate = Uniform::new(0.0, 100.0);
 
         for n in 0..chromosomes.len() {
             if mutate.sample(&mut self.random) < self.probability {
-                chromosomes[n] = super::mutation_bitwise_float(chromosomes[n], self.gene_count);
+                chromosomes[n] = self.single_mutation.mutation(chromosomes[n]);
             }
         }
     }
