@@ -57,8 +57,8 @@ fn main() {
     // Mutation
     let mutation_probability = 15.0;
     let mutation_gene_count = 1;
-    let single_mutation = mutation::BitwiseFloatMutation::new(mutation_gene_count);
-    // let single_cross = cross::FloatCrossMean::new();
+    let single_mutation = mutation::BitwiseMutation::new(mutation_gene_count);
+    // let single_cross = cross::CrossMean::new();
     // let single_cross = cross::FloatCrossGeometricMean::new();
     let mutation = mutation::vec_float::RandomChromosomesMutation::new(
         mutation_probability,
@@ -66,7 +66,7 @@ fn main() {
     );
 
     // Cross
-    let single_cross = cross::FloatCrossBitwise::new();
+    let single_cross = cross::CrossBitwise::new();
     let cross = cross::vec_float::VecCrossAllGenes::new(Box::new(single_cross));
 
     // Stop checker
@@ -75,15 +75,15 @@ fn main() {
     let stop_checker = stopchecker::GoalNotChange::new(change_max_iterations, change_delta);
     // let stop_checker = stopchecker::MaxIterations::new(500);
 
-    let goal = goal::vec_float::GoalFromFunction::new(testfunctions::paraboloid);
+    let goal = goal::GoalFromFunction::new(testfunctions::paraboloid);
     let intervals: Vec<(Gene, Gene)> = (0..chromo_count).map(|_| (minval, maxval)).collect();
     let creator = creation::vec_float::RandomCreator::new(size, intervals);
     let selection = Selection::new(size, minval, maxval);
     let pairing = pairing::RandomPairing::new();
 
     // Logger
-    let logger = logging::vec_float::StdoutResultOnlyLogger::new(15);
-    // let logger = logging::vec_float::StdoutLogger::new(15);
+    let logger = logging::StdoutResultOnlyLogger::new(15);
+    // let logger = logging::StdoutLogger::new(15);
 
     let mut optimizer = genetic::GeneticOptimizer::new(
         Box::new(goal),

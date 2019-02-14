@@ -8,11 +8,11 @@ use rand::rngs;
 pub struct RandomChromosomesMutation<G: Float> {
     probability: f64,
     random: rngs::ThreadRng,
-    single_mutation: Box<dyn FloatMutation<G>>,
+    single_mutation: Box<dyn NumMutation<G>>,
 }
 
 impl<G: Float> RandomChromosomesMutation<G> {
-    pub fn new(probability: f64, single_mutation: Box<dyn FloatMutation<G>>) -> Self {
+    pub fn new(probability: f64, single_mutation: Box<dyn NumMutation<G>>) -> Self {
         let random = rand::thread_rng();
         Self {
             probability,

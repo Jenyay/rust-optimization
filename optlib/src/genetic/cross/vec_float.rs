@@ -1,21 +1,21 @@
 use super::super::*;
-use super::FloatCross;
+use super::NumCross;
 
 use num::Float;
 
 // VecCrossAllGenes
 pub struct VecCrossAllGenes<G: Float> {
-    single_cross: Box<dyn FloatCross<G>>,
+    single_cross: Box<dyn NumCross<G>>,
 }
 
 impl<G: Float> VecCrossAllGenes<G> {
-    pub fn new(single_cross: Box<dyn FloatCross<G>>) -> Self {
+    pub fn new(single_cross: Box<dyn NumCross<G>>) -> Self {
         Self { single_cross }
     }
 }
 
 impl<G: Float> Cross<Vec<G>> for VecCrossAllGenes<G> {
-    fn cross(&mut self, parents: &Vec<&Vec<G>>) -> Vec<Vec<G>> {
+    fn cross(&mut self, parents: &[&Vec<G>]) -> Vec<Vec<G>> {
         assert!(parents.len() == 2);
 
         let parent_1 = parents[0];
