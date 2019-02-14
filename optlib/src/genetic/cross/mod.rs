@@ -1,13 +1,14 @@
-pub mod vec_float;
-
 use std::mem;
 
 use num::{Float, Num, NumCast};
 use rand::distributions::{Distribution, Uniform};
 use rand::rngs::ThreadRng;
+use super::Cross;
 
-pub trait NumCross<G: NumCast + Num + Clone> {
-    fn cross(&mut self, gene: &Vec<G>) -> Vec<G>;
+
+// VecCrossAllGenes
+pub struct VecCrossAllGenes<G: Clone> {
+    single_cross: Box<dyn Cross<G>>,
 }
 
 pub struct CrossMean;
@@ -24,15 +25,15 @@ impl CrossMean {
     }
 }
 
-impl<G: NumCast + Num + Clone> NumCross<G> for CrossMean {
-    fn cross(&mut self, gene: &Vec<G>) -> Vec<G> {
-        assert!(gene.len() >= 2);
-        let mut result = gene[0].clone();
-        for n in 1..gene.len() {
-            result = result + gene[n].clone();
+impl<G: NumCast + Num + Clone> Cross<G> for CrossMean {
+    fn cross(&mut self, parents_genes: &[&G]) -> Vec<G> {
+        assert!(parents_genes.len() >= 2);
+        let mut result = parents_genes[0].clone();
+        for n in 1..parents_genes.len() {
+            result = result + parents_genes[n].clone();
         }
 
-        result = result / G::from(gene.len()).unwrap();
+        result = result / G::from(parents_genes.len()).unwrap();
         vec![result]
     }
 }
@@ -43,15 +44,15 @@ impl FloatCrossGeometricMean {
     }
 }
 
-impl<G: Float> NumCross<G> for FloatCrossGeometricMean {
-    fn cross(&mut self, gene: &Vec<G>) -> Vec<G> {
-        assert!(gene.len() >= 2);
-        let mut result = gene[0];
-        for n in 1..gene.len() {
-            result = result * gene[n];
+impl<G: Float> Cross<G> for FloatCrossGeometricMean {
+    fn cross(&mut self, parents_genes: &[&G]) -> Vec<G> {
+        assert!(parents_genes.len() >= 2);
+        let mut result = *parents_genes[0];
+        for n in 1..parents_genes.len() {
+            result = result * (*parents_genes[n]);
         }
 
-        result = result.powf(G::one() / G::from(gene.len()).unwrap());
+        result = result.powf(G::one() / G::from(parents_genes.len()).unwrap());
         vec![result]
     }
 }
@@ -63,35 +64,59 @@ impl CrossBitwise {
     }
 }
 
-impl NumCross<f64> for CrossBitwise {
-    fn cross(&mut self, gene: &Vec<f64>) -> Vec<f64> {
-        assert_eq!(gene.len(), 2);
-        let size = mem::size_of_val(&gene[0]) * 8;
+impl Cross<f64> for CrossBitwise {
+    fn cross(&mut self, parents_genes: &[&f64]) -> Vec<f64> {
+        assert_eq!(parents_genes.len(), 2);
+        let size = mem::size_of_val(parents_genes[0]) * 8;
         let between = Uniform::new(1, size);
 
         let pos = between.sample(&mut self.random);
 
-        let parent_1 = gene[0].to_bits();
-        let parent_2 = gene[1].to_bits();
+        let parent_1 = parents_genes[0].to_bits();
+        let parent_2 = parents_genes[1].to_bits();
 
         let child_bits = cross_u64(parent_1, parent_2, pos);
         vec![f64::from_bits(child_bits)]
     }
 }
 
-impl NumCross<f32> for CrossBitwise {
-    fn cross(&mut self, gene: &Vec<f32>) -> Vec<f32> {
-        assert_eq!(gene.len(), 2);
-        let size = mem::size_of_val(&gene[0]) * 8;
+impl Cross<f32> for CrossBitwise {
+    fn cross(&mut self, parents_genes: &[&f32]) -> Vec<f32> {
+        assert_eq!(parents_genes.len(), 2);
+        let size = mem::size_of_val(parents_genes[0]) * 8;
         let between = Uniform::new(1, size);
 
         let pos = between.sample(&mut self.random);
 
-        let parent_1 = gene[0].to_bits();
-        let parent_2 = gene[1].to_bits();
+        let parent_1 = parents_genes[0].to_bits();
+        let parent_2 = parents_genes[1].to_bits();
 
         let child_bits = cross_u32(parent_1, parent_2, pos);
         vec![f32::from_bits(child_bits)]
+    }
+}
+
+impl<G: Clone> VecCrossAllGenes<G> {
+    pub fn new(single_cross: Box<dyn Cross<G>>) -> Self {
+        Self { single_cross }
+    }
+}
+
+impl<G: Clone> Cross<Vec<G>> for VecCrossAllGenes<G> {
+    fn cross(&mut self, parents: &[&Vec<G>]) -> Vec<Vec<G>> {
+        assert!(parents.len() == 2);
+
+        let parent_1 = parents[0];
+        let parent_2 = parents[1];
+
+        let gene_count = parent_1.len();
+        let mut child = vec![];
+
+        for n in 0..gene_count {
+            let mut new_gene = self.single_cross.cross(vec![&parent_1[n], &parent_2[n]].as_slice());
+            child.append(&mut new_gene);
+        }
+        vec![child]
     }
 }
 

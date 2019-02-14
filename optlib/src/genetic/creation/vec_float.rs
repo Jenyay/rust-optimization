@@ -1,17 +1,17 @@
 use rand::distributions::{Distribution, Uniform};
 use rand::rngs::ThreadRng;
-use num::Float;
+use num::NumCast;
 
 use super::super::*;
 
 /// RandomCreator
-pub struct RandomCreator<G: Float> {
+pub struct RandomCreator<G: Clone + NumCast> {
     population_size: usize,
     intervals: Vec<(G, G)>,
     random: ThreadRng,
 }
 
-impl<G: Float> RandomCreator<G> {
+impl<G: Clone + NumCast> RandomCreator<G> {
     pub fn new(population_size: usize, intervals: Vec<(G, G)>) -> Self {
         let random = rand::thread_rng();
         Self {
@@ -22,7 +22,7 @@ impl<G: Float> RandomCreator<G> {
     }
 }
 
-impl<G: Float> Creator<Vec<G>> for RandomCreator<G> {
+impl<G: Clone + NumCast> Creator<Vec<G>> for RandomCreator<G> {
     fn create(&mut self) -> Vec<Vec<G>> {
         let mut population = Vec::with_capacity(self.population_size * 2);
         let chromo_count = self.intervals.len();

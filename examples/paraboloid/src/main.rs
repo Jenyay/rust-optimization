@@ -60,14 +60,14 @@ fn main() {
     let single_mutation = mutation::BitwiseMutation::new(mutation_gene_count);
     // let single_cross = cross::CrossMean::new();
     // let single_cross = cross::FloatCrossGeometricMean::new();
-    let mutation = mutation::vec_float::RandomChromosomesMutation::new(
+    let mutation = mutation::VecMutation::new(
         mutation_probability,
         Box::new(single_mutation),
     );
 
     // Cross
     let single_cross = cross::CrossBitwise::new();
-    let cross = cross::vec_float::VecCrossAllGenes::new(Box::new(single_cross));
+    let cross = cross::VecCrossAllGenes::new(Box::new(single_cross));
 
     // Stop checker
     let change_max_iterations = 50;

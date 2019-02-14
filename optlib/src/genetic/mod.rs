@@ -160,7 +160,7 @@ pub trait Cross<T: Clone> {
 }
 
 pub trait Mutation<T: Clone> {
-    fn mutation(&mut self, chromosomes: &mut T);
+    fn mutation(&mut self, chromosomes: &T) -> T;
 }
 
 pub trait Selection<T: Clone> {
@@ -246,12 +246,12 @@ impl<T: Clone> GeneticOptimizer<T> {
             let mut children_chromo_list = self.run_pairing();
 
             // Mutation
-            children_chromo_list
+            let children_mutants = children_chromo_list
                 .iter_mut()
-                .for_each(|chromo| self.mutation.mutation(chromo));
+                .map(|chromo| self.mutation.mutation(chromo)).collect();
 
             // Add new individuals to population
-            self.population.append(children_chromo_list);
+            self.population.append(children_mutants);
 
             // Selection
             self.selection.kill(&mut self.population);
