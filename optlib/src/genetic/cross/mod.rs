@@ -19,6 +19,10 @@ pub struct CrossBitwise {
     random: ThreadRng,
 }
 
+pub struct FloatCrossExp {
+    random: ThreadRng,
+}
+
 impl CrossMean {
     pub fn new() -> Self {
         Self {}
@@ -69,14 +73,9 @@ impl Cross<f64> for CrossBitwise {
         assert_eq!(parents_genes.len(), 2);
         let size = mem::size_of_val(parents_genes[0]) * 8;
         let between = Uniform::new(1, size);
-
         let pos = between.sample(&mut self.random);
 
-        let parent_1 = parents_genes[0].to_bits();
-        let parent_2 = parents_genes[1].to_bits();
-
-        let child_bits = cross_u64(parent_1, parent_2, pos);
-        vec![f64::from_bits(child_bits)]
+        vec![cross_f64(*parents_genes[0], *parents_genes[1], pos)]
     }
 }
 
@@ -85,14 +84,9 @@ impl Cross<f32> for CrossBitwise {
         assert_eq!(parents_genes.len(), 2);
         let size = mem::size_of_val(parents_genes[0]) * 8;
         let between = Uniform::new(1, size);
-
         let pos = between.sample(&mut self.random);
 
-        let parent_1 = parents_genes[0].to_bits();
-        let parent_2 = parents_genes[1].to_bits();
-
-        let child_bits = cross_u32(parent_1, parent_2, pos);
-        vec![f32::from_bits(child_bits)]
+        vec![cross_f32(*parents_genes[0], *parents_genes[1], pos)]
     }
 }
 
@@ -117,6 +111,42 @@ impl<G: Clone> Cross<Vec<G>> for VecCrossAllGenes<G> {
             child.append(&mut new_gene);
         }
         vec![child]
+    }
+}
+
+impl FloatCrossExp {
+    pub fn new() -> Self {
+        let random = rand::thread_rng();
+        Self { random }
+    }
+}
+
+impl<G: Float> Cross<G> for FloatCrossExp {
+    fn cross(&mut self, parents_genes: &[&G]) -> Vec<G> {
+        assert_eq!(parents_genes.len(), 2);
+        // mantissa: u64, exponent: i16, sign: i8
+        let (mantissa_1, exponent_1, sign_1) = parents_genes[0].integer_decode();
+        let (mantissa_2, exponent_2, sign_2) = parents_genes[1].integer_decode();
+
+        let mantissa_size = mem::size_of_val(&mantissa_1) * 8;
+        let exponent_size = mem::size_of_val(&exponent_1) * 8;
+
+        let mantissa_between = Uniform::new(1, mantissa_size);
+        let exponent_between = Uniform::new(1, exponent_size);
+
+        let mantissa_pos = mantissa_between.sample(&mut self.random);
+        let exponent_pos = exponent_between.sample(&mut self.random);
+
+        let mantissa_child = cross_u64(mantissa_1, mantissa_2, mantissa_pos);
+        let exponent_child = cross_i16(exponent_1, exponent_2, exponent_pos);
+
+        let sign_child = match Uniform::new_inclusive(0i8, 1i8).sample(&mut self.random) {
+            0 => sign_1,
+            1 => sign_2,
+            _ => panic!("Invalid random value in FloatCrossExp"),
+        };
+
+        vec![G::from(sign_child).unwrap() * G::from(mantissa_child).unwrap() * G::from(exponent_child).unwrap().exp2()]
     }
 }
 
@@ -160,4 +190,20 @@ pub fn cross_u8(parent_1: u8, parent_2: u8, pos: usize) -> u8 {
     let mask_parent_1 = !0u8 << pos;
     let mask_parent_2 = !0u8 >> (size - pos);
     (parent_1 & mask_parent_1) | (parent_2 & mask_parent_2)
+}
+
+pub fn cross_f32(parent_1: f32, parent_2: f32, pos: usize) -> f32 {
+    let parent_1_bits = parent_1.to_bits();
+    let parent_2_bits = parent_2.to_bits();
+
+    let child_bits = cross_u32(parent_1_bits, parent_2_bits, pos);
+    f32::from_bits(child_bits)
+}
+
+pub fn cross_f64(parent_1: f64, parent_2: f64, pos: usize) -> f64 {
+    let parent_1_bits = parent_1.to_bits();
+    let parent_2_bits = parent_2.to_bits();
+
+    let child_bits = cross_u64(parent_1_bits, parent_2_bits, pos);
+    f64::from_bits(child_bits)
 }

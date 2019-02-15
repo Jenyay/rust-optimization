@@ -51,7 +51,7 @@ fn main() {
     // General parameters
     let minval: Gene = -100.0;
     let maxval: Gene = 100.0;
-    let size = 800;
+    let size = 300;
     let chromo_count = 5;
 
     // Mutation
@@ -66,7 +66,8 @@ fn main() {
     );
 
     // Cross
-    let single_cross = cross::CrossBitwise::new();
+    let single_cross = cross::FloatCrossExp::new();
+    // let single_cross = cross::CrossBitwise::new();
     let cross = cross::VecCrossAllGenes::new(Box::new(single_cross));
 
     // Stop checker
