@@ -1,3 +1,13 @@
+//! A module with genetic algorithm implementation.
+//!
+//! # Terms
+//! * "chromosomes" are point in the search space.
+//! Usually chromosome is single value or vector of values.
+//! * "Fitness" is value of goal function value in genetic algorithm.
+//! * "Generation" is iteration number of genetic algorithm.
+//! * "Individual" is agent in genetic algorithm (point in the search space and value of goal
+//! function).
+
 pub mod creation;
 pub mod cross;
 pub mod goal;
@@ -13,10 +23,17 @@ use std::slice;
 
 use super::{Agent, AlgorithmWithAgents, Optimizer};
 
+/// Struct for single point (agent) in the search space
+/// `T` - type of a point in the search space for goal function (chromosomes).
 #[derive(Debug)]
 pub struct Individual<T: Clone> {
+    /// Point in the search space.
     chromosomes: T,
+
+    /// Value of goal function for the point in the search space.
     fitness: f64,
+
+    /// True if individual will pass to text generation.
     alive: bool,
 }
 
@@ -58,15 +75,25 @@ impl<T: Clone> Individual<T> {
     }
 }
 
+/// Stores all individuals for current generation.
+/// `T` - type of a point in the search space for goal function (chromosomes).
 pub struct Population<T: Clone> {
+    /// Trait object for goal function.
     goal: Box<dyn Goal<T>>,
     individuals: Vec<Individual<T>>,
+
+    /// Best individual for current generation.
     best_individual: Option<Individual<T>>,
+
+    /// Generation number.
     iteration: usize,
 }
 
 impl<T: Clone> Population<T> {
-    pub fn new(goal: Box<dyn Goal<T>>) -> Self {
+    /// Create new `Population` struct
+    /// # Parameters
+    /// * `goal` - trait object for goal function
+    fn new(goal: Box<dyn Goal<T>>) -> Self {
         Population {
             goal,
             individuals: vec![],
@@ -75,19 +102,23 @@ impl<T: Clone> Population<T> {
         }
     }
 
-    pub fn reset(&mut self) {
+    /// Remove all individuals and go to generation 0.
+    fn reset(&mut self) {
         self.individuals.clear();
         self.best_individual = None;
         self.iteration = 0;
     }
 
-    pub fn push(&mut self, chromosomes: T) {
+    /// Create new `Individual` struct with `chromosomes` and add it to population.
+    fn push(&mut self, chromosomes: T) {
         let fitness = self.goal.get(&chromosomes);
         let new_individual = Individual {
             chromosomes,
             fitness,
             alive: true,
         };
+
+        // Check the new individual for the best value of goal function.
         match &self.best_individual {
             None => self.best_individual = Some(new_individual.clone()),
             Some(old_best) => {
@@ -99,40 +130,49 @@ impl<T: Clone> Population<T> {
         self.individuals.push(new_individual);
     }
 
-    pub fn append(&mut self, mut chromosomes_list: Vec<T>) {
-        (0..chromosomes_list.len())
-                .for_each(|_| self.push(chromosomes_list.remove(0)));
+    /// Create new individuals (`Individual` struct) for all items in `chromosomes_list` and add
+    /// them to population.
+    fn append(&mut self, mut chromosomes_list: Vec<T>) {
+        (0..chromosomes_list.len()).for_each(|_| self.push(chromosomes_list.remove(0)));
     }
 
+    /// Returns iterator for all individuals (`Individual` struct) in population.
     pub fn iter(&self) -> slice::Iter<Individual<T>> {
         self.individuals.iter()
     }
 
+    /// Returns mut iterator for all individuals (`Individual` struct) in population.
     pub fn iter_mut(&mut self) -> slice::IterMut<Individual<T>> {
         self.individuals.iter_mut()
     }
 
+    /// Returns iteration number (generation number).
     pub fn get_iteration(&self) -> usize {
         self.iteration
     }
 
+    /// Return count of the individuals in the population.
     pub fn len(&self) -> usize {
         self.individuals.len()
     }
 
+    /// Returns the best individual in the population if exists or None otherwise.
     pub fn get_best(&self) -> &Option<Individual<T>> {
         &self.best_individual
     }
 
+    /// Switch to next iteration (generation)
     fn next_iteration(&mut self) {
         self.iteration += 1;
     }
 
+    /// Remove individual by number
     fn remove(&mut self, index: usize) {
         self.individuals.remove(index);
     }
 }
 
+/// Index trait implementation for Population
 impl<T: Clone> ops::Index<usize> for Population<T> {
     type Output = Individual<T>;
 
@@ -141,47 +181,89 @@ impl<T: Clone> ops::Index<usize> for Population<T> {
     }
 }
 
+/// IndexMut trait implementation for Population
 impl<T: Clone> ops::IndexMut<usize> for Population<T> {
     fn index_mut<'b>(&'b mut self, index: usize) -> &'b mut Individual<T> {
         &mut self.individuals[index]
     }
 }
 
+/// The trait to calculate goal function.
+/// `T` - type of a point in the search space for goal function (chromosomes).
 pub trait Goal<T> {
+    /// Must return value of goal function for `chromosomes` point in the search space.
     fn get(&self, chromosomes: &T) -> f64;
 }
 
+/// The trait to create initial individuals for population.
+/// `T` - type of a point in the search space for goal function (chromosomes).
 pub trait Creator<T: Clone> {
+    /// Must return vector of the new individuals for population
     fn create(&mut self) -> Vec<T>;
 }
 
+/// The trait with cross algorithm.
+/// `T` - type of a point in the search space for goal function (chromosomes).
 pub trait Cross<T: Clone> {
+    /// The method accepts slice of references to parent chromosomes (`parents`),
+    /// must return vector of chromosomes of children. The children will be added to population
+    /// after mutation.
     fn cross(&mut self, parents: &[&T]) -> Vec<T>;
 }
 
+/// The trait with mutation algorithm.
+/// `T` - type of a point in the search space for goal function (chromosomes).
 pub trait Mutation<T: Clone> {
+    /// The method accepts reference to chromosomes of single individual and must return new
+    /// chromosomes (possibly modified). New individuals will be created with the chromosomes after
+    /// mutation.
     fn mutation(&mut self, chromosomes: &T) -> T;
 }
 
+/// The trait with selection algorithm.
+/// `T` - type of a point in the search space for goal function (chromosomes).
 pub trait Selection<T: Clone> {
+    /// The method kills bad individuals. The method must call `Individual::kill()` method for 
+    /// individuals which will not go to next generation.
     fn kill(&mut self, population: &mut Population<T>);
 }
 
+/// The trait to select individuals to pairing.
+/// `T` - type of a point in the search space for goal function (chromosomes).
 pub trait Pairing<T: Clone> {
+    /// The method must select individuals to cross. Returns vector of vector with individuals
+    /// numbers in `population`. Selected individuals will parents for new children.
     fn get_pairs(&mut self, population: &Population<T>) -> Vec<Vec<usize>>;
 }
 
+/// The trait with break criterion of genetic algorithm.
+/// `T` - type of a point in the search space for goal function (chromosomes).
 pub trait StopChecker<T: Clone> {
+    /// The method must return true if genetic algorithm must be stopped.
     fn can_stop(&mut self, population: &Population<T>) -> bool;
 }
 
+/// The trait for logging of genetic algorithm.
+/// `T` - type of a point in the search space for goal function (chromosomes).
 pub trait Logger<T: Clone> {
+    /// Will be called after population initializing.
     fn start(&mut self, _population: &Population<T>) {}
+
+    /// Will be called before run algorithm (possibly after result algorithm after pause).
     fn resume(&mut self, _population: &Population<T>) {}
+
+    /// Will be called in the end of iteration (after selection).
     fn next_iteration(&mut self, _population: &Population<T>) {}
+
+    /// Will be called when algorithm will be stopped.
     fn finish(&mut self, _population: &Population<T>) {}
 }
 
+/// The main struct for an user. `GeneticOptimizer` implements `Optimizer` trait and keep all parts
+/// of genetic algorithm as trait objects: `Creator`, `Pairing`, `Cross`, `Mutation`, `Selection`,
+/// `StopChecker` and, if needed, `Logger`.
+/// The trait run genetic algorithm.
+/// `T` - type of a point in the search space for goal function (chromosomes).
 pub struct GeneticOptimizer<T: Clone> {
     creator: Box<dyn Creator<T>>,
     pairing: Box<dyn Pairing<T>>,
@@ -194,6 +276,7 @@ pub struct GeneticOptimizer<T: Clone> {
 }
 
 impl<T: Clone> GeneticOptimizer<T> {
+    /// Create a new `GeneticOptimizer`.
     pub fn new(
         goal: Box<dyn Goal<T>>,
         creator: Box<dyn Creator<T>>,
@@ -248,7 +331,8 @@ impl<T: Clone> GeneticOptimizer<T> {
             // Mutation
             let children_mutants = children_chromo_list
                 .iter_mut()
-                .map(|chromo| self.mutation.mutation(chromo)).collect();
+                .map(|chromo| self.mutation.mutation(chromo))
+                .collect();
 
             // Add new individuals to population
             self.population.append(children_mutants);
