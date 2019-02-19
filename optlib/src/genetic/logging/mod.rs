@@ -1,15 +1,22 @@
+//! The module with ready for using loggers. The loggers implements the `Logger` trait.
+
 use std::fmt::Display;
 use std::time;
 
 use super::super::Agent;
 use super::{Logger, Population};
 
-pub struct StdoutLogger {
+/// The logger prints out to stdout best chromosomes and goal function for every generation.
+pub struct VerboseStdoutLogger {
     precision: usize,
     start_time: Option<time::Instant>,
 }
 
-impl StdoutLogger {
+impl VerboseStdoutLogger {
+    /// Constructor
+    ///
+    /// # Parameters
+    /// * `precision` - number of digit after comma for float numbers.
     pub fn new(precision: usize) -> Self {
         Self {
             precision,
@@ -18,7 +25,7 @@ impl StdoutLogger {
     }
 }
 
-impl<G: Clone + Display> Logger<Vec<G>> for StdoutLogger {
+impl<G: Clone + Display> Logger<Vec<G>> for VerboseStdoutLogger {
     fn start(&mut self, _population: &Population<Vec<G>>) {}
 
     fn resume(&mut self, _population: &Population<Vec<G>>) {
@@ -47,12 +54,17 @@ impl<G: Clone + Display> Logger<Vec<G>> for StdoutLogger {
     }
 }
 
+/// The logger print out to stdout best result and value of goal function after end of genetic algorithm running.
 pub struct StdoutResultOnlyLogger {
     precision: usize,
     start_time: Option<time::Instant>,
 }
 
 impl StdoutResultOnlyLogger {
+    /// Constructor
+    ///
+    /// # Parameters
+    /// * `precision` - number of digit after comma for float numbers.
     pub fn new(precision: usize) -> Self {
         Self {
             precision,

@@ -1,14 +1,20 @@
+//! The module with most usable algorithms of mutations for various types.
+//! The module contains struct which implements the `Mutation` trait to mutate
+//! chromosomes various types.
+
 use super::Mutation;
 use rand::distributions::{Distribution, Uniform};
 use rand::rngs;
 use rand::rngs::ThreadRng;
 use std::mem;
 
+/// The struct to change random bits in the chromosomes.
 pub struct BitwiseMutation {
     random: ThreadRng,
     change_gene_count: usize,
 }
 
+/// Mutation for chromosomes of Vec<G>, where G - type of single gene.
 pub struct VecMutation<G: Clone> {
     probability: f64,
     random: rngs::ThreadRng,
@@ -16,6 +22,10 @@ pub struct VecMutation<G: Clone> {
 }
 
 impl BitwiseMutation {
+    /// Constructor
+    ///
+    /// # Parameters
+    /// * `change_gene_count` - how many bits will changed by algorithm during mutation.
     pub fn new(change_gene_count: usize) -> Self {
         let random = rand::thread_rng();
         Self {
@@ -54,6 +64,11 @@ impl Mutation<f64> for BitwiseMutation {
 }
 
 impl<G: Clone> VecMutation<G> {
+    /// Constructor
+    ///
+    /// # Parameters
+    /// * `probability` - probability of mutation of single gene.
+    /// * `single_mutation` - trait object with mutation algorithm for single gene.
     pub fn new(probability: f64, single_mutation: Box<dyn Mutation<G>>) -> Self {
         let random = rand::thread_rng();
         Self {

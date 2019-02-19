@@ -1,3 +1,7 @@
+//! The module with most usable algorithms of crossing for various types.
+//! The module contains struct which implements the `Cross` trait and functions to cross
+//! chromosomes various types.
+
 use std::mem;
 
 use num::{Float, Num, NumCast};
@@ -6,19 +10,26 @@ use rand::rngs::ThreadRng;
 use super::Cross;
 
 
-// VecCrossAllGenes
+/// Struct to cross all genes (`G` - type of genes) in chromosome of type Vec<G>.
 pub struct VecCrossAllGenes<G: Clone> {
     single_cross: Box<dyn Cross<G>>,
 }
 
+/// Child chromosome is arithmetic mean of parent chromosomes. Result of cross is single child.
+/// The chromosomes must be numeric type.
 pub struct CrossMean;
 
+/// For float type chromosomes (f32, f64). Child chromosome is geometric mean of parent
+/// chromosomes. Result of cross is single child.
 pub struct FloatCrossGeometricMean;
 
+/// Bitwise cross. Use single point crossing. Result of cross is single child.
 pub struct CrossBitwise {
     random: ThreadRng,
 }
 
+/// Bitwise cross for float type chromosomes. Exponent and mantissa will be crossed independently. 
+/// Use single point crossing. The sign is taken from one of parents at random. 
 pub struct FloatCrossExp {
     random: ThreadRng,
 }
@@ -43,6 +54,7 @@ impl<G: NumCast + Num + Clone> Cross<G> for CrossMean {
 }
 
 impl FloatCrossGeometricMean {
+    /// Constructor.
     pub fn new() -> Self {
         Self {}
     }
@@ -62,6 +74,7 @@ impl<G: Float> Cross<G> for FloatCrossGeometricMean {
 }
 
 impl CrossBitwise {
+    /// Constructor.
     pub fn new() -> Self {
         let random = rand::thread_rng();
         Self { random }
@@ -121,8 +134,8 @@ impl FloatCrossExp {
     }
 }
 
-impl<G: Float> Cross<G> for FloatCrossExp {
-    fn cross(&mut self, parents_genes: &[&G]) -> Vec<G> {
+impl<T: Float> Cross<T> for FloatCrossExp {
+    fn cross(&mut self, parents_genes: &[&T]) -> Vec<T> {
         assert_eq!(parents_genes.len(), 2);
         // mantissa: u64, exponent: i16, sign: i8
         let (mantissa_1, exponent_1, sign_1) = parents_genes[0].integer_decode();
@@ -146,10 +159,17 @@ impl<G: Float> Cross<G> for FloatCrossExp {
             _ => panic!("Invalid random value in FloatCrossExp"),
         };
 
-        vec![G::from(sign_child).unwrap() * G::from(mantissa_child).unwrap() * G::from(exponent_child).unwrap().exp2()]
+        vec![T::from(sign_child).unwrap() * T::from(mantissa_child).unwrap() * T::from(exponent_child).unwrap().exp2()]
     }
 }
 
+/// Single point crossing.
+///
+/// # Parameters
+/// * `parent_1`, `parent_2` - parents for crossing.
+/// * `pos` - position for bytes exchange. The position is counted from right.
+///
+/// Returns single child.
 pub fn cross_u64(parent_1: u64, parent_2: u64, pos: usize) -> u64 {
     let size = mem::size_of_val(&parent_1) * 8;
     let mask_parent_1 = !0u64 << pos;
@@ -157,6 +177,13 @@ pub fn cross_u64(parent_1: u64, parent_2: u64, pos: usize) -> u64 {
     (parent_1 & mask_parent_1) | (parent_2 & mask_parent_2)
 }
 
+/// Single point crossing.
+///
+/// # Parameters
+/// * `parent_1`, `parent_2` - parents for crossing.
+/// * `pos` - position for bytes exchange. The position is counted from right.
+///
+/// Returns single child.
 pub fn cross_u32(parent_1: u32, parent_2: u32, pos: usize) -> u32 {
     let size = mem::size_of_val(&parent_1) * 8;
     let mask_parent_1 = !0u32 << pos;
@@ -164,6 +191,13 @@ pub fn cross_u32(parent_1: u32, parent_2: u32, pos: usize) -> u32 {
     (parent_1 & mask_parent_1) | (parent_2 & mask_parent_2)
 }
 
+/// Single point crossing.
+///
+/// # Parameters
+/// * `parent_1`, `parent_2` - parents for crossing.
+/// * `pos` - position for bytes exchange. The position is counted from right.
+///
+/// Returns single child.
 pub fn cross_i16(parent_1: i16, parent_2: i16, pos: usize) -> i16 {
     let size = mem::size_of_val(&parent_1) * 8;
     let mask_parent_1 = !0i16 << pos;
@@ -171,6 +205,13 @@ pub fn cross_i16(parent_1: i16, parent_2: i16, pos: usize) -> i16 {
     (parent_1 & mask_parent_1) | (parent_2 & mask_parent_2)
 }
 
+/// Single point crossing.
+///
+/// # Parameters
+/// * `parent_1`, `parent_2` - parents for crossing.
+/// * `pos` - position for bytes exchange. The position is counted from right.
+///
+/// Returns single child.
 pub fn cross_u16(parent_1: u16, parent_2: u16, pos: usize) -> u16 {
     let size = mem::size_of_val(&parent_1) * 8;
     let mask_parent_1 = !0u16 << pos;
@@ -178,6 +219,13 @@ pub fn cross_u16(parent_1: u16, parent_2: u16, pos: usize) -> u16 {
     (parent_1 & mask_parent_1) | (parent_2 & mask_parent_2)
 }
 
+/// Single point crossing.
+///
+/// # Parameters
+/// * `parent_1`, `parent_2` - parents for crossing.
+/// * `pos` - position for bytes exchange. The position is counted from right.
+///
+/// Returns single child.
 pub fn cross_i8(parent_1: i8, parent_2: i8, pos: usize) -> i8 {
     let size = mem::size_of_val(&parent_1) * 8;
     let mask_parent_1 = !0i8 << pos;
@@ -185,6 +233,13 @@ pub fn cross_i8(parent_1: i8, parent_2: i8, pos: usize) -> i8 {
     (parent_1 & mask_parent_1) | (parent_2 & mask_parent_2)
 }
 
+/// Single point crossing.
+///
+/// # Parameters
+/// * `parent_1`, `parent_2` - parents for crossing.
+/// * `pos` - position for bytes exchange. The position is counted from right.
+///
+/// Returns single child.
 pub fn cross_u8(parent_1: u8, parent_2: u8, pos: usize) -> u8 {
     let size = mem::size_of_val(&parent_1) * 8;
     let mask_parent_1 = !0u8 << pos;
@@ -192,6 +247,13 @@ pub fn cross_u8(parent_1: u8, parent_2: u8, pos: usize) -> u8 {
     (parent_1 & mask_parent_1) | (parent_2 & mask_parent_2)
 }
 
+/// Single point crossing.
+///
+/// # Parameters
+/// * `parent_1`, `parent_2` - parents for crossing.
+/// * `pos` - position for bytes exchange. The position is counted from right.
+///
+/// Returns single child.
 pub fn cross_f32(parent_1: f32, parent_2: f32, pos: usize) -> f32 {
     let parent_1_bits = parent_1.to_bits();
     let parent_2_bits = parent_2.to_bits();
@@ -200,6 +262,13 @@ pub fn cross_f32(parent_1: f32, parent_2: f32, pos: usize) -> f32 {
     f32::from_bits(child_bits)
 }
 
+/// Single point crossing.
+///
+/// # Parameters
+/// * `parent_1`, `parent_2` - parents for crossing.
+/// * `pos` - position for bytes exchange. The position is counted from right.
+///
+/// Returns single child.
 pub fn cross_f64(parent_1: f64, parent_2: f64, pos: usize) -> f64 {
     let parent_1_bits = parent_1.to_bits();
     let parent_2_bits = parent_2.to_bits();

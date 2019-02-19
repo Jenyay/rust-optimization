@@ -1,7 +1,7 @@
 //! A module with genetic algorithm implementation.
 //!
 //! # Terms
-//! * "chromosomes" are point in the search space.
+//! * "chromosomes" are points in the search space.
 //! Usually chromosome is single value or vector of values.
 //! * "Fitness" is value of goal function value in genetic algorithm.
 //! * "Generation" is iteration number of genetic algorithm.
@@ -24,6 +24,7 @@ use std::slice;
 use super::{Agent, AlgorithmWithAgents, Optimizer};
 
 /// Struct for single point (agent) in the search space
+///
 /// `T` - type of a point in the search space for goal function (chromosomes).
 #[derive(Debug)]
 pub struct Individual<T: Clone> {
@@ -80,6 +81,7 @@ impl<T: Clone> Individual<T> {
 }
 
 /// Stores all individuals for current generation.
+///
 /// `T` - type of a point in the search space for goal function (chromosomes).
 pub struct Population<T: Clone> {
     // Trait object for goal function.
@@ -193,6 +195,7 @@ impl<T: Clone> ops::IndexMut<usize> for Population<T> {
 }
 
 /// The trait to calculate goal function.
+///
 /// `T` - type of a point in the search space for goal function (chromosomes).
 pub trait Goal<T> {
     /// Must return value of goal function for `chromosomes` point in the search space.
@@ -200,6 +203,7 @@ pub trait Goal<T> {
 }
 
 /// The trait to create initial individuals for population.
+///
 /// `T` - type of a point in the search space for goal function (chromosomes).
 pub trait Creator<T: Clone> {
     /// Must return vector of the new individuals for population
@@ -207,6 +211,7 @@ pub trait Creator<T: Clone> {
 }
 
 /// The trait with cross algorithm.
+///
 /// `T` - type of a point in the search space for goal function (chromosomes).
 pub trait Cross<T: Clone> {
     /// The method accepts slice of references to parent chromosomes (`parents`),
@@ -216,6 +221,7 @@ pub trait Cross<T: Clone> {
 }
 
 /// The trait with mutation algorithm.
+///
 /// `T` - type of a point in the search space for goal function (chromosomes).
 pub trait Mutation<T: Clone> {
     /// The method accepts reference to chromosomes of single individual and must return new
@@ -225,6 +231,7 @@ pub trait Mutation<T: Clone> {
 }
 
 /// The trait with selection algorithm.
+///
 /// `T` - type of a point in the search space for goal function (chromosomes).
 pub trait Selection<T: Clone> {
     /// The method kills bad individuals. The method must call `Individual::kill()` method for 
@@ -233,6 +240,7 @@ pub trait Selection<T: Clone> {
 }
 
 /// The trait to select individuals to pairing.
+///
 /// `T` - type of a point in the search space for goal function (chromosomes).
 pub trait Pairing<T: Clone> {
     /// The method must select individuals to cross. Returns vector of vector with individuals
@@ -241,6 +249,7 @@ pub trait Pairing<T: Clone> {
 }
 
 /// The trait with break criterion of genetic algorithm.
+///
 /// `T` - type of a point in the search space for goal function (chromosomes).
 pub trait StopChecker<T: Clone> {
     /// The method must return true if genetic algorithm must be stopped.
@@ -248,6 +257,7 @@ pub trait StopChecker<T: Clone> {
 }
 
 /// The trait for logging of genetic algorithm.
+///
 /// `T` - type of a point in the search space for goal function (chromosomes).
 pub trait Logger<T: Clone> {
     /// Will be called after population initializing.
@@ -267,6 +277,7 @@ pub trait Logger<T: Clone> {
 /// of genetic algorithm as trait objects: `Creator`, `Pairing`, `Cross`, `Mutation`, `Selection`,
 /// `StopChecker` and, if needed, `Logger`.
 /// The trait run genetic algorithm.
+///
 /// `T` - type of a point in the search space for goal function (chromosomes).
 pub struct GeneticOptimizer<T: Clone> {
     creator: Box<dyn Creator<T>>,

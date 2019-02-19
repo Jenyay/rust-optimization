@@ -84,7 +84,7 @@ fn main() {
 
     // Logger
     let logger = logging::StdoutResultOnlyLogger::new(15);
-    // let logger = logging::StdoutLogger::new(15);
+    // let logger = logging::VerboseStdoutLogger::new(15);
 
     let mut optimizer = genetic::GeneticOptimizer::new(
         Box::new(goal),
