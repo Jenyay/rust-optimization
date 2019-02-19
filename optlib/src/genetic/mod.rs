@@ -58,18 +58,22 @@ impl<T: Clone> Agent<T> for Individual<T> {
 }
 
 impl<T: Clone> Individual<T> {
+    /// Return reference to chromosomes.
     pub fn get_chromosomes(&self) -> &T {
         &self.chromosomes
     }
 
+    /// Return value of the guoal function.
     pub fn get_fitness(&self) -> f64 {
         self.fitness
     }
 
+    /// Returns true if the individual go into the next generation and false otherwise.
     pub fn is_alive(&self) -> bool {
         self.alive
     }
 
+    /// Kill individual. The individual do not go into next generation.
     pub fn kill(&mut self) {
         self.alive = false;
     }
@@ -78,14 +82,15 @@ impl<T: Clone> Individual<T> {
 /// Stores all individuals for current generation.
 /// `T` - type of a point in the search space for goal function (chromosomes).
 pub struct Population<T: Clone> {
-    /// Trait object for goal function.
+    // Trait object for goal function.
     goal: Box<dyn Goal<T>>,
+
     individuals: Vec<Individual<T>>,
 
-    /// Best individual for current generation.
+    // Best individual for current generation.
     best_individual: Option<Individual<T>>,
 
-    /// Generation number.
+    // Generation number.
     iteration: usize,
 }
 
@@ -166,9 +171,8 @@ impl<T: Clone> Population<T> {
         self.iteration += 1;
     }
 
-    /// Remove individual by number
-    fn remove(&mut self, index: usize) {
-        self.individuals.remove(index);
+    fn remove_dead(&mut self) {
+        self.individuals.retain(|individual| individual.is_alive());
     }
 }
 
@@ -299,26 +303,32 @@ impl<T: Clone> GeneticOptimizer<T> {
         }
     }
 
+    /// Replace the trait object of pairing algorithm.
     pub fn replace_pairing(&mut self, pairing: Box<dyn Pairing<T>>) {
         self.pairing = pairing;
     }
 
+    /// Replace the trait object of cross algorithm.
     pub fn replace_cross(&mut self, cross: Box<dyn Cross<T>>) {
         self.cross = cross;
     }
 
+    /// Replace the trait object of mutation algorithm.
     pub fn replace_mutation(&mut self, mutation: Box<dyn Mutation<T>>) {
         self.mutation = mutation;
     }
 
+    /// Replace the trait object of selection algorithm.
     pub fn replace_selection(&mut self, selection: Box<dyn Selection<T>>) {
         self.selection = selection;
     }
 
+    /// Replace the trait object of stop checker algorithm.
     pub fn replace_stop_checker(&mut self, stop_checker: Box<dyn StopChecker<T>>) {
         self.stop_checker = stop_checker;
     }
 
+    /// Do new iterations of genetic algorithm.
     pub fn next_iterations(&mut self) -> Option<(&T, f64)> {
         if let Some(ref mut logger) = self.logger {
             logger.resume(&self.population);
@@ -334,20 +344,13 @@ impl<T: Clone> GeneticOptimizer<T> {
                 .map(|chromo| self.mutation.mutation(chromo))
                 .collect();
 
-            // Add new individuals to population
+            // Create new individuals by new chromosomes and add new individuals to population
             self.population.append(children_mutants);
 
             // Selection
             self.selection.kill(&mut self.population);
 
-            // Remove dead individuals
-            let mut dead_count = 0;
-            for n in 0..self.population.len() {
-                if !self.population[n - dead_count].is_alive() {
-                    self.population.remove(n - dead_count);
-                    dead_count += 1;
-                }
-            }
+            self.population.remove_dead();
 
             self.population.next_iteration();
 
@@ -385,6 +388,7 @@ impl<T: Clone> GeneticOptimizer<T> {
 }
 
 impl<T: Clone> Optimizer<T> for GeneticOptimizer<T> {
+    /// Run genetic algorithm
     fn find_min(&mut self) -> Option<(&T, f64)> {
         self.population.reset();
         let start_chromo_list = self.creator.create();

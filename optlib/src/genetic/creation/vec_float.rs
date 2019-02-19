@@ -1,10 +1,14 @@
+//! The module with Creators for the case when chromosomes are Vec<Num>.
+//! The Creators used to create the first generation of individuals.
+
 use rand::distributions::{Distribution, Uniform};
 use rand::rngs::ThreadRng;
 use num::NumCast;
 
 use super::super::*;
 
-/// RandomCreator
+/// Creator to initialize population by individuals with random chromosomes in the preset
+/// intervals.
 pub struct RandomCreator<G: Clone + NumCast> {
     population_size: usize,
     intervals: Vec<(G, G)>,
@@ -30,7 +34,7 @@ impl<G: Clone + NumCast> Creator<Vec<G>> for RandomCreator<G> {
         for _ in 0..self.population_size {
             let mut chromo = Vec::with_capacity(chromo_count);
             for interval in &self.intervals {
-                let between = Uniform::new(interval.0.to_f64().unwrap(), interval.1.to_f64().unwrap());
+                let between = Uniform::new_inclusive(interval.0.to_f64().unwrap(), interval.1.to_f64().unwrap());
                 chromo.push(G::from(between.sample(&mut self.random)).unwrap());
             }
 
