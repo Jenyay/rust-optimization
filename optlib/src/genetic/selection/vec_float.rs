@@ -1,11 +1,17 @@
+//! The module with selection algorithms for type chromosomes of Vec<Float>.
+
 use super::super::*;
 
 use num::Float;
 
-pub fn kill_chromo_interval<T: Float>(
-    population: &mut Population<Vec<T>>,
-    minval: T,
-    maxval: T,
+/// Kill individuals if theirs gene does not lie in the specified inteval.
+///
+/// `G` - type of gene.
+/// Returns count of the killed individuals.
+pub fn kill_chromo_interval<G: Float>(
+    population: &mut Population<Vec<G>>,
+    minval: G,
+    maxval: G,
 ) -> usize {
     let mut kill_count = 0;
 

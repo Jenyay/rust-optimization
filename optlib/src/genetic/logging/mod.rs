@@ -1,4 +1,4 @@
-//! The module with ready for using loggers. The loggers implements the `Logger` trait.
+//! The module with the loggers ready for using. The loggers implements the `Logger` trait.
 
 use std::fmt::Display;
 use std::time;
@@ -16,7 +16,7 @@ impl VerboseStdoutLogger {
     /// Constructor
     ///
     /// # Parameters
-    /// * `precision` - number of digit after comma for float numbers.
+    /// * `precision` - count of the digits after comma for float numbers.
     pub fn new(precision: usize) -> Self {
         Self {
             precision,
@@ -64,7 +64,7 @@ impl StdoutResultOnlyLogger {
     /// Constructor
     ///
     /// # Parameters
-    /// * `precision` - number of digit after comma for float numbers.
+    /// * `precision` - count of the digits after comma for float numbers.
     pub fn new(precision: usize) -> Self {
         Self {
             precision,

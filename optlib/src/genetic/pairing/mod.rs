@@ -1,9 +1,11 @@
+//! The module with pairing algorithm traits. The pairing algorithm selects individuals for crossing.
+
 use super::*;
 
 use rand::distributions::{Distribution, Uniform};
 use rand::rngs::ThreadRng;
 
-// RandomPairing
+/// The struct with pairing algorithm which select random individuals for crossing.
 pub struct RandomPairing {
     random: ThreadRng,
 }
@@ -26,6 +28,7 @@ impl<T: Clone> Pairing<T> for RandomPairing {
 }
 
 impl RandomPairing {
+    /// Constructor.
     pub fn new() -> Self {
         let random = rand::thread_rng();
         Self { random }

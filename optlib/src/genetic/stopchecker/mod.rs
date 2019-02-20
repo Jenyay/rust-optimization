@@ -1,11 +1,17 @@
+//! The module with structs for `StopChecker` traits.
+
 use super::*;
 
-/// MaxIteration
+/// Genetic algorithm will be stopped after specified generation (iteration).
 pub struct MaxIterations {
     max_iter: usize,
 }
 
 impl MaxIterations {
+    /// Constructor
+    ///
+    /// # Parameters
+    /// * `max_iter` - how many iterations (generations) will run genetic algorithm.
     pub fn new(max_iter: usize) -> Self {
         MaxIterations { max_iter }
     }
@@ -17,7 +23,7 @@ impl<T: Clone> StopChecker<T> for MaxIterations {
     }
 }
 
-/// GoalNotChange
+/// Genetic algorithm will be stopped if goal function of the best individual does not change.
 pub struct GoalNotChange {
     max_iter: usize,
     delta: f64,
@@ -27,6 +33,13 @@ pub struct GoalNotChange {
 }
 
 impl GoalNotChange {
+    /// Constructor.
+    ///
+    /// # Parameters
+    /// * `max_iter` - how many iterations (generations) the value of goal function of the best
+    /// individual may not change.
+    /// * `delta` - small value. The change of goal function is not considered if the change less
+    /// of `delta`.
     pub fn new(max_iter: usize, delta: f64) -> Self {
         GoalNotChange {
             max_iter,

@@ -1,4 +1,4 @@
-//! A module with genetic algorithm implementation.
+//! The module with genetic algorithm implementation.
 //!
 //! # Terms
 //! * "chromosomes" are points in the search space.

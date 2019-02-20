@@ -1,7 +1,12 @@
+//! The module with selection algorithms. The algoritms must kill individuals which does not go to
+//! next generation. The algorithm must call `kill()` method for such individuals.
+
 pub mod vec_float;
 
 use super::Population;
 
+/// Kill individuals if value of theirs fitness (goal function) is NaN.
+/// Returns count of killed individuals.
 pub fn kill_fitness_nan<T: Clone>(population: &mut Population<T>) -> usize {
     let mut kill_count = 0;
 
@@ -17,6 +22,8 @@ pub fn kill_fitness_nan<T: Clone>(population: &mut Population<T>) -> usize {
 }
 
 
+/// Function to kill worst individuals in population.
+/// `count` - how many individuals must be killed.
 pub fn kill_worst<T: Clone>(population: &mut Population<T>, count: usize) {
     // List of indexes of individuals in population to be kill
     let mut kill_list: Vec<usize> = Vec::with_capacity(count);
