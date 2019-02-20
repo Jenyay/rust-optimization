@@ -36,6 +36,7 @@ impl genetic::Selection<Chromosomes> for Selection {
         // 1. Kill all individuals with chromosomes outside the interval [minval; maxval]
         let mut kill_count = 0;
         kill_count += selection::kill_fitness_nan(population);
+
         kill_count +=
             selection::vec_float::kill_chromo_interval(population, self.minval, self.maxval);
 
@@ -49,14 +50,14 @@ impl genetic::Selection<Chromosomes> for Selection {
 
 fn main() {
     // General parameters
-    let minval: Gene = -100.0;
-    let maxval: Gene = 100.0;
-    let size = 200;
-    let chromo_count = 5;
+    let minval: Gene = -500.0;
+    let maxval: Gene = 500.0;
+    let size = 500;
+    let chromo_count = 15;
 
     // Mutation
     let mutation_probability = 15.0;
-    let mutation_gene_count = 1;
+    let mutation_gene_count = 3;
     let single_mutation = mutation::BitwiseMutation::new(mutation_gene_count);
     // let single_cross = cross::CrossMean::new();
     // let single_cross = cross::FloatCrossGeometricMean::new();
@@ -66,6 +67,7 @@ fn main() {
     );
 
     // Cross
+    // let single_cross = cross::CrossMean::new();
     let single_cross = cross::FloatCrossExp::new();
     // let single_cross = cross::CrossBitwise::new();
     let cross = cross::VecCrossAllGenes::new(Box::new(single_cross));
@@ -76,15 +78,15 @@ fn main() {
     let stop_checker = stopchecker::GoalNotChange::new(change_max_iterations, change_delta);
     // let stop_checker = stopchecker::MaxIterations::new(500);
 
-    let goal = goal::GoalFromFunction::new(testfunctions::paraboloid);
+    let goal = goal::GoalFromFunction::new(testfunctions::schwefel);
     let intervals: Vec<(Gene, Gene)> = (0..chromo_count).map(|_| (minval, maxval)).collect();
     let creator = creation::vec_float::RandomCreator::new(size, intervals);
     let selection = Selection::new(size, minval, maxval);
     let pairing = pairing::RandomPairing::new();
 
     // Logger
-    let logger = logging::StdoutResultOnlyLogger::new(15);
-    // let logger = logging::VerboseStdoutLogger::new(15);
+    let logger = logging::StdoutResultOnlyLogger::new(8);
+    // let logger = logging::VerboseStdoutLogger::new(8);
 
     let mut optimizer = genetic::GeneticOptimizer::new(
         Box::new(goal),

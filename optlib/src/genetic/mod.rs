@@ -20,6 +20,7 @@ pub mod stopchecker;
 use std::f64;
 use std::ops;
 use std::slice;
+use std::cmp::Ordering;
 
 use super::{Agent, AlgorithmWithAgents, Optimizer};
 
@@ -125,15 +126,6 @@ impl<T: Clone> Population<T> {
             alive: true,
         };
 
-        // Check the new individual for the best value of goal function.
-        match &self.best_individual {
-            None => self.best_individual = Some(new_individual.clone()),
-            Some(old_best) => {
-                if new_individual.get_fitness() < old_best.get_fitness() {
-                    self.best_individual = Some(new_individual.clone());
-                }
-            }
-        }
         self.individuals.push(new_individual);
     }
 
@@ -158,9 +150,14 @@ impl<T: Clone> Population<T> {
         self.iteration
     }
 
-    /// Return count of the individuals in the population.
+    /// Returns count of the individuals in the population.
     pub fn len(&self) -> usize {
         self.individuals.len()
+    }
+
+    /// Return count of live individuals
+    pub fn len_alive(&self) -> usize {
+        self.individuals.iter().filter(|individual| individual.is_alive()).count()
     }
 
     /// Returns the best individual in the population if exists or None otherwise.
@@ -170,6 +167,20 @@ impl<T: Clone> Population<T> {
 
     /// Switch to next iteration (generation)
     fn next_iteration(&mut self) {
+        // Update best individual
+        let best = self.individuals.iter().min_by(|ind_1, ind_2| {
+            let goal_1 = ind_1.get_goal();
+            let goal_2 = ind_2.get_goal();
+
+            if goal_1.is_nan() && goal_2.is_nan() { Ordering::Greater }
+            else if goal_1.is_nan() { Ordering::Greater }
+            else if goal_2.is_nan() { Ordering::Less }
+            else { goal_1.partial_cmp(&goal_2).unwrap() }
+        });
+
+        if let Some(ref individual) = best {
+            self.best_individual = Some((*individual).clone());
+        }
         self.iteration += 1;
     }
 
@@ -189,7 +200,7 @@ impl<T: Clone> ops::Index<usize> for Population<T> {
 
 /// IndexMut trait implementation for Population
 impl<T: Clone> ops::IndexMut<usize> for Population<T> {
-    fn index_mut<'b>(&'b mut self, index: usize) -> &'b mut Individual<T> {
+    fn index_mut<'a>(&'a mut self, index: usize) -> &'a mut Individual<T> {
         &mut self.individuals[index]
     }
 }

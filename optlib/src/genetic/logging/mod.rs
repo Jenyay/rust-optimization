@@ -88,10 +88,10 @@ impl<G: Clone + Display> Logger<Vec<G>> for StdoutResultOnlyLogger {
             None => println!("Solution not found"),
             Some(individual) => {
                 let mut result = String::new();
-                result = result + "Solution:\n    ";
+                result = result + "Solution:\n";
 
                 for chromo in individual.get_chromosomes() {
-                    result = result + &format!("  {:<20.*}", self.precision, chromo);
+                    result = result + &format!("  {:.*}\n", self.precision, chromo);
                 }
 
                 result = result + "\n";
