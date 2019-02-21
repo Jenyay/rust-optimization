@@ -165,8 +165,8 @@ impl<T: Clone> Population<T> {
         &self.best_individual
     }
 
-    /// Switch to next iteration (generation)
-    fn next_iteration(&mut self) {
+    /// Find new the best individual
+    fn update_best_individual(&mut self) {
         // Update best individual
         let best = self.individuals.iter().min_by(|ind_1, ind_2| {
             let goal_1 = ind_1.get_goal();
@@ -181,6 +181,10 @@ impl<T: Clone> Population<T> {
         if let Some(ref individual) = best {
             self.best_individual = Some((*individual).clone());
         }
+    }
+
+    /// Switch to next iteration (generation)
+    fn next_iteration(&mut self) {
         self.iteration += 1;
     }
 
@@ -373,6 +377,8 @@ impl<T: Clone> GeneticOptimizer<T> {
             self.selection.kill(&mut self.population);
 
             self.population.remove_dead();
+
+            self.population.update_best_individual();
 
             self.population.next_iteration();
 

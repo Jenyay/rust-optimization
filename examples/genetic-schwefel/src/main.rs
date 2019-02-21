@@ -14,36 +14,29 @@ type Gene = f32;
 type Chromosomes = Vec<Gene>;
 type Population = genetic::Population<Chromosomes>;
 
-// Selection
-struct Selection {
-    population_size: usize,
-    minval: Gene,
-    maxval: Gene,
+/// Selection
+struct SelectionMultiple {
+    selections: Vec<Box<dyn genetic::Selection<Chromosomes>>>,
 }
 
-impl Selection {
-    pub fn new(population_size: usize, minval: Gene, maxval: Gene) -> Selection {
-        Selection {
-            population_size,
-            minval,
-            maxval,
-        }
+impl SelectionMultiple {
+    pub fn new(population_size: usize, minval: Gene, maxval: Gene) -> Self {
+        let selections: Vec<Box<dyn genetic::Selection<Chromosomes>>> = vec![
+            Box::new(selection::KillFitnessNaN::new()),
+            Box::new(selection::vec_float::CheckChromoInterval::new((
+                minval, maxval,
+            ))),
+            Box::new(selection::LimitPopulation::new(population_size)),
+        ];
+
+        Self { selections }
     }
 }
 
-impl genetic::Selection<Chromosomes> for Selection {
+impl genetic::Selection<Chromosomes> for SelectionMultiple {
     fn kill(&mut self, population: &mut Population) {
-        // 1. Kill all individuals with chromosomes outside the interval [minval; maxval]
-        let mut kill_count = 0;
-        kill_count += selection::kill_fitness_nan(population);
-
-        kill_count +=
-            selection::vec_float::kill_chromo_interval(population, self.minval, self.maxval);
-
-        // 2. Keep alive only population_size best individuals
-        if population.len() - kill_count > self.population_size {
-            let to_kill = population.len() - self.population_size - kill_count;
-            selection::kill_worst(population, to_kill);
+        for selection in &mut self.selections {
+            selection.kill(population);
         }
     }
 }
@@ -61,10 +54,7 @@ fn main() {
     let single_mutation = mutation::BitwiseMutation::new(mutation_gene_count);
     // let single_cross = cross::CrossMean::new();
     // let single_cross = cross::FloatCrossGeometricMean::new();
-    let mutation = mutation::VecMutation::new(
-        mutation_probability,
-        Box::new(single_mutation),
-    );
+    let mutation = mutation::VecMutation::new(mutation_probability, Box::new(single_mutation));
 
     // Cross
     // let single_cross = cross::CrossMean::new();
@@ -81,7 +71,7 @@ fn main() {
     let goal = goal::GoalFromFunction::new(testfunctions::schwefel);
     let intervals: Vec<(Gene, Gene)> = (0..chromo_count).map(|_| (minval, maxval)).collect();
     let creator = creation::vec_float::RandomCreator::new(size, intervals);
-    let selection = Selection::new(size, minval, maxval);
+    let selection = SelectionMultiple::new(size, minval, maxval);
     let pairing = pairing::RandomPairing::new();
 
     // Logger

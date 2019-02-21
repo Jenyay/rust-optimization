@@ -3,22 +3,52 @@
 
 pub mod vec_float;
 
-use super::Population;
+use super::{Population, Selection};
 
 /// Kill individuals if value of theirs fitness (goal function) is NaN.
 /// Returns count of killed individuals.
-pub fn kill_fitness_nan<T: Clone>(population: &mut Population<T>) -> usize {
-    let mut kill_count = 0;
+pub struct KillFitnessNaN;
 
-    for individual in population.iter_mut() {
-        if !individual.get_fitness().is_finite() {
-            individual.kill();
-            kill_count += 1;
-            continue;
+impl<T: Clone> Selection<T> for KillFitnessNaN {
+    fn kill(&mut self, population: &mut Population<T>) {
+        for individual in population.iter_mut() {
+            if !individual.get_fitness().is_finite() {
+                individual.kill();
+            }
         }
     }
+}
 
-    kill_count
+impl KillFitnessNaN {
+    /// Constructor.
+    pub fn new() -> Self {
+        Self
+    }
+}
+
+pub struct LimitPopulation {
+    max_count: usize,
+}
+
+impl LimitPopulation {
+    /// Constructor.
+    pub fn new(max_count: usize) -> Self {
+        Self { max_count }
+    }
+
+    pub fn set_limit(&mut self, max_count: usize) {
+        self.max_count = max_count;
+    }
+}
+
+
+impl<T: Clone> Selection<T> for LimitPopulation {
+    fn kill(&mut self, population: &mut Population<T>) {
+        let alive_count = population.len_alive();
+        if alive_count > self.max_count {
+            kill_worst(population, alive_count - self.max_count);
+        }
+    }
 }
 
 

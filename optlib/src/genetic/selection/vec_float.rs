@@ -8,22 +8,25 @@ use num::Float;
 ///
 /// `G` - type of gene.
 /// Returns count of the killed individuals.
-pub fn kill_chromo_interval<G: Float>(
-    population: &mut Population<Vec<G>>,
-    minval: G,
-    maxval: G,
-) -> usize {
-    let mut kill_count = 0;
+pub struct CheckChromoInterval<G: Float> {
+    interval: (G, G),
+}
 
-    for individual in population.iter_mut() {
-        for chromo in individual.get_chromosomes() {
-            if !chromo.is_finite() || *chromo < minval || *chromo > maxval {
-                individual.kill();
-                kill_count += 1;
-                break;
+impl<G: Float> CheckChromoInterval<G> {
+    pub fn new(interval: (G, G)) -> Self {
+        Self { interval }
+    }
+}
+
+impl<G: Float> Selection<Vec<G>> for CheckChromoInterval<G> {
+    fn kill(&mut self, population: &mut Population<Vec<G>>) {
+        for individual in population.iter_mut() {
+            for chromo in individual.get_chromosomes() {
+                if !chromo.is_finite() || *chromo < self.interval.0 || *chromo > self.interval.1 {
+                    individual.kill();
+                    break;
+                }
             }
         }
     }
-
-    kill_count
 }
