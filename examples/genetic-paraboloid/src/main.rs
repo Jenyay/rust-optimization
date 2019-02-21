@@ -35,9 +35,7 @@ impl SelectionMultiple {
 
 impl genetic::Selection<Chromosomes> for SelectionMultiple {
     fn kill(&mut self, population: &mut Population) {
-        for selection in &mut self.selections {
-            selection.kill(population);
-        }
+        self.selections.iter_mut().for_each(|selection| selection.kill(population));
     }
 }
 
