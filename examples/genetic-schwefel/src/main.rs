@@ -12,38 +12,13 @@ use optlib::Optimizer;
 
 type Gene = f32;
 type Chromosomes = Vec<Gene>;
-type Population = genetic::Population<Chromosomes>;
 
-/// Selection
-struct SelectionMultiple {
-    selections: Vec<Box<dyn genetic::Selection<Chromosomes>>>,
-}
-
-impl SelectionMultiple {
-    pub fn new(population_size: usize, minval: Gene, maxval: Gene) -> Self {
-        let selections: Vec<Box<dyn genetic::Selection<Chromosomes>>> = vec![
-            Box::new(selection::KillFitnessNaN::new()),
-            Box::new(selection::vec_float::CheckChromoInterval::new((
-                minval, maxval,
-            ))),
-            Box::new(selection::LimitPopulation::new(population_size)),
-        ];
-
-        Self { selections }
-    }
-}
-
-impl genetic::Selection<Chromosomes> for SelectionMultiple {
-    fn kill(&mut self, population: &mut Population) {
-        self.selections.iter_mut().for_each(|selection| selection.kill(population));
-    }
-}
 
 fn main() {
     // General parameters
     let minval: Gene = -500.0;
     let maxval: Gene = 500.0;
-    let size = 500;
+    let population_size = 500;
     let chromo_count = 15;
 
     // Mutation
@@ -68,8 +43,19 @@ fn main() {
 
     let goal = goal::GoalFromFunction::new(testfunctions::schwefel);
     let intervals: Vec<(Gene, Gene)> = (0..chromo_count).map(|_| (minval, maxval)).collect();
-    let creator = creation::vec_float::RandomCreator::new(size, intervals);
-    let selection = SelectionMultiple::new(size, minval, maxval);
+    let creator = creation::vec_float::RandomCreator::new(population_size, intervals);
+
+    // Selection
+    let selection_algorithms: Vec<Box<dyn genetic::Selection<Chromosomes>>> = vec![
+        Box::new(selection::KillFitnessNaN::new()),
+        Box::new(selection::vec_float::CheckChromoInterval::new((
+            minval, maxval,
+        ))),
+        Box::new(selection::LimitPopulation::new(population_size)),
+    ];
+    let selection = selection::Composite::new(selection_algorithms);
+
+    // Pairing
     let pairing = pairing::RandomPairing::new();
 
     // Logger
