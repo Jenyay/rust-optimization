@@ -20,6 +20,21 @@ fn main() {
     let maxval: Gene = 100.0;
     let population_size = 200;
     let chromo_count = 5;
+    let intervals = vec![(minval, maxval); chromo_count];
+
+    // Goal function
+    let goal = goal::GoalFromFunction::new(testfunctions::paraboloid);
+
+    // Creator
+    let creator = creation::vec_float::RandomCreator::new(population_size, intervals.clone());
+
+    // Pairing
+    let pairing = pairing::RandomPairing::new();
+
+    // Cross
+    let single_cross = cross::FloatCrossExp::new();
+    // let single_cross = cross::CrossBitwise::new();
+    let cross = cross::VecCrossAllGenes::new(Box::new(single_cross));
 
     // Mutation
     let mutation_probability = 15.0;
@@ -29,32 +44,19 @@ fn main() {
     // let single_cross = cross::FloatCrossGeometricMean::new();
     let mutation = mutation::VecMutation::new(mutation_probability, Box::new(single_mutation));
 
-    // Cross
-    let single_cross = cross::FloatCrossExp::new();
-    // let single_cross = cross::CrossBitwise::new();
-    let cross = cross::VecCrossAllGenes::new(Box::new(single_cross));
+    // Selection
+    let selection_algorithms: Vec<Box<dyn genetic::Selection<Chromosomes>>> = vec![
+        Box::new(selection::KillFitnessNaN::new()),
+        Box::new(selection::vec_float::CheckChromoInterval::new(intervals.clone())),
+        Box::new(selection::LimitPopulation::new(population_size)),
+    ];
+    let selection = selection::Composite::new(selection_algorithms);
 
     // Stop checker
     let change_max_iterations = 150;
     let change_delta = 1e-7;
     let stop_checker = stopchecker::GoalNotChange::new(change_max_iterations, change_delta);
     // let stop_checker = stopchecker::MaxIterations::new(500);
-
-    let goal = goal::GoalFromFunction::new(testfunctions::paraboloid);
-    let intervals: Vec<(Gene, Gene)> = (0..chromo_count).map(|_| (minval, maxval)).collect();
-    let creator = creation::vec_float::RandomCreator::new(population_size, intervals);
-
-    // Selection
-    let selection_algorithms: Vec<Box<dyn genetic::Selection<Chromosomes>>> = vec![
-        Box::new(selection::KillFitnessNaN::new()),
-        Box::new(selection::vec_float::CheckChromoInterval::new((
-            minval, maxval,
-        ))),
-        Box::new(selection::LimitPopulation::new(population_size)),
-    ];
-    let selection = selection::Composite::new(selection_algorithms);
-
-    let pairing = pairing::RandomPairing::new();
 
     // Logger
     let logger = logging::StdoutResultOnlyLogger::new(15);
