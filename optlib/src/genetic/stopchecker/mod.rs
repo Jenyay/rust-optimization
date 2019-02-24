@@ -91,3 +91,53 @@ impl<T: Clone> StopChecker<T> for Threshold {
         }
     }
 }
+
+/// Stop genetic algorithm if ANY of stop checker returns true
+pub struct CompositeAny<T: Clone> {
+    stop_checkers: Vec<Box<dyn StopChecker<T>>>,
+}
+
+impl<T: Clone> CompositeAny<T> {
+    /// Constructor
+    pub fn new(stop_checkers: Vec<Box<dyn StopChecker<T>>>) -> Self {
+        assert!(stop_checkers.len() != 0);
+        Self { stop_checkers }
+    }
+}
+
+impl<T: Clone> StopChecker<T> for CompositeAny<T> {
+    fn can_stop(&mut self, population: &Population<T>) -> bool {
+        for checker in &mut self.stop_checkers {
+            if checker.can_stop(population) {
+                return true
+            }
+        }
+
+        false
+    }
+}
+
+/// Stop genetic algorithm if ALL stop checkers returns true
+pub struct CompositeAll<T: Clone> {
+    stop_checkers: Vec<Box<dyn StopChecker<T>>>,
+}
+
+impl<T: Clone> CompositeAll<T> {
+    /// Constructor
+    pub fn new(stop_checkers: Vec<Box<dyn StopChecker<T>>>) -> Self {
+        assert!(stop_checkers.len() != 0);
+        Self { stop_checkers }
+    }
+}
+
+impl<T: Clone> StopChecker<T> for CompositeAll<T> {
+    fn can_stop(&mut self, population: &Population<T>) -> bool {
+        for checker in &mut self.stop_checkers {
+            if !checker.can_stop(population) {
+                return false
+            }
+        }
+
+        true
+    }
+}

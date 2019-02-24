@@ -50,11 +50,18 @@ fn main() {
     let pre_birth = pre_birth::vec_float::CheckChromoInterval::new(intervals.clone());
 
     // Stop checker
-    let change_max_iterations = 150;
+    let change_max_iterations = 100;
     let change_delta = 1e-7;
     // let stop_checker = stopchecker::GoalNotChange::new(change_max_iterations, change_delta);
     // let stop_checker = stopchecker::MaxIterations::new(500);
-    let stop_checker = stopchecker::Threshold::new(0.001);
+    let stop_checker = stopchecker::CompositeAny::new(vec![
+        Box::new(stopchecker::Threshold::new(1e-4)),
+        Box::new(stopchecker::GoalNotChange::new(
+            change_max_iterations,
+            change_delta,
+        )),
+        Box::new(stopchecker::MaxIterations::new(3000)),
+    ]);
 
     // Selection
     let selection_algorithms: Vec<Box<dyn genetic::Selection<Chromosomes>>> = vec![
