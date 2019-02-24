@@ -91,8 +91,11 @@ pub struct Population<T: Clone> {
 
     individuals: Vec<Individual<T>>,
 
-    // Best individual for current generation.
+    // The best individual for current generation.
     best_individual: Option<Individual<T>>,
+
+    // The worst individual for current generation.
+    worst_individual: Option<Individual<T>>,
 
     // Generation number.
     iteration: usize,
@@ -107,6 +110,7 @@ impl<T: Clone> Population<T> {
             goal,
             individuals: vec![],
             best_individual: None,
+            worst_individual: None,
             iteration: 0,
         }
     }
@@ -115,6 +119,7 @@ impl<T: Clone> Population<T> {
     fn reset(&mut self) {
         self.individuals.clear();
         self.best_individual = None;
+        self.worst_individual = None;
         self.iteration = 0;
     }
 
@@ -166,22 +171,51 @@ impl<T: Clone> Population<T> {
         &self.best_individual
     }
 
-    /// Find new the best individual
-    fn update_best_individual(&mut self) {
-        // Update best individual
+    /// Find new the best and the worst individuals
+    fn update_best_worst_individual(&mut self) {
+        // Update the best individual
         let best = self.individuals.iter().min_by(|ind_1, ind_2| {
-            let goal_1 = ind_1.get_goal();
-            let goal_2 = ind_2.get_goal();
-
-            if goal_1.is_nan() && goal_2.is_nan() { Ordering::Greater }
-            else if goal_1.is_nan() { Ordering::Greater }
-            else if goal_2.is_nan() { Ordering::Less }
-            else { goal_1.partial_cmp(&goal_2).unwrap() }
+            self.individuals_min_cmp(ind_1, ind_2)
         });
 
         if let Some(ref individual) = best {
             self.best_individual = Some((*individual).clone());
         }
+
+        // Update the worst individual
+        let worst = self.individuals.iter().max_by(|ind_1, ind_2| {
+            self.individuals_max_cmp(ind_1, ind_2)
+        });
+
+        if let Some(ref individual) = worst {
+            self.worst_individual = Some((*individual).clone());
+        }
+    }
+
+    /// Function to find individual with minimal fitness.
+    ///
+    /// NaN fitness greater others.
+    fn individuals_min_cmp(&self, individual_1: &Individual<T>, individual_2: &Individual<T>) -> Ordering {
+        let goal_1 = individual_1.get_goal();
+        let goal_2 = individual_2.get_goal();
+
+        if goal_1.is_nan() && goal_2.is_nan() { Ordering::Greater }
+        else if goal_1.is_nan() { Ordering::Greater }
+        else if goal_2.is_nan() { Ordering::Less }
+        else { goal_1.partial_cmp(&goal_2).unwrap() }
+    }
+
+    /// Function to find individual with maximal fitness.
+    ///
+    /// NaN fitness less others.
+    fn individuals_max_cmp(&self, individual_1: &Individual<T>, individual_2: &Individual<T>) -> Ordering {
+        let goal_1 = individual_1.get_goal();
+        let goal_2 = individual_2.get_goal();
+
+        if goal_1.is_nan() && goal_2.is_nan() { Ordering::Less }
+        else if goal_1.is_nan() { Ordering::Less }
+        else if goal_2.is_nan() { Ordering::Greater }
+        else { goal_1.partial_cmp(&goal_2).unwrap() }
     }
 
     /// Switch to next iteration (generation)
@@ -395,7 +429,7 @@ impl<T: Clone> GeneticOptimizer<T> {
 
             self.population.remove_dead();
 
-            self.population.update_best_individual();
+            self.population.update_best_worst_individual();
 
             self.population.next_iteration();
 
