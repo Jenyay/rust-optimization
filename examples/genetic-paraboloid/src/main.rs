@@ -58,8 +58,9 @@ fn main() {
     // Stop checker
     let change_max_iterations = 150;
     let change_delta = 1e-7;
-    let stop_checker = stopchecker::GoalNotChange::new(change_max_iterations, change_delta);
+    // let stop_checker = stopchecker::GoalNotChange::new(change_max_iterations, change_delta);
     // let stop_checker = stopchecker::MaxIterations::new(500);
+    let stop_checker = stopchecker::Threshold::new(1e-6);
 
     // Logger
     let logger = logging::StdoutResultOnlyLogger::new(15);

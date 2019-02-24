@@ -14,14 +14,14 @@ pub mod goal;
 pub mod logging;
 pub mod mutation;
 pub mod pairing;
+pub mod pre_birth;
 pub mod selection;
 pub mod stopchecker;
-pub mod pre_birth;
 
+use std::cmp::Ordering;
 use std::f64;
 use std::ops;
 use std::slice;
-use std::cmp::Ordering;
 
 use super::{Agent, AlgorithmWithAgents, Optimizer};
 
@@ -163,7 +163,10 @@ impl<T: Clone> Population<T> {
 
     /// Return count of live individuals
     pub fn len_alive(&self) -> usize {
-        self.individuals.iter().filter(|individual| individual.is_alive()).count()
+        self.individuals
+            .iter()
+            .filter(|individual| individual.is_alive())
+            .count()
     }
 
     /// Returns the best individual in the population if exists or None otherwise.
@@ -171,21 +174,28 @@ impl<T: Clone> Population<T> {
         &self.best_individual
     }
 
+    /// Returns the worst individual in the population if exists or None otherwise.
+    pub fn get_worst(&self) -> &Option<Individual<T>> {
+        &self.worst_individual
+    }
+
     /// Find new the best and the worst individuals
     fn update_best_worst_individual(&mut self) {
         // Update the best individual
-        let best = self.individuals.iter().min_by(|ind_1, ind_2| {
-            self.individuals_min_cmp(ind_1, ind_2)
-        });
+        let best = self
+            .individuals
+            .iter()
+            .min_by(|ind_1, ind_2| self.individuals_min_cmp(ind_1, ind_2));
 
         if let Some(ref individual) = best {
             self.best_individual = Some((*individual).clone());
         }
 
         // Update the worst individual
-        let worst = self.individuals.iter().max_by(|ind_1, ind_2| {
-            self.individuals_max_cmp(ind_1, ind_2)
-        });
+        let worst = self
+            .individuals
+            .iter()
+            .max_by(|ind_1, ind_2| self.individuals_max_cmp(ind_1, ind_2));
 
         if let Some(ref individual) = worst {
             self.worst_individual = Some((*individual).clone());
@@ -195,27 +205,45 @@ impl<T: Clone> Population<T> {
     /// Function to find individual with minimal fitness.
     ///
     /// NaN fitness greater others.
-    fn individuals_min_cmp(&self, individual_1: &Individual<T>, individual_2: &Individual<T>) -> Ordering {
+    fn individuals_min_cmp(
+        &self,
+        individual_1: &Individual<T>,
+        individual_2: &Individual<T>,
+    ) -> Ordering {
         let goal_1 = individual_1.get_goal();
         let goal_2 = individual_2.get_goal();
 
-        if goal_1.is_nan() && goal_2.is_nan() { Ordering::Greater }
-        else if goal_1.is_nan() { Ordering::Greater }
-        else if goal_2.is_nan() { Ordering::Less }
-        else { goal_1.partial_cmp(&goal_2).unwrap() }
+        if goal_1.is_nan() && goal_2.is_nan() {
+            Ordering::Greater
+        } else if goal_1.is_nan() {
+            Ordering::Greater
+        } else if goal_2.is_nan() {
+            Ordering::Less
+        } else {
+            goal_1.partial_cmp(&goal_2).unwrap()
+        }
     }
 
     /// Function to find individual with maximal fitness.
     ///
     /// NaN fitness less others.
-    fn individuals_max_cmp(&self, individual_1: &Individual<T>, individual_2: &Individual<T>) -> Ordering {
+    fn individuals_max_cmp(
+        &self,
+        individual_1: &Individual<T>,
+        individual_2: &Individual<T>,
+    ) -> Ordering {
         let goal_1 = individual_1.get_goal();
         let goal_2 = individual_2.get_goal();
 
-        if goal_1.is_nan() && goal_2.is_nan() { Ordering::Less }
-        else if goal_1.is_nan() { Ordering::Less }
-        else if goal_2.is_nan() { Ordering::Greater }
-        else { goal_1.partial_cmp(&goal_2).unwrap() }
+        if goal_1.is_nan() && goal_2.is_nan() {
+            Ordering::Less
+        } else if goal_1.is_nan() {
+            Ordering::Less
+        } else if goal_2.is_nan() {
+            Ordering::Greater
+        } else {
+            goal_1.partial_cmp(&goal_2).unwrap()
+        }
     }
 
     /// Switch to next iteration (generation)
@@ -292,7 +320,7 @@ pub trait PreBirth<T: Clone> {
 ///
 /// `T` - type of a point in the search space for goal function (chromosomes).
 pub trait Selection<T: Clone> {
-    /// The method kills bad individuals. The method must call `Individual::kill()` method for 
+    /// The method kills bad individuals. The method must call `Individual::kill()` method for
     /// individuals which will not go to next generation.
     fn kill(&mut self, population: &mut Population<T>);
 }

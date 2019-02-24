@@ -29,7 +29,7 @@ pub struct GoalNotChange {
     delta: f64,
 
     old_goal: f64,
-    change_iter: usize
+    change_iter: usize,
 }
 
 impl GoalNotChange {
@@ -64,6 +64,30 @@ impl<T: Clone> StopChecker<T> for GoalNotChange {
 
                 (population.get_iteration() - self.change_iter) > self.max_iter
             }
+        }
+    }
+}
+
+/// Stop genetic algorithm if value of the goal function less of than threshold.
+pub struct Threshold {
+    threshold: f64,
+}
+
+impl Threshold {
+    /// Constructor.
+    ///
+    /// # Parameters
+    /// * `threshold` - min value of the goal function
+    pub fn new(threshold: f64) -> Self {
+        Self { threshold }
+    }
+}
+
+impl<T: Clone> StopChecker<T> for Threshold {
+    fn can_stop(&mut self, population: &Population<T>) -> bool {
+        match population.get_best() {
+            None => false,
+            Some(individual) => individual.get_goal() <= self.threshold,
         }
     }
 }
