@@ -5,15 +5,14 @@ use optlib::genetic::goal;
 use optlib::genetic::logging;
 use optlib::genetic::mutation;
 use optlib::genetic::pairing;
+use optlib::genetic::pre_birth;
 use optlib::genetic::selection;
 use optlib::genetic::stopchecker;
-use optlib::genetic::pre_birth;
 use optlib::testfunctions;
 use optlib::Optimizer;
 
 type Gene = f32;
 type Chromosomes = Vec<Gene>;
-
 
 fn main() {
     // General parameters
@@ -25,12 +24,16 @@ fn main() {
 
     // Goal function
     let goal = goal::GoalFromFunction::new(testfunctions::schwefel);
-    
+
     // Creator
     let creator = creation::vec_float::RandomCreator::new(population_size, intervals.clone());
 
     // Pairing
-    let pairing = pairing::RandomPairing::new();
+    // let pairing = pairing::RandomPairing::new();
+    let partners_count = 2;
+    let families_count = population_size / 2;
+    let rounds_count = 5;
+    let pairing = pairing::Tournament::new(partners_count, families_count, rounds_count);
 
     // Cross
     // let single_cross = cross::CrossMean::new();
@@ -45,21 +48,21 @@ fn main() {
     // let single_cross = cross::CrossMean::new();
     // let single_cross = cross::FloatCrossGeometricMean::new();
     let mutation = mutation::VecMutation::new(mutation_probability, Box::new(single_mutation));
-    
+
     // Pre birth
     let pre_birth = pre_birth::vec_float::CheckChromoInterval::new(intervals.clone());
 
     // Stop checker
-    let change_max_iterations = 100;
+    let change_max_iterations = 200;
     let change_delta = 1e-7;
     // let stop_checker = stopchecker::GoalNotChange::new(change_max_iterations, change_delta);
     // let stop_checker = stopchecker::MaxIterations::new(500);
     let stop_checker = stopchecker::CompositeAny::new(vec![
         Box::new(stopchecker::Threshold::new(1e-4)),
-        Box::new(stopchecker::GoalNotChange::new(
-            change_max_iterations,
-            change_delta,
-        )),
+        // Box::new(stopchecker::GoalNotChange::new(
+        //     change_max_iterations,
+        //     change_delta,
+        // )),
         Box::new(stopchecker::MaxIterations::new(3000)),
     ]);
 

@@ -29,7 +29,11 @@ fn main() {
     let creator = creation::vec_float::RandomCreator::new(population_size, intervals.clone());
 
     // Pairing
-    let pairing = pairing::RandomPairing::new();
+    // let pairing = pairing::RandomPairing::new();
+    let partners_count = 2;
+    let families_count = population_size / 2;
+    let rounds_count = 2;
+    let pairing = pairing::Tournament::new(partners_count, families_count, rounds_count);
 
     // Cross
     let single_cross = cross::FloatCrossExp::new();
@@ -38,7 +42,7 @@ fn main() {
 
     // Mutation
     let mutation_probability = 15.0;
-    let mutation_gene_count = 1;
+    let mutation_gene_count = 3;
     let single_mutation = mutation::BitwiseMutation::new(mutation_gene_count);
     // let single_cross = cross::CrossMean::new();
     // let single_cross = cross::FloatCrossGeometricMean::new();
@@ -59,11 +63,11 @@ fn main() {
     let change_delta = 1e-7;
     let stop_checker = stopchecker::CompositeAny::new(vec![
         Box::new(stopchecker::Threshold::new(1e-6)),
-        Box::new(stopchecker::GoalNotChange::new(
-            change_max_iterations,
-            change_delta,
-        )),
-        Box::new(stopchecker::MaxIterations::new(2000)),
+        // Box::new(stopchecker::GoalNotChange::new(
+        //     change_max_iterations,
+        //     change_delta,
+        // )),
+        Box::new(stopchecker::MaxIterations::new(3000)),
     ]);
 
     // Logger
