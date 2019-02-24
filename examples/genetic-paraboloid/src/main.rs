@@ -7,6 +7,7 @@ use optlib::genetic::mutation;
 use optlib::genetic::pairing;
 use optlib::genetic::selection;
 use optlib::genetic::stopchecker;
+use optlib::genetic::pre_birth;
 use optlib::testfunctions;
 use optlib::Optimizer;
 
@@ -43,11 +44,13 @@ fn main() {
     // let single_cross = cross::CrossMean::new();
     // let single_cross = cross::FloatCrossGeometricMean::new();
     let mutation = mutation::VecMutation::new(mutation_probability, Box::new(single_mutation));
+    
+    // Pre birth
+    let pre_birth = pre_birth::vec_float::CheckChromoInterval::new(intervals.clone());
 
     // Selection
     let selection_algorithms: Vec<Box<dyn genetic::Selection<Chromosomes>>> = vec![
         Box::new(selection::KillFitnessNaN::new()),
-        Box::new(selection::vec_float::CheckChromoInterval::new(intervals.clone())),
         Box::new(selection::LimitPopulation::new(population_size)),
     ];
     let selection = selection::Composite::new(selection_algorithms);
@@ -70,6 +73,7 @@ fn main() {
         Box::new(mutation),
         Box::new(selection),
         Box::new(stop_checker),
+        Some(Box::new(pre_birth)),
         Some(Box::new(logger)),
     );
 

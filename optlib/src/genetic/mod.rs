@@ -16,6 +16,7 @@ pub mod mutation;
 pub mod pairing;
 pub mod selection;
 pub mod stopchecker;
+pub mod pre_birth;
 
 use std::f64;
 use std::ops;
@@ -245,6 +246,14 @@ pub trait Mutation<T: Clone> {
     fn mutation(&mut self, chromosomes: &T) -> T;
 }
 
+/// The trait may be used after mutation but before birth of the individuals.
+///
+/// `T` - type of a point in the search space for goal function (chromosomes).
+pub trait PreBirth<T: Clone> {
+    /// The method may modify chromosomes list before birth of the individuals.
+    fn pre_birth(&mut self, population: &Population<T>, new_chromosomes: &mut Vec<T>);
+}
+
 /// The trait with selection algorithm.
 ///
 /// `T` - type of a point in the search space for goal function (chromosomes).
@@ -301,6 +310,7 @@ pub struct GeneticOptimizer<T: Clone> {
     mutation: Box<dyn Mutation<T>>,
     selection: Box<dyn Selection<T>>,
     stop_checker: Box<dyn StopChecker<T>>,
+    pre_birth: Option<Box<dyn PreBirth<T>>>,
     logger: Option<Box<dyn Logger<T>>>,
     population: Population<T>,
 }
@@ -315,6 +325,7 @@ impl<T: Clone> GeneticOptimizer<T> {
         mutation: Box<dyn Mutation<T>>,
         selection: Box<dyn Selection<T>>,
         stop_checker: Box<dyn StopChecker<T>>,
+        pre_birth: Option<Box<dyn PreBirth<T>>>,
         logger: Option<Box<dyn Logger<T>>>,
     ) -> GeneticOptimizer<T> {
         GeneticOptimizer {
@@ -324,6 +335,7 @@ impl<T: Clone> GeneticOptimizer<T> {
             mutation,
             selection,
             stop_checker,
+            pre_birth,
             logger,
             population: Population::new(goal),
         }
@@ -365,10 +377,15 @@ impl<T: Clone> GeneticOptimizer<T> {
             let mut children_chromo_list = self.run_pairing();
 
             // Mutation
-            let children_mutants = children_chromo_list
+            let mut children_mutants: Vec<T> = children_chromo_list
                 .iter_mut()
                 .map(|chromo| self.mutation.mutation(chromo))
                 .collect();
+
+            // May be change new chromosomes vector before birth
+            if let Some(ref mut pre_birth) = self.pre_birth {
+                pre_birth.pre_birth(&self.population, &mut children_mutants);
+            }
 
             // Create new individuals by new chromosomes and add new individuals to population
             self.population.append(children_mutants);
