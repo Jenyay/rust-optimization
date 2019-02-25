@@ -1,4 +1,6 @@
-//! The module with selection algorithms. The algoritms must kill individuals which does not go to
+//! The module with selection algorithms.
+//!
+//! The algoritms must kill individuals which does not go to
 //! next generation. The algorithm must call `kill()` method for such individuals.
 
 pub mod vec_float;
