@@ -53,8 +53,8 @@ fn main() {
     let pre_birth = pre_birth::vec_float::CheckChromoInterval::new(intervals.clone());
 
     // Stop checker
-    let change_max_iterations = 200;
-    let change_delta = 1e-7;
+    // let change_max_iterations = 200;
+    // let change_delta = 1e-7;
     // let stop_checker = stopchecker::GoalNotChange::new(change_max_iterations, change_delta);
     // let stop_checker = stopchecker::MaxIterations::new(500);
     let stop_checker = stopchecker::CompositeAny::new(vec![
@@ -74,8 +74,10 @@ fn main() {
     let selection = selection::Composite::new(selection_algorithms);
 
     // Logger
-    let logger = logging::StdoutResultOnlyLogger::new(8);
-    // let logger = logging::VerboseStdoutLogger::new(8);
+    let loggers: Vec<Box<genetic::Logger<Chromosomes>>> = vec![
+        Box::new(logging::StdoutResultOnlyLogger::new(15)),
+        // Box::new(logging::VerboseStdoutLogger::new(15)),
+    ];
 
     let mut optimizer = genetic::GeneticOptimizer::new(
         Box::new(goal),
@@ -86,7 +88,7 @@ fn main() {
         Box::new(selection),
         Box::new(stop_checker),
         Some(Box::new(pre_birth)),
-        Some(Box::new(logger)),
+        loggers,
     );
 
     optimizer.find_min();

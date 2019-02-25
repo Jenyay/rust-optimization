@@ -59,8 +59,8 @@ fn main() {
     let selection = selection::Composite::new(selection_algorithms);
 
     // Stop checker
-    let change_max_iterations = 150;
-    let change_delta = 1e-7;
+    // let change_max_iterations = 150;
+    // let change_delta = 1e-7;
     let stop_checker = stopchecker::CompositeAny::new(vec![
         Box::new(stopchecker::Threshold::new(1e-6)),
         // Box::new(stopchecker::GoalNotChange::new(
@@ -71,8 +71,10 @@ fn main() {
     ]);
 
     // Logger
-    let logger = logging::StdoutResultOnlyLogger::new(15);
-    // let logger = logging::VerboseStdoutLogger::new(15);
+    let loggers: Vec<Box<genetic::Logger<Chromosomes>>> = vec![
+        Box::new(logging::StdoutResultOnlyLogger::new(15)),
+        Box::new(logging::VerboseStdoutLogger::new(15)),
+    ];
 
     let mut optimizer = genetic::GeneticOptimizer::new(
         Box::new(goal),
@@ -83,7 +85,7 @@ fn main() {
         Box::new(selection),
         Box::new(stop_checker),
         Some(Box::new(pre_birth)),
-        Some(Box::new(logger)),
+        loggers,
     );
 
     optimizer.find_min();

@@ -373,7 +373,7 @@ pub struct GeneticOptimizer<T: Clone> {
     selection: Box<dyn Selection<T>>,
     stop_checker: Box<dyn StopChecker<T>>,
     pre_birth: Option<Box<dyn PreBirth<T>>>,
-    logger: Option<Box<dyn Logger<T>>>,
+    logger: Vec<Box<dyn Logger<T>>>,
     population: Population<T>,
 }
 
@@ -388,7 +388,7 @@ impl<T: Clone> GeneticOptimizer<T> {
         selection: Box<dyn Selection<T>>,
         stop_checker: Box<dyn StopChecker<T>>,
         pre_birth: Option<Box<dyn PreBirth<T>>>,
-        logger: Option<Box<dyn Logger<T>>>,
+        logger: Vec<Box<dyn Logger<T>>>,
     ) -> GeneticOptimizer<T> {
         GeneticOptimizer {
             creator,
@@ -430,10 +430,10 @@ impl<T: Clone> GeneticOptimizer<T> {
 
     /// Do new iterations of genetic algorithm.
     pub fn next_iterations(&mut self) -> Option<(&T, f64)> {
-        if let Some(ref mut logger) = self.logger {
-            logger.resume(&self.population);
+        {
+            let population = &self.population;
+            self.logger.iter_mut().for_each(|logger| logger.resume(population));
         }
-
         while !self.stop_checker.can_stop(&self.population) {
             // Pairing
             let mut children_chromo_list = self.run_pairing();
@@ -461,13 +461,16 @@ impl<T: Clone> GeneticOptimizer<T> {
 
             self.population.next_iteration();
 
-            if let Some(ref mut logger) = self.logger {
-                logger.next_iteration(&self.population);
+            {
+                let population = &self.population;
+                self.logger.iter_mut().for_each(|logger| logger.next_iteration(&population));
             }
         }
 
-        if let Some(ref mut logger) = self.logger {
-            logger.finish(&self.population);
+
+        {
+            let population = &self.population;
+            self.logger.iter_mut().for_each(|logger| logger.finish(&population));
         }
 
         match &self.population.best_individual {
@@ -503,9 +506,11 @@ impl<T: Clone> Optimizer<T> for GeneticOptimizer<T> {
         // Create individuals from chromosomes
         self.population.append(start_chromo_list);
 
-        if let Some(ref mut logger) = self.logger {
-            logger.start(&self.population);
+        {
+            let population = &self.population;
+            self.logger.iter_mut().for_each(|logger| logger.start(&population));
         }
+
         self.next_iterations()
     }
 }
