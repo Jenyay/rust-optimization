@@ -180,7 +180,7 @@ impl<T: Clone> Population<T> {
     }
 
     /// Find new the best and the worst individuals
-    fn update_best_worst_individual(&mut self) {
+    fn update_best_worst_individuals(&mut self) {
         // Update the best individual
         let best = self
             .individuals
@@ -366,14 +366,14 @@ pub trait Logger<T: Clone> {
 ///
 /// `T` - type of a point in the search space for goal function (chromosomes).
 pub struct GeneticOptimizer<T: Clone> {
+    stop_checker: Box<dyn StopChecker<T>>,
     creator: Box<dyn Creator<T>>,
     pairing: Box<dyn Pairing<T>>,
     cross: Box<dyn Cross<T>>,
     mutation: Box<dyn Mutation<T>>,
-    selection: Box<dyn Selection<T>>,
-    stop_checker: Box<dyn StopChecker<T>>,
-    pre_birth: Option<Box<dyn PreBirth<T>>>,
-    logger: Vec<Box<dyn Logger<T>>>,
+    selections: Vec<Box<dyn Selection<T>>>,
+    pre_births: Vec<Box<dyn PreBirth<T>>>,
+    loggers: Vec<Box<dyn Logger<T>>>,
     population: Population<T>,
 }
 
@@ -381,24 +381,24 @@ impl<T: Clone> GeneticOptimizer<T> {
     /// Create a new `GeneticOptimizer`.
     pub fn new(
         goal: Box<dyn Goal<T>>,
+        stop_checker: Box<dyn StopChecker<T>>,
         creator: Box<dyn Creator<T>>,
         pairing: Box<dyn Pairing<T>>,
         cross: Box<dyn Cross<T>>,
         mutation: Box<dyn Mutation<T>>,
-        selection: Box<dyn Selection<T>>,
-        stop_checker: Box<dyn StopChecker<T>>,
-        pre_birth: Option<Box<dyn PreBirth<T>>>,
-        logger: Vec<Box<dyn Logger<T>>>,
+        selections: Vec<Box<dyn Selection<T>>>,
+        pre_births: Vec<Box<dyn PreBirth<T>>>,
+        loggers: Vec<Box<dyn Logger<T>>>,
     ) -> GeneticOptimizer<T> {
         GeneticOptimizer {
             creator,
+            stop_checker,
             pairing,
             cross,
             mutation,
-            selection,
-            stop_checker,
-            pre_birth,
-            logger,
+            selections,
+            pre_births,
+            loggers,
             population: Population::new(goal),
         }
     }
@@ -419,8 +419,13 @@ impl<T: Clone> GeneticOptimizer<T> {
     }
 
     /// Replace the trait object of selection algorithm.
-    pub fn replace_selection(&mut self, selection: Box<dyn Selection<T>>) {
-        self.selection = selection;
+    pub fn replace_selection(&mut self, selections: Vec<Box<dyn Selection<T>>>) {
+        self.selections = selections;
+    }
+
+    /// Replace the trait object of selection algorithm.
+    pub fn replace_pre_birth(&mut self, pre_births: Vec<Box<dyn PreBirth<T>>>) {
+        self.pre_births = pre_births;
     }
 
     /// Replace the trait object of stop checker algorithm.
@@ -432,7 +437,9 @@ impl<T: Clone> GeneticOptimizer<T> {
     pub fn next_iterations(&mut self) -> Option<(&T, f64)> {
         {
             let population = &self.population;
-            self.logger.iter_mut().for_each(|logger| logger.resume(population));
+            self.loggers
+                .iter_mut()
+                .for_each(|logger| logger.resume(population));
         }
         while !self.stop_checker.can_stop(&self.population) {
             // Pairing
@@ -445,32 +452,40 @@ impl<T: Clone> GeneticOptimizer<T> {
                 .collect();
 
             // May be change new chromosomes vector before birth
-            if let Some(ref mut pre_birth) = self.pre_birth {
-                pre_birth.pre_birth(&self.population, &mut children_mutants);
+            {
+                let population = &self.population;
+                self.pre_births
+                    .iter_mut()
+                    .for_each(|pre_birth| pre_birth.pre_birth(population, &mut children_mutants));
             }
 
             // Create new individuals by new chromosomes and add new individuals to population
             self.population.append(children_mutants);
 
             // Selection
-            self.selection.kill(&mut self.population);
+            for selection in &mut self.selections {
+                selection.kill(&mut self.population);
+            }
 
             self.population.remove_dead();
 
-            self.population.update_best_worst_individual();
+            self.population.update_best_worst_individuals();
 
             self.population.next_iteration();
 
             {
                 let population = &self.population;
-                self.logger.iter_mut().for_each(|logger| logger.next_iteration(&population));
+                self.loggers
+                    .iter_mut()
+                    .for_each(|logger| logger.next_iteration(&population));
             }
         }
 
-
         {
             let population = &self.population;
-            self.logger.iter_mut().for_each(|logger| logger.finish(&population));
+            self.loggers
+                .iter_mut()
+                .for_each(|logger| logger.finish(&population));
         }
 
         match &self.population.best_individual {
@@ -508,7 +523,9 @@ impl<T: Clone> Optimizer<T> for GeneticOptimizer<T> {
 
         {
             let population = &self.population;
-            self.logger.iter_mut().for_each(|logger| logger.start(&population));
+            self.loggers
+                .iter_mut()
+                .for_each(|logger| logger.start(&population));
         }
 
         self.next_iterations()

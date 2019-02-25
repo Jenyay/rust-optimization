@@ -49,14 +49,15 @@ fn main() {
     let mutation = mutation::VecMutation::new(mutation_probability, Box::new(single_mutation));
 
     // Pre birth
-    let pre_birth = pre_birth::vec_float::CheckChromoInterval::new(intervals.clone());
+    let pre_births: Vec<Box<genetic::PreBirth<Chromosomes>>> = vec![Box::new(
+        pre_birth::vec_float::CheckChromoInterval::new(intervals.clone()),
+    )];
 
     // Selection
-    let selection_algorithms: Vec<Box<dyn genetic::Selection<Chromosomes>>> = vec![
+    let selections: Vec<Box<dyn genetic::Selection<Chromosomes>>> = vec![
         Box::new(selection::KillFitnessNaN::new()),
         Box::new(selection::LimitPopulation::new(population_size)),
     ];
-    let selection = selection::Composite::new(selection_algorithms);
 
     // Stop checker
     // let change_max_iterations = 150;
@@ -79,13 +80,13 @@ fn main() {
 
     let mut optimizer = genetic::GeneticOptimizer::new(
         Box::new(goal),
+        Box::new(stop_checker),
         Box::new(creator),
         Box::new(pairing),
         Box::new(cross),
         Box::new(mutation),
-        Box::new(selection),
-        Box::new(stop_checker),
-        Some(Box::new(pre_birth)),
+        selections,
+        pre_births,
         loggers,
     );
 

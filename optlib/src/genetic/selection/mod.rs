@@ -41,7 +41,6 @@ impl LimitPopulation {
     }
 }
 
-
 impl<T: Clone> Selection<T> for LimitPopulation {
     fn kill(&mut self, population: &mut Population<T>) {
         let alive_count = population.len_alive();
@@ -50,7 +49,6 @@ impl<T: Clone> Selection<T> for LimitPopulation {
         }
     }
 }
-
 
 /// Function to kill worst individuals in population.
 /// `count` - how many individuals must be killed.
@@ -92,26 +90,5 @@ pub fn kill_worst<T: Clone>(population: &mut Population<T>, count: usize) {
 
     for n in kill_list {
         population[n].kill();
-    }
-}
-
-
-/// Apply many selections algorithms to population
-pub struct Composite<T: Clone> {
-    selections: Vec<Box<dyn Selection<T>>>,
-}
-
-impl<T: Clone> Composite<T> {
-    /// Constructor
-    pub fn new(selection_algorithms: Vec<Box<dyn Selection<T>>>) -> Self {
-        Self { selections: selection_algorithms }
-    }
-}
-
-impl<T: Clone> Selection<T> for Composite<T> {
-    fn kill(&mut self, population: &mut Population<T>) {
-        self.selections
-            .iter_mut()
-            .for_each(|selection| selection.kill(population));
     }
 }
