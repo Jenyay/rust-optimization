@@ -72,8 +72,9 @@ fn main() {
 
     // Logger
     let loggers: Vec<Box<genetic::Logger<Chromosomes>>> = vec![
-        Box::new(logging::StdoutResultOnlyLogger::new(15)),
         Box::new(logging::VerboseStdoutLogger::new(15)),
+        Box::new(logging::StdoutResultOnlyLogger::new(15)),
+        Box::new(logging::TimeStdoutLogger::new()),
     ];
 
     let mut optimizer = genetic::GeneticOptimizer::new(
