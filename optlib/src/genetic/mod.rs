@@ -437,12 +437,10 @@ impl<T: Clone> GeneticOptimizer<T> {
 
     /// Do new iterations of genetic algorithm.
     pub fn next_iterations(&mut self) -> Option<(&T, f64)> {
-        {
-            let population = &self.population;
-            self.loggers
-                .iter_mut()
-                .for_each(|logger| logger.resume(population));
+        for logger in &mut self.loggers {
+            logger.resume(&self.population);
         }
+
         while !self.stop_checker.can_stop(&self.population) {
             // Pairing
             let mut children_chromo_list = self.run_pairing();
@@ -454,11 +452,8 @@ impl<T: Clone> GeneticOptimizer<T> {
                 .collect();
 
             // May be change new chromosomes vector before birth
-            {
-                let population = &self.population;
-                self.pre_births
-                    .iter_mut()
-                    .for_each(|pre_birth| pre_birth.pre_birth(population, &mut children_mutants));
+            for pre_birth in &mut self.pre_births {
+                pre_birth.pre_birth(&self.population, &mut children_mutants);
             }
 
             // Create new individuals by new chromosomes and add new individuals to population
@@ -475,19 +470,13 @@ impl<T: Clone> GeneticOptimizer<T> {
 
             self.population.next_iteration();
 
-            {
-                let population = &self.population;
-                self.loggers
-                    .iter_mut()
-                    .for_each(|logger| logger.next_iteration(&population));
+            for logger in &mut self.loggers {
+                logger.next_iteration(&self.population);
             }
         }
 
-        {
-            let population = &self.population;
-            self.loggers
-                .iter_mut()
-                .for_each(|logger| logger.finish(&population));
+        for logger in &mut self.loggers {
+            logger.finish(&self.population);
         }
 
         match &self.population.best_individual {
@@ -523,11 +512,8 @@ impl<T: Clone> Optimizer<T> for GeneticOptimizer<T> {
         // Create individuals from chromosomes
         self.population.append(start_chromo_list);
 
-        {
-            let population = &self.population;
-            self.loggers
-                .iter_mut()
-                .for_each(|logger| logger.start(&population));
+        for logger in &mut self.loggers {
+            logger.start(&self.population);
         }
 
         self.next_iterations()
