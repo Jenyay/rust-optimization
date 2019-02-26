@@ -137,8 +137,10 @@ impl<T: Clone> Population<T> {
 
     /// Create new individuals (`Individual` struct) for all items in `chromosomes_list` and add
     /// them to population.
-    fn append(&mut self, mut chromosomes_list: Vec<T>) {
-        (0..chromosomes_list.len()).for_each(|_| self.push(chromosomes_list.remove(0)));
+    fn append(&mut self, chromosomes_list: Vec<T>) {
+        for chromosome in chromosomes_list {
+            self.push(chromosome);
+        }
     }
 
     /// Returns iterator for all individuals (`Individual` struct) in population.
