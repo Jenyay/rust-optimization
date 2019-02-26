@@ -65,13 +65,7 @@ fn main() {
     // Pairing is algorithm of selection individuals for crossbreeding.
 
     // Select random individuals from the population.
-    // let pairing = pairing::RandomPairing::new();
-
-    // Tournament method.
-    let partners_count = 2;
-    let families_count = population_size / 2;
-    let rounds_count = 5;
-    let pairing = pairing::Tournament::new(partners_count, families_count, rounds_count);
+    let pairing = pairing::RandomPairing::new();
 
     // Crossbreeding algorithm.
     // Make a Cross trait object. The bitwise crossing for float genes.
@@ -129,4 +123,42 @@ fn main() {
     optimizer.find_min();
 }
 
+```
+
+Build example in 'examples/genetic-schwefel/':
+
+```
+cargo build --release
+```
+
+Run example:
+
+```
+cargo run --release
+```
+
+Work result:
+
+```
+Solution:
+  420.974975585937500
+  420.969146728515625
+  420.955078125000000
+  421.004760742187500
+  420.999511718750000
+  421.007263183593750
+  420.987487792968750
+  421.001800537109375
+  420.980499267578125
+  420.991180419921875
+  421.001068115234375
+  420.942718505859375
+  420.964080810546875
+  420.951721191406250
+  420.961029052734375
+
+
+Goal: 0.000488281250000
+Iterations count: 3000
+Time elapsed: 2352 ms
 ```
