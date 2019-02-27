@@ -230,13 +230,18 @@ pub fn cross_u16(parent_1: u16, parent_2: u16, pos: usize) -> u16 {
 /// ```
 /// use optlib::genetic::cross;
 ///
-/// let parent_1 = 0b_0000_0000_i8;
-/// let parent_2 = 0b_0111_1111_i8;
+/// assert_eq!(cross::cross_i8(0b_0000_0000_i8, 0b_0111_1111_i8, 4), 0b_0000_1111_i8);
+/// assert_eq!(cross::cross_i8(0b_0000_0000_i8, 0b_0111_1111_i8, 1), 0b_0000_0001_i8);
+/// assert_eq!(cross::cross_i8(0b_0000_0000_i8, 0b_0111_1111_i8, 7), 0b_0111_1111_i8);
+/// assert_eq!(cross::cross_i8(0b_0000_0000_i8, 0b_0111_1111_i8, 6), 0b_0011_1111_i8);
 ///
-/// assert_eq!(cross::cross_i8(parent_1, parent_2, 4), 0b_0000_1111_i8);
-/// assert_eq!(cross::cross_i8(parent_1, parent_2, 1), 0b_0000_0001_i8);
-/// assert_eq!(cross::cross_i8(parent_1, parent_2, 7), 0b_0111_1111_i8);
-/// assert_eq!(cross::cross_i8(parent_1, parent_2, 6), 0b_0011_1111_i8);
+/// // -1i8 == 0b_1111_1111
+/// // -16i8 == 0b_1111_0000
+/// assert_eq!(cross::cross_i8(-1i8, 0i8, 4), -16i8);
+///
+/// // -1i8 == 0b_1111_1111
+/// // -128i8 == 0b_1000_0000
+/// assert_eq!(cross::cross_i8(-1i8, 0i8, 7), -128i8);
 /// ```
 pub fn cross_i8(parent_1: i8, parent_2: i8, pos: usize) -> i8 {
     let size = mem::size_of_val(&parent_1) * 8;
@@ -255,12 +260,9 @@ pub fn cross_i8(parent_1: i8, parent_2: i8, pos: usize) -> i8 {
 /// ```
 /// use optlib::genetic::cross;
 ///
-/// let parent_1 = 0b_0000_0000;
-/// let parent_2 = 0b_1111_1111;
-///
-/// assert_eq!(cross::cross_u8(parent_1, parent_2, 4), 0b_0000_1111);
-/// assert_eq!(cross::cross_u8(parent_1, parent_2, 1), 0b_0000_0001);
-/// assert_eq!(cross::cross_u8(parent_1, parent_2, 7), 0b_0111_1111);
+/// assert_eq!(cross::cross_u8(0b_0000_0000, 0b_1111_1111, 4), 0b_0000_1111);
+/// assert_eq!(cross::cross_u8(0b_0000_0000, 0b_1111_1111, 1), 0b_0000_0001);
+/// assert_eq!(cross::cross_u8(0b_0000_0000, 0b_1111_1111, 7), 0b_0111_1111);
 /// ```
 pub fn cross_u8(parent_1: u8, parent_2: u8, pos: usize) -> u8 {
     let size = mem::size_of_val(&parent_1) * 8;
