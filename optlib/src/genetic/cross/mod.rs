@@ -226,10 +226,22 @@ pub fn cross_u16(parent_1: u16, parent_2: u16, pos: usize) -> u16 {
 /// * `pos` - position for bytes exchange. The position is counted from right.
 ///
 /// Returns single child.
+///
+/// ```
+/// use optlib::genetic::cross;
+///
+/// let parent_1 = 0b_0000_0000_i8;
+/// let parent_2 = 0b_0111_1111_i8;
+///
+/// assert_eq!(cross::cross_i8(parent_1, parent_2, 4), 0b_0000_1111_i8);
+/// assert_eq!(cross::cross_i8(parent_1, parent_2, 1), 0b_0000_0001_i8);
+/// assert_eq!(cross::cross_i8(parent_1, parent_2, 7), 0b_0111_1111_i8);
+/// assert_eq!(cross::cross_i8(parent_1, parent_2, 6), 0b_0011_1111_i8);
+/// ```
 pub fn cross_i8(parent_1: i8, parent_2: i8, pos: usize) -> i8 {
     let size = mem::size_of_val(&parent_1) * 8;
     let mask_parent_1 = !0i8 << pos;
-    let mask_parent_2 = !0i8 >> (size - pos);
+    let mask_parent_2 = (0b_0111_1111_i8) >> (size - pos - 1);
     (parent_1 & mask_parent_1) | (parent_2 & mask_parent_2)
 }
 
@@ -240,6 +252,16 @@ pub fn cross_i8(parent_1: i8, parent_2: i8, pos: usize) -> i8 {
 /// * `pos` - position for bytes exchange. The position is counted from right.
 ///
 /// Returns single child.
+/// ```
+/// use optlib::genetic::cross;
+///
+/// let parent_1 = 0b_0000_0000;
+/// let parent_2 = 0b_1111_1111;
+///
+/// assert_eq!(cross::cross_u8(parent_1, parent_2, 4), 0b_0000_1111);
+/// assert_eq!(cross::cross_u8(parent_1, parent_2, 1), 0b_0000_0001);
+/// assert_eq!(cross::cross_u8(parent_1, parent_2, 7), 0b_0111_1111);
+/// ```
 pub fn cross_u8(parent_1: u8, parent_2: u8, pos: usize) -> u8 {
     let size = mem::size_of_val(&parent_1) * 8;
     let mask_parent_1 = !0u8 << pos;
