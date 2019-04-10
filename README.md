@@ -125,16 +125,16 @@ fn main() {
 
 ```
 
-Build example in 'examples/genetic-schwefel/':
+Build all crates:
 
 ```
-cargo build --release
+cargo build --release --all
 ```
 
 Run example:
 
 ```
-cargo run --release
+cargo run --bin genetic-schwefel --release
 ```
 
 Work result:
