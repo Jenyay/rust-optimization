@@ -1,0 +1,6 @@
+[workspace]
+members = [
+	"optlib",
+	"examples/genetic-paraboloid",
+	"examples/genetic-schwefel",
+]
