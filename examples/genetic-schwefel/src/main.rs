@@ -5,12 +5,12 @@
 //! f(x') = 0
 //!
 //! # Terms
-//! * 'Goal function' - the function for optimization. y = f(x).
+//! * `Goal function` - the function for optimization. y = f(x).
 //! * `Gene` - a single value of xi.
-//! * 'Chromosome' - a point in the search space. x = (x0, x1, x2, ..., xn).
-//! * 'Individual' - union of x and value of goal function.
-//! * 'Population' - set of the individuals.
-//! * 'Generation' - a number of iteration of genetic algorithm.
+//! * `Chromosome` - a point in the search space. x = (x0, x1, x2, ..., xn).
+//! * `Individual` - union of x and value of goal function.
+//! * `Population` - set of the individuals.
+//! * `Generation` - a number of iteration of genetic algorithm.
 use optlib::genetic;
 use optlib::genetic::creation;
 use optlib::genetic::cross;
