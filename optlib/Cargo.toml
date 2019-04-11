@@ -14,3 +14,6 @@ repository = "https://github.com/Jenyay/rust-optimization"
 [dependencies]
 num = "0.2"
 rand = "0.6.4"
+
+[badges]
+maintenance = { status = "actively-developed" }

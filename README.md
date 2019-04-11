@@ -3,6 +3,10 @@ Optimization algorithms realized in Rust
 
 In given time optlib realized genetic algorithm only.
 
+* Documentation - https://docs.rs/optlib
+* Page at crates.io - https://crates.io/crates/optlib
+
+
 ## Example of optimization
 
 ```rust
