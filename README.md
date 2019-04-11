@@ -1,10 +1,12 @@
 # optlib
+
+[![Current Version](https://img.shields.io/crates/v/optlib.svg)](https://crates.io/crates/optlib)
+[![Documentation](https://docs.rs/optlib/badge.svg)](https://docs.rs/optlib)
+[![License](https://img.shields.io/crates/l/optlib.svg)](https://crates.io/crates/optlib)
+
 Optimization algorithms realized in Rust
 
 In given time optlib realized genetic algorithm only.
-
-* Documentation - https://docs.rs/optlib
-* Page at crates.io - https://crates.io/crates/optlib
 
 
 ## Example of optimization
