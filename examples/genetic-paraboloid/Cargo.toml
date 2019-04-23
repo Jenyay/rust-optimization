@@ -1,9 +1,0 @@
-[package]
-name = "genetic-paraboloid"
-version = "0.1.0"
-authors = ["Jenyay <jenyay.ilin@gmail.com>"]
-edition = "2018"
-
-[dependencies]
-optlib = { path = "../../optlib" }
-rand = "0.6.4"
