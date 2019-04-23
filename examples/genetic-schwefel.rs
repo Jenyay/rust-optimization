@@ -11,16 +11,9 @@
 //! * `Individual` - union of x and value of goal function.
 //! * `Population` - set of the individuals.
 //! * `Generation` - a number of iteration of genetic algorithm.
-use optlib::genetic;
-use optlib::genetic::creation;
-use optlib::genetic::cross;
-use optlib::genetic::goal;
-use optlib::genetic::logging;
-use optlib::genetic::mutation;
-use optlib::genetic::pairing;
-use optlib::genetic::pre_birth;
-use optlib::genetic::selection;
-use optlib::genetic::stopchecker;
+use optlib::genetic::{
+    self, creation, cross, goal, logging, mutation, pairing, pre_birth, selection, stopchecker,
+};
 use optlib::testfunctions;
 use optlib::Optimizer;
 
