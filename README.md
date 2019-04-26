@@ -4,9 +4,9 @@
 [![Documentation](https://docs.rs/optlib/badge.svg)](https://docs.rs/optlib)
 [![License](https://img.shields.io/crates/l/optlib.svg)](https://crates.io/crates/optlib)
 
-Optimization algorithms realized in Rust
+Optimization algorithms implemented in Rust
 
-In given time optlib realized genetic algorithm only.
+For now optlib provides only genetic algorithm.
 
 
 ## Example of optimization
@@ -51,26 +51,24 @@ fn main() {
     let minval: Gene = -500.0;
     let maxval: Gene = 500.0;
 
-    // Count individuals in initial population
+    // Initial population individuals count
     let population_size = 500;
 
-    // Count of xi in the chromosomes
+    // Count of xi in chromosomes
     let chromo_count = 15;
 
     let intervals = vec![(minval, maxval); chromo_count];
 
-    // Make a trait object for goal function (Schwefel function)
+    // Make a trait object for a goal function (Schwefel function)
     let goal = goal::GoalFromFunction::new(testfunctions::schwefel);
 
-    // Make the creator to create initial population.
-    // RandomCreator will fill initial population with individuals with random chromosomes in a
-    // given interval,
+    // creator will generate an initial population using RandomCreator.
+    // Individuals of this population will have random chromosomes within a given interval.
     let creator = creation::vec_float::RandomCreator::new(population_size, intervals.clone());
 
     // Make a trait object for the pairing.
-    // Pairing is algorithm of selection individuals for crossbreeding.
-
-    // Select random individuals from the population.
+    // Pairing is the algorithm of selecting individuals for crossbreeding.
+    // RandomPairing selects random individuals from the population.
     let pairing = pairing::RandomPairing::new();
 
     // Crossbreeding algorithm.
@@ -85,22 +83,22 @@ fn main() {
     let single_mutation = mutation::BitwiseMutation::new(mutation_gene_count);
     let mutation = mutation::VecMutation::new(mutation_probability, Box::new(single_mutation));
 
-    // Pre birth. Throw away new chlld chromosomes if their genes do not lies if given intervals.
+    // Pre birth. Throw away new child chromosomes if their genes do not lie within given intervals.
     let pre_births: Vec<Box<genetic::PreBirth<Chromosomes>>> = vec![Box::new(
         pre_birth::vec_float::CheckChromoInterval::new(intervals.clone()),
     )];
 
     // Stop checker. Stop criterion for genetic algorithm.
-    // Stop algorithm if the value of goal function will become less of 1e-4 or
+    // Stop algorithm if the value of goal function will become less than 10⁻⁴ or
     // after 3000 generations (iterations).
     let stop_checker = stopchecker::CompositeAny::new(vec![
         Box::new(stopchecker::Threshold::new(1e-4)),
         Box::new(stopchecker::MaxIterations::new(3000)),
     ]);
 
-    // Make a trait object for selection. Selection is killing the worst individuals.
+    // Make a trait object for selection. Selection kills the worst individuals.
     // Kill all individuals if the value of goal function is NaN or Inf.
-    // Kill the worst individuals to population size remained unchanged.
+    // Kill worst individuals to keep initial population size.
     let selections: Vec<Box<dyn genetic::Selection<Chromosomes>>> = vec![
         Box::new(selection::KillFitnessNaN::new()),
         Box::new(selection::LimitPopulation::new(population_size)),
