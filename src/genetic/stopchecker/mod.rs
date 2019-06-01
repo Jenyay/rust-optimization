@@ -17,7 +17,7 @@ impl MaxIterations {
     }
 }
 
-impl<T: Clone> StopChecker<T> for MaxIterations {
+impl<T> StopChecker<T> for MaxIterations {
     fn can_stop(&mut self, population: &Population<T>) -> bool {
         population.get_iteration() >= self.max_iter
     }
@@ -50,7 +50,7 @@ impl GoalNotChange {
     }
 }
 
-impl<T: Clone> StopChecker<T> for GoalNotChange {
+impl<T> StopChecker<T> for GoalNotChange {
     fn can_stop(&mut self, population: &Population<T>) -> bool {
         match population.get_best() {
             None => false,
@@ -83,7 +83,7 @@ impl Threshold {
     }
 }
 
-impl<T: Clone> StopChecker<T> for Threshold {
+impl<T> StopChecker<T> for Threshold {
     fn can_stop(&mut self, population: &Population<T>) -> bool {
         match population.get_best() {
             None => false,
@@ -93,11 +93,11 @@ impl<T: Clone> StopChecker<T> for Threshold {
 }
 
 /// Stop genetic algorithm if ANY of stop checker returns true
-pub struct CompositeAny<T: Clone> {
+pub struct CompositeAny<T> {
     stop_checkers: Vec<Box<dyn StopChecker<T>>>,
 }
 
-impl<T: Clone> CompositeAny<T> {
+impl<T> CompositeAny<T> {
     /// Constructor
     pub fn new(stop_checkers: Vec<Box<dyn StopChecker<T>>>) -> Self {
         assert!(stop_checkers.len() != 0);
@@ -105,7 +105,7 @@ impl<T: Clone> CompositeAny<T> {
     }
 }
 
-impl<T: Clone> StopChecker<T> for CompositeAny<T> {
+impl<T> StopChecker<T> for CompositeAny<T> {
     fn can_stop(&mut self, population: &Population<T>) -> bool {
         for checker in &mut self.stop_checkers {
             if checker.can_stop(population) {
@@ -118,11 +118,11 @@ impl<T: Clone> StopChecker<T> for CompositeAny<T> {
 }
 
 /// Stop genetic algorithm if ALL stop checkers returns true
-pub struct CompositeAll<T: Clone> {
+pub struct CompositeAll<T> {
     stop_checkers: Vec<Box<dyn StopChecker<T>>>,
 }
 
-impl<T: Clone> CompositeAll<T> {
+impl<T> CompositeAll<T> {
     /// Constructor
     pub fn new(stop_checkers: Vec<Box<dyn StopChecker<T>>>) -> Self {
         assert!(stop_checkers.len() != 0);
@@ -130,7 +130,7 @@ impl<T: Clone> CompositeAll<T> {
     }
 }
 
-impl<T: Clone> StopChecker<T> for CompositeAll<T> {
+impl<T> StopChecker<T> for CompositeAll<T> {
     fn can_stop(&mut self, population: &Population<T>) -> bool {
         for checker in &mut self.stop_checkers {
             if !checker.can_stop(population) {

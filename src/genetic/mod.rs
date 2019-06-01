@@ -29,7 +29,7 @@ use super::{Agent, AlgorithmWithAgents, Optimizer};
 ///
 /// `T` - type of a point in the search space for goal function (chromosomes).
 #[derive(Debug)]
-pub struct Individual<T: Clone> {
+pub struct Individual<T> {
     /// Point in the search space.
     chromosomes: T,
 
@@ -50,7 +50,7 @@ impl<T: Clone> Clone for Individual<T> {
     }
 }
 
-impl<T: Clone> Agent<T> for Individual<T> {
+impl<T> Agent<T> for Individual<T> {
     fn get_goal(&self) -> f64 {
         self.fitness
     }
@@ -60,7 +60,7 @@ impl<T: Clone> Agent<T> for Individual<T> {
     }
 }
 
-impl<T: Clone> Individual<T> {
+impl<T> Individual<T> {
     /// Return reference to chromosomes.
     pub fn get_chromosomes(&self) -> &T {
         &self.chromosomes
@@ -85,7 +85,7 @@ impl<T: Clone> Individual<T> {
 /// Stores all individuals for current generation.
 ///
 /// `T` - type of a point in the search space for goal function (chromosomes).
-pub struct Population<T: Clone> {
+pub struct Population<T> {
     // Trait object for goal function.
     goal: Box<dyn Goal<T>>,
 
@@ -102,6 +102,31 @@ pub struct Population<T: Clone> {
 }
 
 impl<T: Clone> Population<T> {
+    /// Find new the best and the worst individuals
+    fn update_best_worst_individuals(&mut self) {
+        // Update the best individual
+        let best = self
+            .individuals
+            .iter()
+            .min_by(|ind_1, ind_2| self.individuals_min_cmp(ind_1, ind_2));
+
+        if let Some(ref individual) = best {
+            self.best_individual = Some((*individual).clone());
+        }
+
+        // Update the worst individual
+        let worst = self
+            .individuals
+            .iter()
+            .max_by(|ind_1, ind_2| self.individuals_max_cmp(ind_1, ind_2));
+
+        if let Some(ref individual) = worst {
+            self.worst_individual = Some((*individual).clone());
+        }
+    }
+}
+
+impl<T> Population<T> {
     /// Create new `Population` struct
     /// # Parameters
     /// * `goal` - trait object for goal function
@@ -158,11 +183,6 @@ impl<T: Clone> Population<T> {
         self.iteration
     }
 
-    /// Returns count of the individuals in the population.
-    pub fn len(&self) -> usize {
-        self.individuals.len()
-    }
-
     /// Return count of live individuals
     pub fn len_alive(&self) -> usize {
         self.individuals
@@ -180,28 +200,9 @@ impl<T: Clone> Population<T> {
     pub fn get_worst(&self) -> &Option<Individual<T>> {
         &self.worst_individual
     }
-
-    /// Find new the best and the worst individuals
-    fn update_best_worst_individuals(&mut self) {
-        // Update the best individual
-        let best = self
-            .individuals
-            .iter()
-            .min_by(|ind_1, ind_2| self.individuals_min_cmp(ind_1, ind_2));
-
-        if let Some(ref individual) = best {
-            self.best_individual = Some((*individual).clone());
-        }
-
-        // Update the worst individual
-        let worst = self
-            .individuals
-            .iter()
-            .max_by(|ind_1, ind_2| self.individuals_max_cmp(ind_1, ind_2));
-
-        if let Some(ref individual) = worst {
-            self.worst_individual = Some((*individual).clone());
-        }
+    /// Returns count of the individuals in the population.
+    pub fn len(&self) -> usize {
+        self.individuals.len()
     }
 
     /// Function to find individual with minimal fitness.
@@ -259,7 +260,7 @@ impl<T: Clone> Population<T> {
 }
 
 /// Index trait implementation for Population
-impl<T: Clone> ops::Index<usize> for Population<T> {
+impl<T> ops::Index<usize> for Population<T> {
     type Output = Individual<T>;
 
     fn index(&self, index: usize) -> &Individual<T> {
@@ -268,7 +269,7 @@ impl<T: Clone> ops::Index<usize> for Population<T> {
 }
 
 /// IndexMut trait implementation for Population
-impl<T: Clone> ops::IndexMut<usize> for Population<T> {
+impl<T> ops::IndexMut<usize> for Population<T> {
     fn index_mut<'a>(&'a mut self, index: usize) -> &'a mut Individual<T> {
         &mut self.individuals[index]
     }
@@ -285,7 +286,7 @@ pub trait Goal<T> {
 /// The trait to create initial individuals for population.
 ///
 /// `T` - type of a point in the search space for goal function (chromosomes).
-pub trait Creator<T: Clone> {
+pub trait Creator<T> {
     /// Must return vector of the new individuals for population
     fn create(&mut self) -> Vec<T>;
 }
@@ -293,7 +294,7 @@ pub trait Creator<T: Clone> {
 /// The trait with cross algorithm.
 ///
 /// `T` - type of a point in the search space for goal function (chromosomes).
-pub trait Cross<T: Clone> {
+pub trait Cross<T> {
     /// The method accepts slice of references to parent chromosomes (`parents`),
     /// must return vector of chromosomes of children. The children will be added to population
     /// after mutation.
@@ -303,7 +304,7 @@ pub trait Cross<T: Clone> {
 /// The trait with mutation algorithm.
 ///
 /// `T` - type of a point in the search space for goal function (chromosomes).
-pub trait Mutation<T: Clone> {
+pub trait Mutation<T> {
     /// The method accepts reference to chromosomes of single individual and must return new
     /// chromosomes (possibly modified). New individuals will be created with the chromosomes after
     /// mutation.
@@ -313,7 +314,7 @@ pub trait Mutation<T: Clone> {
 /// The trait may be used after mutation but before birth of the individuals.
 ///
 /// `T` - type of a point in the search space for goal function (chromosomes).
-pub trait PreBirth<T: Clone> {
+pub trait PreBirth<T> {
     /// The method may modify chromosomes list before birth of the individuals.
     fn pre_birth(&mut self, population: &Population<T>, new_chromosomes: &mut Vec<T>);
 }
@@ -321,7 +322,7 @@ pub trait PreBirth<T: Clone> {
 /// The trait with selection algorithm.
 ///
 /// `T` - type of a point in the search space for goal function (chromosomes).
-pub trait Selection<T: Clone> {
+pub trait Selection<T> {
     /// The method kills bad individuals. The method must call `Individual::kill()` method for
     /// individuals which will not go to next generation.
     fn kill(&mut self, population: &mut Population<T>);
@@ -330,7 +331,7 @@ pub trait Selection<T: Clone> {
 /// The trait to select individuals to pairing.
 ///
 /// `T` - type of a point in the search space for goal function (chromosomes).
-pub trait Pairing<T: Clone> {
+pub trait Pairing<T> {
     /// The method must select individuals to cross. Returns vector of vector with individuals
     /// numbers in `population`. Selected individuals will parents for new children.
     fn get_pairs(&mut self, population: &Population<T>) -> Vec<Vec<usize>>;
@@ -339,7 +340,7 @@ pub trait Pairing<T: Clone> {
 /// The trait with break criterion of genetic algorithm.
 ///
 /// `T` - type of a point in the search space for goal function (chromosomes).
-pub trait StopChecker<T: Clone> {
+pub trait StopChecker<T> {
     /// The method must return true if genetic algorithm must be stopped.
     fn can_stop(&mut self, population: &Population<T>) -> bool;
 }
@@ -347,7 +348,7 @@ pub trait StopChecker<T: Clone> {
 /// The trait for logging of genetic algorithm.
 ///
 /// `T` - type of a point in the search space for goal function (chromosomes).
-pub trait Logger<T: Clone> {
+pub trait Logger<T> {
     /// Will be called after population initializing.
     fn start(&mut self, _population: &Population<T>) {}
 
@@ -367,7 +368,7 @@ pub trait Logger<T: Clone> {
 /// The trait run genetic algorithm.
 ///
 /// `T` - type of a point in the search space for goal function (chromosomes).
-pub struct GeneticOptimizer<T: Clone> {
+pub struct GeneticOptimizer<T> {
     stop_checker: Box<dyn StopChecker<T>>,
     creator: Box<dyn Creator<T>>,
     pairing: Box<dyn Pairing<T>>,
@@ -520,7 +521,7 @@ impl<T: Clone> Optimizer<T> for GeneticOptimizer<T> {
     }
 }
 
-impl<T: Clone> AlgorithmWithAgents<T> for GeneticOptimizer<T> {
+impl<T> AlgorithmWithAgents<T> for GeneticOptimizer<T> {
     type Agent = Individual<T>;
 
     fn get_agents(&self) -> Vec<&Self::Agent> {

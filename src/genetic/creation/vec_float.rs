@@ -11,13 +11,13 @@ use super::super::*;
 /// Creator to initialize population by individuals with random genes in the preset
 /// intervals.
 /// `G` - type of genes. Chromosome is vector of the genes.
-pub struct RandomCreator<G: Clone + NumCast + PartialOrd> {
+pub struct RandomCreator<G: NumCast + PartialOrd> {
     population_size: usize,
     intervals: Vec<(G, G)>,
     random: ThreadRng,
 }
 
-impl<G: Clone + NumCast + PartialOrd> RandomCreator<G> {
+impl<G: NumCast + PartialOrd> RandomCreator<G> {
     /// Constructor.
     ///
     /// `G` - type of genes. Chromosome is vector of the genes.
@@ -43,7 +43,7 @@ impl<G: Clone + NumCast + PartialOrd> RandomCreator<G> {
     }
 }
 
-impl<G: Clone + NumCast + PartialOrd> Creator<Vec<G>> for RandomCreator<G> {
+impl<G: NumCast + PartialOrd> Creator<Vec<G>> for RandomCreator<G> {
     fn create(&mut self) -> Vec<Vec<G>> {
         let mut population = Vec::with_capacity(self.population_size * 2);
         let chromo_count = self.intervals.len();

@@ -10,7 +10,7 @@ use rand::distributions::{Distribution, Uniform};
 use rand::rngs::ThreadRng;
 
 /// Struct to cross all genes (`G` - type of genes) in chromosome of type Vec<G>.
-pub struct VecCrossAllGenes<G: Clone> {
+pub struct VecCrossAllGenes<G> {
     single_cross: Box<dyn Cross<G>>,
 }
 
@@ -124,13 +124,13 @@ impl Cross<f32> for CrossBitwise {
     }
 }
 
-impl<G: Clone> VecCrossAllGenes<G> {
+impl<G> VecCrossAllGenes<G> {
     pub fn new(single_cross: Box<dyn Cross<G>>) -> Self {
         Self { single_cross }
     }
 }
 
-impl<G: Clone> Cross<Vec<G>> for VecCrossAllGenes<G> {
+impl<G> Cross<Vec<G>> for VecCrossAllGenes<G> {
     fn cross(&mut self, parents: &[&Vec<G>]) -> Vec<Vec<G>> {
         assert!(parents.len() == 2);
 

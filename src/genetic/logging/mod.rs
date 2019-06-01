@@ -23,7 +23,7 @@ impl VerboseStdoutLogger {
     }
 }
 
-impl<G: Clone + Display> Logger<Vec<G>> for VerboseStdoutLogger {
+impl<G: Display> Logger<Vec<G>> for VerboseStdoutLogger {
     fn next_iteration(&mut self, population: &Population<Vec<G>>) {
         if let Some(individual) = population.get_best() {
             let mut result = String::new();
@@ -56,7 +56,7 @@ impl StdoutResultOnlyLogger {
     }
 }
 
-impl<G: Clone + Display> Logger<Vec<G>> for StdoutResultOnlyLogger {
+impl<G: Display> Logger<Vec<G>> for StdoutResultOnlyLogger {
     fn start(&mut self, _population: &Population<Vec<G>>) {}
 
     fn finish(&mut self, population: &Population<Vec<G>>) {
@@ -94,7 +94,7 @@ impl TimeStdoutLogger {
     }
 }
 
-impl<G: Clone + Display> Logger<Vec<G>> for TimeStdoutLogger {
+impl<G: Display> Logger<Vec<G>> for TimeStdoutLogger {
     fn resume(&mut self, _population: &Population<Vec<G>>) {
         self.start_time = Some(time::Instant::now());
     }

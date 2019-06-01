@@ -15,7 +15,7 @@ pub struct BitwiseMutation {
 }
 
 /// Mutation for chromosomes of Vec<G>, where G - type of single gene.
-pub struct VecMutation<G: Clone> {
+pub struct VecMutation<G> {
     probability: f64,
     random: rngs::ThreadRng,
     single_mutation: Box<dyn Mutation<G>>,
@@ -63,7 +63,7 @@ impl Mutation<f64> for BitwiseMutation {
     }
 }
 
-impl<G: Clone> VecMutation<G> {
+impl<G> VecMutation<G> {
     /// Constructor
     ///
     /// # Parameters

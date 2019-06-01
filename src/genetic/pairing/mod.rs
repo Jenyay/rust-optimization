@@ -10,7 +10,7 @@ pub struct RandomPairing {
     random: ThreadRng,
 }
 
-impl<T: Clone> Pairing<T> for RandomPairing {
+impl<T> Pairing<T> for RandomPairing {
     fn get_pairs(&mut self, population: &Population<T>) -> Vec<Vec<usize>> {
         let mut pairs: Vec<Vec<usize>> = vec![];
 
@@ -63,7 +63,7 @@ impl Tournament {
     }
 }
 
-impl<T: Clone> Pairing<T> for Tournament {
+impl<T> Pairing<T> for Tournament {
     fn get_pairs(&mut self, population: &Population<T>) -> Vec<Vec<usize>> {
         let mut pairs: Vec<Vec<usize>> = Vec::with_capacity(self.families_count);
         let between = Uniform::new(0, population.len());
