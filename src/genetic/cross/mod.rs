@@ -50,10 +50,9 @@ impl CrossMean {
 impl<G: NumCast + Num + Clone> Cross<G> for CrossMean {
     fn cross(&mut self, parents_genes: &[&G]) -> Vec<G> {
         assert!(parents_genes.len() >= 2);
-        let mut result = parents_genes[0].clone();
-        for n in 1..parents_genes.len() {
-            result = result + parents_genes[n].clone();
-        }
+        let mut result: G = parents_genes
+            .iter()
+            .fold(G::zero(), |x, y| x + (**y).clone());
 
         result = result / G::from(parents_genes.len()).unwrap();
         vec![result]
