@@ -39,6 +39,14 @@ impl CrossMean {
     }
 }
 
+/// ```
+/// use optlib::genetic::cross;
+/// use optlib::genetic::Cross;
+///
+/// assert!(cross::CrossMean::new().cross(&vec![&1.0_f32, &2.0_f32]) == vec![1.5_f32]);
+/// assert!(cross::CrossMean::new().cross(&vec![&0.0_f64, &1.0_f64]) == vec![0.5_f64]);
+/// assert!(cross::CrossMean::new().cross(&vec![&0.0_f64, &1.0_f64, &2.0_f64]) == vec![1.0_f64]);
+/// ```
 impl<G: NumCast + Num + Clone> Cross<G> for CrossMean {
     fn cross(&mut self, parents_genes: &[&G]) -> Vec<G> {
         assert!(parents_genes.len() >= 2);
@@ -59,13 +67,28 @@ impl FloatCrossGeometricMean {
     }
 }
 
+/// ```
+/// use optlib::genetic::cross;
+/// use optlib::genetic::Cross;
+///
+/// let mut crosser = cross::FloatCrossGeometricMean::new();
+///
+/// let parents_genes_equal = vec![&1.0_f32, &1.0_f32];
+/// assert!(crosser.cross(&parents_genes_equal).len() == 1);
+/// assert!(crosser.cross(&parents_genes_equal)[0] - 1.0_f32 < 1e-7);
+///
+/// let parents_genes_1 = vec![&1.0_f32, &2.0_f32];
+/// assert!(crosser.cross(&parents_genes_1).len() == 1);
+/// assert!(crosser.cross(&parents_genes_1)[0] - 1.41421 < 1e-4);
+///
+/// let parents_genes_2 = vec![&1.0_f64, &2.0_f64, &3.0_f64];
+/// assert!(crosser.cross(&parents_genes_2).len() == 1);
+/// assert!(crosser.cross(&parents_genes_2)[0] - 1.81712 < 1e-4);
+/// ```
 impl<G: Float> Cross<G> for FloatCrossGeometricMean {
     fn cross(&mut self, parents_genes: &[&G]) -> Vec<G> {
         assert!(parents_genes.len() >= 2);
-        let mut result = *parents_genes[0];
-        for n in 1..parents_genes.len() {
-            result = result * (*parents_genes[n]);
-        }
+        let mut result: G = parents_genes.iter().fold(G::one(), |x, y| x * (**y));
 
         result = result.powf(G::one() / G::from(parents_genes.len()).unwrap());
         vec![result]
