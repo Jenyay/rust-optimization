@@ -53,10 +53,9 @@ fn main() {
     // let pairing = pairing::RandomPairing::new();
 
     // Tournament method.
-    let partners_count = 2;
     let families_count = population_size / 2;
     let rounds_count = 5;
-    let pairing = pairing::Tournament::new(partners_count, families_count, rounds_count);
+    let pairing = pairing::Tournament::new(families_count).rounds_count(rounds_count);
 
     // Crossbreeding algorithm.
     // Make a Cross trait object. The bitwise crossing for float genes.

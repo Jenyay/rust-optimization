@@ -39,8 +39,8 @@ impl RandomPairing {
 ///
 /// Every individual to cross must be best of N others random individuals.
 pub struct Tournament {
-    partners_count: usize,
     families_count: usize,
+    partners_count: usize,
     rounds_count: usize,
     random: ThreadRng,
 }
@@ -49,17 +49,27 @@ impl Tournament {
     /// Constructor.
     ///
     /// # Parameters
-    /// * `partners_count` - partners count for crossing.
     /// * `families_count` - families count for crossing.
-    /// * `rounds_count` - How many times should win an individual to cross.
-    pub fn new(partners_count: usize, families_count: usize, rounds_count: usize) -> Self {
+    pub fn new(families_count: usize) -> Self {
         let random = rand::thread_rng();
         Self {
-            partners_count,
             families_count,
-            rounds_count,
+            partners_count: 2,
+            rounds_count: 1,
             random,
         }
+    }
+
+    /// Set partners count for every family. Tthe default is 2.
+    pub fn partners_count<'a>(mut self, count: usize) -> Self {
+        self.partners_count = count;
+        self
+    }
+
+    /// How many competitors should an individual win? The default is 1
+    pub fn rounds_count<'a>(mut self, count: usize) -> Self {
+        self.rounds_count = count;
+        self
     }
 }
 

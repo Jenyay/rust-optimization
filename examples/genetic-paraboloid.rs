@@ -23,10 +23,12 @@ fn main() {
 
     // Pairing
     // let pairing = pairing::RandomPairing::new();
-    let partners_count = 2;
     let families_count = population_size / 2;
+    let partners_count = 2;
     let rounds_count = 2;
-    let pairing = pairing::Tournament::new(partners_count, families_count, rounds_count);
+    let pairing = pairing::Tournament::new(families_count)
+        .partners_count(partners_count)
+        .rounds_count(rounds_count);
 
     // Cross
     let single_cross = cross::FloatCrossExp::new();
