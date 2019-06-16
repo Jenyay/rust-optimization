@@ -105,7 +105,7 @@ impl CrossBitwise {
 impl Cross<f64> for CrossBitwise {
     fn cross(&mut self, parents_genes: &[&f64]) -> Vec<f64> {
         assert_eq!(parents_genes.len(), 2);
-        let size = mem::size_of_val(parents_genes[0]) * 8;
+        let size = mem::size_of::<f64>() * 8;
         let between = Uniform::new(1, size);
         let pos = between.sample(&mut self.random);
 
@@ -116,7 +116,7 @@ impl Cross<f64> for CrossBitwise {
 impl Cross<f32> for CrossBitwise {
     fn cross(&mut self, parents_genes: &[&f32]) -> Vec<f32> {
         assert_eq!(parents_genes.len(), 2);
-        let size = mem::size_of_val(parents_genes[0]) * 8;
+        let size = mem::size_of::<f32>() * 8;
         let between = Uniform::new(1, size);
         let pos = between.sample(&mut self.random);
 
@@ -211,7 +211,7 @@ impl<T: Float> Cross<T> for FloatCrossExp {
 /// 0b_1111_1111_1111_1111_1111_1111_1111_1111_1111_1111_1111_1111_1111_1111_1111_0000_u64);
 /// ```
 pub fn cross_u64(parent_1: u64, parent_2: u64, pos: usize) -> u64 {
-    let size = mem::size_of_val(&parent_1) * 8;
+    let size = mem::size_of::<f64>() * 8;
     let mask_parent_1 = !0u64 << pos;
     let mask_parent_2 = !0u64 >> (size - pos);
     (parent_1 & mask_parent_1) | (parent_2 & mask_parent_2)
@@ -236,7 +236,7 @@ pub fn cross_u64(parent_1: u64, parent_2: u64, pos: usize) -> u64 {
 /// assert_eq!(cross::cross_u32(std::u32::MAX, 0u32, 4), 0b_1111_1111_1111_1111_1111_1111_1111_0000_u32);
 /// ```
 pub fn cross_u32(parent_1: u32, parent_2: u32, pos: usize) -> u32 {
-    let size = mem::size_of_val(&parent_1) * 8;
+    let size = mem::size_of::<u32>() * 8;
     let mask_parent_1 = !0u32 << pos;
     let mask_parent_2 = !0u32 >> (size - pos);
     (parent_1 & mask_parent_1) | (parent_2 & mask_parent_2)
@@ -270,7 +270,7 @@ pub fn cross_u32(parent_1: u32, parent_2: u32, pos: usize) -> u32 {
 /// assert_eq!(cross::cross_i16(-1i16, 0i16, 15), -32768i16);
 /// ```
 pub fn cross_i16(parent_1: i16, parent_2: i16, pos: usize) -> i16 {
-    let size = mem::size_of_val(&parent_1) * 8;
+    let size = mem::size_of::<i16>() * 8;
     let mask_parent_1 = !0i16 << pos;
     let mask_parent_2 = std::i16::MAX >> (size - pos - 1);
     (parent_1 & mask_parent_1) | (parent_2 & mask_parent_2)
@@ -294,7 +294,7 @@ pub fn cross_i16(parent_1: i16, parent_2: i16, pos: usize) -> i16 {
 /// assert_eq!(cross::cross_u16(0b_0000_0000_0000_0000, 0b_1111_1111_1111_1111, 15), 0b_0111_1111_1111_1111);
 /// ```
 pub fn cross_u16(parent_1: u16, parent_2: u16, pos: usize) -> u16 {
-    let size = mem::size_of_val(&parent_1) * 8;
+    let size = mem::size_of::<u16>() * 8;
     let mask_parent_1 = !0u16 << pos;
     let mask_parent_2 = !0u16 >> (size - pos);
     (parent_1 & mask_parent_1) | (parent_2 & mask_parent_2)
@@ -327,7 +327,7 @@ pub fn cross_u16(parent_1: u16, parent_2: u16, pos: usize) -> u16 {
 /// assert_eq!(cross::cross_i8(-1i8, 0i8, 7), -128i8);
 /// ```
 pub fn cross_i8(parent_1: i8, parent_2: i8, pos: usize) -> i8 {
-    let size = mem::size_of_val(&parent_1) * 8;
+    let size = mem::size_of::<i8>() * 8;
     let mask_parent_1 = !0i8 << pos;
     let mask_parent_2 = std::i8::MAX >> (size - pos - 1);
     (parent_1 & mask_parent_1) | (parent_2 & mask_parent_2)
@@ -351,7 +351,7 @@ pub fn cross_i8(parent_1: i8, parent_2: i8, pos: usize) -> i8 {
 /// assert_eq!(cross::cross_u8(0b_0000_0000, 0b_1111_1111, 7), 0b_0111_1111);
 /// ```
 pub fn cross_u8(parent_1: u8, parent_2: u8, pos: usize) -> u8 {
-    let size = mem::size_of_val(&parent_1) * 8;
+    let size = mem::size_of::<u8>() * 8;
     let mask_parent_1 = !0u8 << pos;
     let mask_parent_2 = !0u8 >> (size - pos);
     (parent_1 & mask_parent_1) | (parent_2 & mask_parent_2)

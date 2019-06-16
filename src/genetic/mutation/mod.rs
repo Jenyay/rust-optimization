@@ -37,7 +37,7 @@ impl BitwiseMutation {
 
 impl Mutation<f32> for BitwiseMutation {
     fn mutation(&mut self, gene: &f32) -> f32 {
-        let size = mem::size_of_val(gene) * 8;
+        let size = mem::size_of::<f32>() * 8;
         let between = Uniform::new(0, size);
 
         let mut bit_value = gene.to_bits();
@@ -51,7 +51,7 @@ impl Mutation<f32> for BitwiseMutation {
 
 impl Mutation<f64> for BitwiseMutation {
     fn mutation(&mut self, gene: &f64) -> f64 {
-        let size = mem::size_of_val(gene) * 8;
+        let size = mem::size_of::<f64>() * 8;
         let between = Uniform::new(0, size);
 
         let mut bit_value = gene.to_bits();
