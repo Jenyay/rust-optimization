@@ -1,3 +1,5 @@
+use std::io;
+
 use optlib::genetic::{
     self, creation, cross, goal, logging, mutation, pairing, pre_birth, selection, stopchecker,
 };
@@ -67,10 +69,14 @@ fn main() {
     ]);
 
     // Logger
+    let mut stdout_verbose = io::stdout();
+    let mut stdout_result = io::stdout();
+    let mut stdout_time = io::stdout();
+
     let loggers: Vec<Box<genetic::Logger<Chromosomes>>> = vec![
-        Box::new(logging::VerboseStdoutLogger::new(15)),
-        Box::new(logging::StdoutResultOnlyLogger::new(15)),
-        Box::new(logging::TimeStdoutLogger::new()),
+        Box::new(logging::VerboseLogger::new(&mut stdout_verbose, 15)),
+        Box::new(logging::ResultOnlyLogger::new(&mut stdout_result, 15)),
+        Box::new(logging::TimeLogger::new(&mut stdout_time)),
     ];
 
     let mut optimizer = genetic::GeneticOptimizer::new(

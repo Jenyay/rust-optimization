@@ -368,31 +368,31 @@ pub trait Logger<T> {
 /// The trait run genetic algorithm.
 ///
 /// `T` - type of a point in the search space for goal function (chromosomes).
-pub struct GeneticOptimizer<T> {
-    stop_checker: Box<dyn StopChecker<T>>,
-    creator: Box<dyn Creator<T>>,
-    pairing: Box<dyn Pairing<T>>,
-    cross: Box<dyn Cross<T>>,
-    mutation: Box<dyn Mutation<T>>,
-    selections: Vec<Box<dyn Selection<T>>>,
-    pre_births: Vec<Box<dyn PreBirth<T>>>,
-    loggers: Vec<Box<dyn Logger<T>>>,
+pub struct GeneticOptimizer<'a, T> {
+    stop_checker: Box<dyn StopChecker<T> + 'a>,
+    creator: Box<dyn Creator<T> + 'a>,
+    pairing: Box<dyn Pairing<T> + 'a>,
+    cross: Box<dyn Cross<T> + 'a>,
+    mutation: Box<dyn Mutation<T> + 'a>,
+    selections: Vec<Box<dyn Selection<T> + 'a>>,
+    pre_births: Vec<Box<dyn PreBirth<T> + 'a>>,
+    loggers: Vec<Box<dyn Logger<T> + 'a>>,
     population: Population<T>,
 }
 
-impl<T: Clone> GeneticOptimizer<T> {
+impl<'a, T: Clone> GeneticOptimizer<'a, T> {
     /// Create a new `GeneticOptimizer`.
     pub fn new(
         goal: Box<dyn Goal<T>>,
-        stop_checker: Box<dyn StopChecker<T>>,
-        creator: Box<dyn Creator<T>>,
-        pairing: Box<dyn Pairing<T>>,
-        cross: Box<dyn Cross<T>>,
-        mutation: Box<dyn Mutation<T>>,
-        selections: Vec<Box<dyn Selection<T>>>,
-        pre_births: Vec<Box<dyn PreBirth<T>>>,
-        loggers: Vec<Box<dyn Logger<T>>>,
-    ) -> GeneticOptimizer<T> {
+        stop_checker: Box<dyn StopChecker<T> + 'a>,
+        creator: Box<dyn Creator<T> + 'a>,
+        pairing: Box<dyn Pairing<T> + 'a>,
+        cross: Box<dyn Cross<T> + 'a>,
+        mutation: Box<dyn Mutation<T> + 'a>,
+        selections: Vec<Box<dyn Selection<T> + 'a>>,
+        pre_births: Vec<Box<dyn PreBirth<T> + 'a>>,
+        loggers: Vec<Box<dyn Logger<T> + 'a>>,
+    ) -> GeneticOptimizer<'a, T> {
         GeneticOptimizer {
             creator,
             stop_checker,
@@ -504,7 +504,7 @@ impl<T: Clone> GeneticOptimizer<T> {
     }
 }
 
-impl<T: Clone> Optimizer<T> for GeneticOptimizer<T> {
+impl<'a, T: Clone> Optimizer<T> for GeneticOptimizer<'a, T> {
     /// Run genetic algorithm
     fn find_min(&mut self) -> Option<(&T, f64)> {
         self.population.reset();
@@ -521,7 +521,7 @@ impl<T: Clone> Optimizer<T> for GeneticOptimizer<T> {
     }
 }
 
-impl<T> AlgorithmWithAgents<T> for GeneticOptimizer<T> {
+impl<'a, T> AlgorithmWithAgents<T> for GeneticOptimizer<'a, T> {
     type Agent = Individual<T>;
 
     fn get_agents(&self) -> Vec<&Self::Agent> {
