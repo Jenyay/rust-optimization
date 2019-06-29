@@ -38,11 +38,32 @@ pub fn paraboloid<G: Float>(x: &Vec<G>) -> f64 {
 ///
 /// let x = vec![420.9687, 420.9687, 420.9687, 420.9687];
 /// let value = schwefel(&x);
-/// assert!(value < 1e-4);
-/// assert!(value > 0.0);
+/// assert!(value.abs() < 1e-4);
 /// ```
 pub fn schwefel<G: Float>(x: &Vec<G>) -> f64 {
     let result = G::from(418.9829).unwrap() * G::from(x.len()).unwrap() - x.iter().fold(G::zero(), |acc, &xi| acc + xi * xi.abs().sqrt().sin());
+
+    result.to_f64().unwrap()
+}
+
+/// Rastrigin function
+///
+/// # Parameters
+/// Global minimum is x' = (0, 0, ...) for xn in (-5.12; +5.12)
+/// f(x') = 0
+///
+/// ```
+/// use optlib::testfunctions::rastrigin;
+///
+/// let x = vec![0.0_f32, 0.0_f32, 0.0_f32, 0.0_f32, 0.0_f32, 0.0_f32];
+/// let value = rastrigin(&x);
+/// assert!(value.abs() < 1e-7);
+/// ```
+pub fn rastrigin<G: Float>(x: &Vec<G>) -> f64 {
+    let a = G::from(10.0_f64).unwrap();
+    let pi = G::from(3.14159265358979_f64).unwrap();
+    let result = a * G::from(x.len()).unwrap() +
+        x.iter().fold(G::zero(), |acc, &xi| acc + xi * xi - a * (G::from(2).unwrap() * pi * xi).cos());
 
     result.to_f64().unwrap()
 }
