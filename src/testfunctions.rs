@@ -26,7 +26,7 @@ pub fn paraboloid<G: Float>(x: &Vec<G>) -> f64 {
     result.to_f64().unwrap()
 }
 
-/// Schwefel function
+/// The Schwefel function
 ///
 /// # Parameters
 /// Any x lies in [-500.0; 500.0]. 
@@ -46,7 +46,7 @@ pub fn schwefel<G: Float>(x: &Vec<G>) -> f64 {
     result.to_f64().unwrap()
 }
 
-/// Rastrigin function
+/// The Rastrigin function
 ///
 /// # Parameters
 /// Global minimum is x' = (0, 0, ...) for xn in (-5.12; +5.12)
@@ -66,4 +66,26 @@ pub fn rastrigin<G: Float>(x: &Vec<G>) -> f64 {
         x.iter().fold(G::zero(), |acc, &xi| acc + xi * xi - a * (G::from(2).unwrap() * pi * xi).cos());
 
     result.to_f64().unwrap()
+}
+
+/// The Rosenbrock function
+///
+/// # Parameters
+/// Global minimum is x' = (1, 1, ...) for xn in (-inf; +inf)
+/// f(x') = 0
+///
+/// ```
+/// use optlib::testfunctions::rosenbrock;
+///
+/// let x = vec![1.0_f32, 1.0_f32, 1.0_f32, 1.0_f32, 1.0_f32, 1.0_f32];
+/// let value = rosenbrock(&x);
+/// assert!(value.abs() < 1e-7);
+/// ```
+pub fn rosenbrock<G: Float>(x: &Vec<G>) -> f64 {
+    let mut sum = G::from(0.0).unwrap();
+    for n in 0..x.len() - 1 {
+        sum = sum + G::from(100.0).unwrap() * ((x[n + 1] - x[n] * x[n]).powi(2)) + (G::from(1.0).unwrap() - x[n]).powi(2);
+    }
+
+    sum.to_f64().unwrap()
 }
