@@ -46,7 +46,7 @@ fn main() {
     let mutation = mutation::VecMutation::new(mutation_probability, Box::new(single_mutation));
 
     // Pre birth
-    let pre_births: Vec<Box<genetic::PreBirth<Chromosomes>>> = vec![Box::new(
+    let pre_births: Vec<Box<dyn genetic::PreBirth<Chromosomes>>> = vec![Box::new(
         pre_birth::vec_float::CheckChromoInterval::new(intervals.clone()),
     )];
 
@@ -73,7 +73,7 @@ fn main() {
     let mut stdout_result = io::stdout();
     let mut stdout_time = io::stdout();
 
-    let loggers: Vec<Box<genetic::Logger<Chromosomes>>> = vec![
+    let loggers: Vec<Box<dyn genetic::Logger<Chromosomes>>> = vec![
         Box::new(logging::VerboseLogger::new(&mut stdout_verbose, 15)),
         Box::new(logging::ResultOnlyLogger::new(&mut stdout_result, 15)),
         Box::new(logging::TimeLogger::new(&mut stdout_time)),

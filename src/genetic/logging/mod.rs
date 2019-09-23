@@ -9,7 +9,7 @@ use super::{Logger, Population};
 
 /// The logger prints out to stdout best chromosomes and goal function for every generation.
 pub struct VerboseLogger<'a> {
-    writer: &'a mut io::Write,
+    writer: &'a mut dyn io::Write,
     precision: usize,
 }
 
@@ -18,7 +18,7 @@ impl<'a> VerboseLogger<'a> {
     ///
     /// # Parameters
     /// * `precision` - count of the digits after comma for float numbers.
-    pub fn new(writer: &'a mut io::Write, precision: usize) -> Self {
+    pub fn new(writer: &'a mut dyn io::Write, precision: usize) -> Self {
         Self {
             writer,
             precision,
@@ -44,7 +44,7 @@ impl<'a, G: Display> Logger<Vec<G>> for VerboseLogger<'a> {
 
 /// The logger print out to stdout best result and value of goal function after end of genetic algorithm running.
 pub struct ResultOnlyLogger<'a> {
-    writer: &'a mut io::Write,
+    writer: &'a mut dyn io::Write,
     precision: usize,
 }
 
@@ -53,7 +53,7 @@ impl<'a> ResultOnlyLogger<'a> {
     ///
     /// # Parameters
     /// * `precision` - count of the digits after comma for float numbers.
-    pub fn new(writer: &'a mut io::Write, precision: usize) -> Self {
+    pub fn new(writer: &'a mut dyn io::Write, precision: usize) -> Self {
         Self {
             writer,
             precision,
@@ -87,13 +87,13 @@ impl<'a, G: Display> Logger<Vec<G>> for ResultOnlyLogger<'a> {
 
 /// The logger prints out time duration after finish of algorithm.
 pub struct TimeLogger<'a> {
-    writer: &'a mut io::Write,
+    writer: &'a mut dyn io::Write,
     start_time: Option<time::Instant>,
 }
 
 impl<'a> TimeLogger<'a> {
     /// Constructor
-    pub fn new(writer: &'a mut io::Write) -> Self {
+    pub fn new(writer: &'a mut dyn io::Write) -> Self {
         Self {
             writer,
             start_time: None,
