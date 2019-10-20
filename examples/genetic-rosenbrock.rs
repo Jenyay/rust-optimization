@@ -66,7 +66,7 @@ fn main() {
 
     // Make a Mutation trait object.
     // Use bitwise mutation (change random bits with given probability).
-    let mutation_probability = 65.0;
+    let mutation_probability = 85.0;
     let mutation_gene_count = 3;
     let single_mutation = mutation::BitwiseMutation::new(mutation_gene_count);
     let mutation = mutation::VecMutation::new(mutation_probability, Box::new(single_mutation));

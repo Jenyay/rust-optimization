@@ -66,7 +66,7 @@ impl<T> Individual<T> {
         &self.chromosomes
     }
 
-    /// Return value of the guoal function.
+    /// Return value of the goal function.
     pub fn get_fitness(&self) -> f64 {
         self.fitness
     }
@@ -287,7 +287,7 @@ pub trait Goal<T> {
 ///
 /// `T` - type of a point in the search space for goal function (chromosomes).
 pub trait Creator<T> {
-    /// Must return vector of the new individuals for population
+    /// Must return vector of the chromosomes of a new individuals for population
     fn create(&mut self) -> Vec<T>;
 }
 
