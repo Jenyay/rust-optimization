@@ -3,6 +3,7 @@
 extern crate num;
 
 pub mod genetic;
+pub mod particleswarm;
 pub mod testfunctions;
 
 /// Common Optimizer trait.
@@ -38,4 +39,11 @@ pub trait Agent<T> {
 
     /// Returns value of a goal function for current agent.
     fn get_goal(&self) -> f64;
+}
+
+
+/// The trait for the goal function.
+pub trait Goal<T> {
+    /// Must return value of goal function for the point in the search space (x).
+    fn get(&self, x: &T) -> f64;
 }
