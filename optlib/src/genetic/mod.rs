@@ -437,7 +437,7 @@ impl<'a, T: Clone> GeneticOptimizer<'a, T> {
     }
 
     /// Do new iterations of genetic algorithm.
-    pub fn next_iterations(&mut self) -> Option<(&T, f64)> {
+    pub fn next_iterations(&mut self) -> Option<(T, f64)> {
         for logger in &mut self.loggers {
             logger.resume(&self.population);
         }
@@ -482,7 +482,7 @@ impl<'a, T: Clone> GeneticOptimizer<'a, T> {
 
         match &self.population.best_individual {
             None => None,
-            Some(individual) => Some((&individual.chromosomes, individual.fitness)),
+            Some(individual) => Some((individual.chromosomes.clone(), individual.fitness)),
         }
     }
 
@@ -506,7 +506,7 @@ impl<'a, T: Clone> GeneticOptimizer<'a, T> {
 
 impl<'a, T: Clone> Optimizer<T> for GeneticOptimizer<'a, T> {
     /// Run genetic algorithm
-    fn find_min(&mut self) -> Option<(&T, f64)> {
+    fn find_min(&mut self) -> Option<(T, f64)> {
         self.population.reset();
         let start_chromo_list = self.creator.create();
 

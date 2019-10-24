@@ -16,7 +16,7 @@ pub trait Optimizer<T> {
     ///
     /// # Remarks
     /// All algorithms with `Optimizer` must search minimum of a goal function.
-    fn find_min(&mut self) -> Option<(&T, f64)>;
+    fn find_min(&mut self) -> Option<(T, f64)>;
 }
 
 /// The trait for algotithms where use agents (genetic algorithm, partical swarm algorithm etc).
