@@ -1,0 +1,19 @@
+[package]
+name = "optlib-testfunc"
+version = "0.1.0"
+description = "The functions to test optimization algorithms."
+authors = ["Eugeniy Ilin <jenyay.ilin@gmail.com>"]
+edition = "2018"
+keywords = ["optimization", "math", "functions"]
+categories = ["algorithms", "science"]
+homepage = "https://github.com/Jenyay/rust-optimization"
+repository = "https://github.com/Jenyay/rust-optimization"
+license = "MIT"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+num = "0.2"
+
+[badges]
+maintenance = { status = "actively-developed" }

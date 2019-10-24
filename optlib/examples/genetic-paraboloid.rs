@@ -3,7 +3,7 @@ use std::io;
 use optlib::genetic::{
     self, creation, cross, goal, logging, mutation, pairing, pre_birth, selection, stopchecker,
 };
-use optlib::testfunctions;
+use optlib_testfunc;
 use optlib::Optimizer;
 
 type Gene = f32;
@@ -18,7 +18,7 @@ fn main() {
     let intervals = vec![(minval, maxval); chromo_count];
 
     // Goal function
-    let goal = goal::GoalFromFunction::new(testfunctions::paraboloid);
+    let goal = goal::GoalFromFunction::new(optlib_testfunc::paraboloid);
 
     // Creator
     let creator = creation::vec_float::RandomCreator::new(population_size, intervals.clone());

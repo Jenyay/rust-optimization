@@ -16,7 +16,7 @@ use std::io;
 use optlib::genetic::{
     self, creation, cross, goal, logging, mutation, pairing, pre_birth, selection, stopchecker,
 };
-use optlib::testfunctions;
+use optlib_testfunc;
 use optlib::Optimizer;
 
 /// Gene type
@@ -41,7 +41,7 @@ fn main() {
     let intervals = vec![(minval, maxval); chromo_count];
 
     // Make a trait object for goal function (Schwefel function)
-    let goal = goal::GoalFromFunction::new(testfunctions::rastrigin);
+    let goal = goal::GoalFromFunction::new(optlib_testfunc::rastrigin);
 
     // Make the creator to create initial population.
     // RandomCreator will fill initial population with individuals with random chromosomes in a
