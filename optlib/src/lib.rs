@@ -4,7 +4,6 @@ extern crate num;
 
 pub mod genetic;
 pub mod particleswarm;
-pub mod testfunctions;
 
 /// Common Optimizer trait.
 ///

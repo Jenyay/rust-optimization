@@ -1,7 +1,7 @@
-//! Example of optimizing the Rosenbrock function.
+//! Example of optimizing the Rastrigin function.
 //!
 //! y = f(x), where x = (x0, x1, ..., xi,... xn).
-//! Global minimum is x' = (1.0, 1.0, ...) for any xi.
+//! Global minimum is x' = (0.0, 0.0, ...) for any xi lying in [-5.12; 5.12].
 //! f(x') = 0
 //!
 //! # Terms
@@ -16,7 +16,7 @@ use std::io;
 use optlib::genetic::{
     self, creation, cross, goal, logging, mutation, pairing, pre_birth, selection, stopchecker,
 };
-use optlib::testfunctions;
+use optlib_testfunc;
 use optlib::Optimizer;
 
 /// Gene type
@@ -28,20 +28,20 @@ type Chromosomes = Vec<Gene>;
 fn main() {
     // General parameters
 
-    // Search space
-    let minval: Gene = -2.0_f32;
-    let maxval: Gene = 2.0_f32;
+    // Search space. Any xi lies in [-5.12; 5.12]
+    let minval: Gene = -5.12;
+    let maxval: Gene = 5.12;
 
     // Count individuals in initial population
-    let population_size = 600;
+    let population_size = 20;
 
     // Count of xi in the chromosomes
-    let chromo_count = 3;
+    let chromo_count = 30;
 
     let intervals = vec![(minval, maxval); chromo_count];
 
     // Make a trait object for goal function (Schwefel function)
-    let goal = goal::GoalFromFunction::new(testfunctions::rosenbrock);
+    let goal = goal::GoalFromFunction::new(optlib_testfunc::rastrigin);
 
     // Make the creator to create initial population.
     // RandomCreator will fill initial population with individuals with random chromosomes in a
@@ -66,7 +66,7 @@ fn main() {
 
     // Make a Mutation trait object.
     // Use bitwise mutation (change random bits with given probability).
-    let mutation_probability = 85.0;
+    let mutation_probability = 15.0;
     let mutation_gene_count = 3;
     let single_mutation = mutation::BitwiseMutation::new(mutation_gene_count);
     let mutation = mutation::VecMutation::new(mutation_probability, Box::new(single_mutation));
@@ -77,20 +77,20 @@ fn main() {
     )];
 
     // Stop checker. Stop criterion for genetic algorithm.
-    let change_max_iterations = 3000;
-    let change_delta = 1e-9;
+    // let change_max_iterations = 200;
+    // let change_delta = 1e-7;
     // let stop_checker = stopchecker::GoalNotChange::new(change_max_iterations, change_delta);
     // let stop_checker = stopchecker::MaxIterations::new(500);
 
     // Stop algorithm if the value of goal function will become less of 1e-4 or
     // after 3000 generations (iterations).
     let stop_checker = stopchecker::CompositeAny::new(vec![
-        // Box::new(stopchecker::Threshold::new(1e-6)),
-        Box::new(stopchecker::GoalNotChange::new(
-            change_max_iterations,
-            change_delta,
-        )),
-        // Box::new(stopchecker::MaxIterations::new(20000)),
+        Box::new(stopchecker::Threshold::new(1e-4)),
+        // Box::new(stopchecker::GoalNotChange::new(
+        //     change_max_iterations,
+        //     change_delta,
+        // )),
+        Box::new(stopchecker::MaxIterations::new(3000)),
     ]);
 
     // Make a trait object for selection. Selection is killing the worst individuals.
@@ -102,12 +102,12 @@ fn main() {
     ];
 
     // Make a loggers trait objects
-    let mut stdout_verbose = io::stdout();
+    // let mut stdout_verbose = io::stdout();
     let mut stdout_result = io::stdout();
     let mut stdout_time = io::stdout();
 
     let loggers: Vec<Box<dyn genetic::Logger<Chromosomes>>> = vec![
-        Box::new(logging::VerboseLogger::new(&mut stdout_verbose, 15)),
+        // Box::new(logging::VerboseLogger::new(&mut stdout_verbose, 15)),
         Box::new(logging::ResultOnlyLogger::new(&mut stdout_result, 15)),
         Box::new(logging::TimeLogger::new(&mut stdout_time)),
     ];

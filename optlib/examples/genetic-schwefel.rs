@@ -1,7 +1,7 @@
-//! Example of optimizing the Rastrigin function.
+//! Example of optimizing the Schwefel function.
 //!
 //! y = f(x), where x = (x0, x1, ..., xi,... xn).
-//! Global minimum is x' = (0.0, 0.0, ...) for any xi lying in [-5.12; 5.12].
+//! Global minimum is x' = (420.9687, 420.9687, ...) for any xi lying in [-500.0; 500.0].
 //! f(x') = 0
 //!
 //! # Terms
@@ -16,7 +16,7 @@ use std::io;
 use optlib::genetic::{
     self, creation, cross, goal, logging, mutation, pairing, pre_birth, selection, stopchecker,
 };
-use optlib::testfunctions;
+use optlib_testfunc;
 use optlib::Optimizer;
 
 /// Gene type
@@ -28,20 +28,20 @@ type Chromosomes = Vec<Gene>;
 fn main() {
     // General parameters
 
-    // Search space. Any xi lies in [-5.12; 5.12]
-    let minval: Gene = -5.12;
-    let maxval: Gene = 5.12;
+    // Search space. Any xi lies in [-500.0; 500.0]
+    let minval: Gene = -500.0;
+    let maxval: Gene = 500.0;
 
     // Count individuals in initial population
-    let population_size = 20;
+    let population_size = 500;
 
     // Count of xi in the chromosomes
-    let chromo_count = 30;
+    let chromo_count = 15;
 
     let intervals = vec![(minval, maxval); chromo_count];
 
     // Make a trait object for goal function (Schwefel function)
-    let goal = goal::GoalFromFunction::new(testfunctions::rastrigin);
+    let goal = goal::GoalFromFunction::new(optlib_testfunc::schwefel);
 
     // Make the creator to create initial population.
     // RandomCreator will fill initial population with individuals with random chromosomes in a
