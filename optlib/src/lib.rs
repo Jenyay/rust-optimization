@@ -27,6 +27,13 @@ pub trait AlgorithmWithAgents<T> {
 
     /// Returns vector with references to all agents
     fn get_agents(&self) -> Vec<&Self::Agent>;
+
+    /// Returns best agent At this point in time
+    fn get_best_agent(&self) -> Option<&dyn Agent<T>>;
+}
+
+pub trait IterativeAlgorithm {
+    fn get_iteration(&self) -> usize;
 }
 
 /// The trait for single point in search space. The trait used with `AlgorithmWithAgents`.
