@@ -3,7 +3,38 @@ use std::f64;
 
 use num::Float;
 
-use super::{Agent, AlgorithmWithAgents, Goal, IterativeAlgorithm, Optimizer};
+use super::{Agent, AgentsLogger, AlgorithmWithAgents, Goal, IterativeAlgorithm, Optimizer};
+
+/// The trait to create initial particles swarm.
+///
+/// `T` - type of a point in the search space for goal function.
+pub trait Creator<T> {
+    /// Must return vector of the start points for a new particles.
+    fn get_coordinates(&self) -> Vec<Vec<T>>;
+
+    /// Must return vector of speed for a new particles.
+    fn get_speed(&self) -> Vec<Vec<T>>;
+}
+
+/// The trait with break criterion for particle swarm algorithm.
+///
+/// `T` - type of a point in the search space for goal function.
+pub trait StopChecker<T> {
+    /// The method must return true if the algorithm must be stopped.
+    fn can_stop(&mut self, swarm: &Swarm<T>) -> bool;
+}
+
+/// The trait may be used after moving the particle but before goal function calculating.
+///
+/// `T` - type of a point in the search space for goal function.
+pub trait PostMove<T> {
+    /// The method may modify coordinates list before calculate goal function
+    fn post_move(&self, coordinates: &mut Vec<T>);
+}
+
+pub trait SpeedCalculator<T> {
+    fn calc_new_speed(&self, swarm: &Swarm<T>, particle: &Particle<T>) -> Vec<T>;
+}
 
 /// Struct for single point (agent) in the search space
 ///
@@ -122,71 +153,14 @@ fn test_particle_move_to_worse() {
     assert_eq!(particle.best_personal_value, value);
 }
 
-/// The trait for logging for particle swarm algorithm.
-///
-/// `T` - type of a point in the search space for goal function.
-pub trait Logger<T> {
-    /// Will be called after swarm initializing.
-    fn start(&mut self, _swarm: &Swarm<T>) {}
-
-    /// Will be called before run algorithm (possibly after result algorithm after pause).
-    fn resume(&mut self, _swarm: &Swarm<T>) {}
-
-    /// Will be called in the end of iteration.
-    fn next_iteration(&mut self, _swarm: &Swarm<T>) {}
-
-    /// Will be called when algorithm will be stopped.
-    fn finish(&mut self, _swarm: &Swarm<T>) {}
-}
-
-/// The trait to create initial particles swarm.
-///
-/// `T` - type of a point in the search space for goal function.
-pub trait Creator<T> {
-    /// Must return vector of the start points for a new particles.
-    fn get_coordinates(&self) -> Vec<Vec<T>>;
-
-    /// Must return vector of speed for a new particles.
-    fn get_speed(&self) -> Vec<Vec<T>>;
-}
-
-/// The trait with break criterion for particle swarm algorithm.
-///
-/// `T` - type of a point in the search space for goal function.
-pub trait StopChecker<T> {
-    /// The method must return true if the algorithm must be stopped.
-    fn can_stop(&mut self, swarm: &Swarm<T>) -> bool;
-}
-
-/// The trait may be used after moving the particle but before goal function calculating.
-///
-/// `T` - type of a point in the search space for goal function.
-pub trait PostMove<T> {
-    /// The method may modify coordinates list before calculate goal function
-    fn post_move(&self, coordinates: &mut Vec<T>);
-}
-
-pub trait SpeedCalculator<T> {
-    fn calc_new_speed(&self, swarm: &Swarm<T>, particle: &Particle<T>) -> Vec<T>;
-}
-
 /// Stores all particles.
 ///
 /// `T` - type of a point in the search space for goal function.
 pub struct Swarm<T> {
     particles: Vec<Particle<T>>,
 
-    // Trait object for goal function.
-    // goal: Box<dyn Goal<T>>,
-
-    // The best coordinates for current iteration.
+    /// The best coordinates for current iteration.
     best_particle: Option<Particle<T>>,
-
-    // The best value for current iteration.
-    // best_value: f64,
-
-    // Iteration number.
-    iteration: usize,
 }
 
 impl<T: Clone> Swarm<T> {
@@ -194,7 +168,6 @@ impl<T: Clone> Swarm<T> {
         Swarm {
             particles: vec![],
             best_particle: None,
-            iteration: 0,
         }
     }
 
@@ -207,7 +180,6 @@ impl<T: Clone> Swarm<T> {
     fn reset(&mut self) {
         self.particles.clear();
         self.best_particle = None;
-        self.iteration = 0;
     }
 
     fn replace_particles(&mut self, particles: Vec<Particle<T>>) {
@@ -233,25 +205,24 @@ impl<T: Clone> Swarm<T> {
 }
 
 #[test]
-fn test_find_best_particle_empty()
-{
+fn test_find_best_particle_empty() {
     let particles: Vec<Particle<f32>> = vec![];
     assert!(Swarm::find_best_particle(&particles).is_none());
 }
 
 #[test]
-fn test_find_best_particle_single()
-{
-    let particles: Vec<Particle<f32>> = vec![
-        Particle::new(vec![1_f32, 2_f32], vec![10_f32, 20_f32], 100_f64),
-    ];
+fn test_find_best_particle_single() {
+    let particles: Vec<Particle<f32>> = vec![Particle::new(
+        vec![1_f32, 2_f32],
+        vec![10_f32, 20_f32],
+        100_f64,
+    )];
     let best_particle = Swarm::find_best_particle(&particles);
     assert!(best_particle.is_some());
 }
 
 #[test]
-fn test_find_best_particle_many_01()
-{
+fn test_find_best_particle_many_01() {
     let particles: Vec<Particle<f32>> = vec![
         Particle::new(vec![1_f32, 2_f32], vec![10_f32, 20_f32], 100_f64),
         Particle::new(vec![3_f32, 4_f32], vec![10_f32, 20_f32], 50_f64),
@@ -261,8 +232,7 @@ fn test_find_best_particle_many_01()
 }
 
 #[test]
-fn test_find_best_particle_many_02()
-{
+fn test_find_best_particle_many_02() {
     let particles: Vec<Particle<f32>> = vec![
         Particle::new(vec![3_f32, 4_f32], vec![10_f32, 20_f32], 50_f64),
         Particle::new(vec![1_f32, 2_f32], vec![10_f32, 20_f32], 100_f64),
@@ -277,8 +247,9 @@ pub struct ParticleSwarmOptimizer<T> {
     stop_checker: Box<dyn StopChecker<T>>,
     speed_calculator: Box<dyn SpeedCalculator<T>>,
     post_move: Vec<Box<dyn PostMove<T>>>,
-    loggers: Vec<Box<dyn Logger<T>>>,
+    loggers: Vec<Box<dyn AgentsLogger<Vec<T>, Particle<T>>>>,
     swarm: Swarm<T>,
+    iteration: usize,
 }
 
 impl<T: Clone + Float> ParticleSwarmOptimizer<T> {
@@ -288,7 +259,7 @@ impl<T: Clone + Float> ParticleSwarmOptimizer<T> {
         creator: Box<dyn Creator<T>>,
         speed_calculator: Box<dyn SpeedCalculator<T>>,
         post_move: Vec<Box<dyn PostMove<T>>>,
-        loggers: Vec<Box<dyn Logger<T>>>,
+        loggers: Vec<Box<dyn AgentsLogger<Vec<T>, Particle<T>>>>,
     ) -> Self {
         let swarm = Swarm::new();
 
@@ -300,6 +271,7 @@ impl<T: Clone + Float> ParticleSwarmOptimizer<T> {
             post_move,
             loggers,
             swarm,
+            iteration: 0,
         }
     }
 
@@ -331,8 +303,8 @@ impl<T: Clone + Float> ParticleSwarmOptimizer<T> {
 
     /// Main algorithm steps is here
     pub fn next_iterations(&mut self) -> Option<(Vec<T>, f64)> {
-        for logger in &mut self.loggers {
-            logger.resume(&self.swarm);
+        for logger in &self.loggers {
+            logger.resume(self);
         }
 
         while !self.stop_checker.can_stop(&self.swarm) {
@@ -359,12 +331,11 @@ impl<T: Clone + Float> ParticleSwarmOptimizer<T> {
                 // Calculate new value for the particle
                 let new_value = self.goal.get(&new_coordinates);
 
-                // Move particle
                 self.swarm.particles[n].move_to(new_coordinates, new_value);
             }
 
-            // Find best particle
             self.swarm.update_best_particle();
+            self.iteration += 1;
         }
 
         match &self.swarm.best_particle {
@@ -377,9 +348,10 @@ impl<T: Clone + Float> ParticleSwarmOptimizer<T> {
 impl<T: Clone + Float> Optimizer<Vec<T>> for ParticleSwarmOptimizer<T> {
     fn find_min(&mut self) -> Option<(Vec<T>, f64)> {
         self.renew_swarm();
+        self.iteration = 0;
 
-        for logger in &mut self.loggers {
-            logger.start(&self.swarm);
+        for logger in &self.loggers {
+            logger.start(self);
         }
 
         self.next_iterations()
@@ -399,7 +371,7 @@ impl<T: Clone> AlgorithmWithAgents<Vec<T>> for ParticleSwarmOptimizer<T> {
         agents
     }
 
-    /// Returns best agent At this point in time
+    /// Returns best agent at this point in time
     fn get_best_agent(&self) -> Option<&dyn Agent<Vec<T>>> {
         match &self.swarm.best_particle {
             None => None,
@@ -410,7 +382,7 @@ impl<T: Clone> AlgorithmWithAgents<Vec<T>> for ParticleSwarmOptimizer<T> {
 
 impl<T> IterativeAlgorithm for ParticleSwarmOptimizer<T> {
     fn get_iteration(&self) -> usize {
-        self.swarm.iteration
+        self.iteration
     }
 }
 

@@ -10,7 +10,6 @@
 
 pub mod creation;
 pub mod cross;
-pub mod goal;
 pub mod logging;
 pub mod mutation;
 pub mod pairing;
@@ -23,7 +22,7 @@ use std::f64;
 use std::ops;
 use std::slice;
 
-use super::{Agent, AlgorithmWithAgents, Optimizer, IterativeAlgorithm};
+use super::{Agent, AlgorithmWithAgents, Optimizer, IterativeAlgorithm, Goal};
 
 /// Struct for single point (agent) in the search space
 ///
@@ -200,6 +199,7 @@ impl<T> Population<T> {
     pub fn get_worst(&self) -> &Option<Individual<T>> {
         &self.worst_individual
     }
+
     /// Returns count of the individuals in the population.
     pub fn len(&self) -> usize {
         self.individuals.len()
@@ -278,10 +278,10 @@ impl<T> ops::IndexMut<usize> for Population<T> {
 /// The trait to calculate goal function.
 ///
 /// `T` - type of a point in the search space for goal function (chromosomes).
-pub trait Goal<T> {
-    /// Must return value of goal function for `chromosomes` point in the search space.
-    fn get(&self, chromosomes: &T) -> f64;
-}
+// pub trait Goal<T> {
+//     /// Must return value of goal function for `chromosomes` point in the search space.
+//     fn get(&self, chromosomes: &T) -> f64;
+// }
 
 /// The trait to create initial individuals for population.
 ///

@@ -19,10 +19,14 @@ pub trait Optimizer<T> {
     fn find_min(&mut self) -> Option<(T, f64)>;
 }
 
+pub trait IterativeAlgorithm {
+    fn get_iteration(&self) -> usize;
+}
+
 /// The trait for algotithms where use agents (genetic algorithm, partical swarm algorithm etc).
 ///
 /// `T` - type of a point in search space for goal function.
-pub trait AlgorithmWithAgents<T> {
+pub trait AlgorithmWithAgents<T>: IterativeAlgorithm {
     type Agent: Agent<T>;
 
     /// Returns vector with references to all agents
@@ -30,10 +34,6 @@ pub trait AlgorithmWithAgents<T> {
 
     /// Returns best agent At this point in time
     fn get_best_agent(&self) -> Option<&dyn Agent<T>>;
-}
-
-pub trait IterativeAlgorithm {
-    fn get_iteration(&self) -> usize;
 }
 
 /// The trait for single point in search space. The trait used with `AlgorithmWithAgents`.
@@ -47,9 +47,44 @@ pub trait Agent<T> {
     fn get_goal(&self) -> f64;
 }
 
-
 /// The trait for the goal function.
 pub trait Goal<T> {
     /// Must return value of goal function for the point in the search space (x).
     fn get(&self, x: &T) -> f64;
+}
+
+/// Struct to convert (wrap) function to `Goal` trait.
+pub struct GoalFromFunction<T> {
+    function: fn(&T) -> f64,
+}
+
+impl<T> GoalFromFunction<T> {
+    /// Constructor.
+    pub fn new(function: fn(&T) -> f64) -> Self {
+        Self { function }
+    }
+}
+
+impl<T> Goal<T> for GoalFromFunction<T> {
+    fn get(&self, x: &T) -> f64 {
+        (self.function)(x)
+    }
+}
+
+/// The logging trait for algorithm with the agents.
+///
+/// `T` - type of a point in the search space for goal function.
+/// `A` - agent type.
+pub trait AgentsLogger<T, A> {
+    /// Will be called after algorithm initializing.
+    fn start(&self, _algorithm: &dyn AlgorithmWithAgents<T, Agent = A>) {}
+
+    /// Will be called before run algorithm (possibly after result algorithm after pause).
+    fn resume(&self, _algorithm: &dyn AlgorithmWithAgents<T, Agent = A>) {}
+
+    /// Will be called in the end of iteration.
+    fn next_iteration(&self, _algorithm: &dyn AlgorithmWithAgents<T, Agent = A>) {}
+
+    /// Will be called when algorithm will be stopped.
+    fn finish(&self, _algorithm: &dyn AlgorithmWithAgents<T, Agent = A>) {}
 }
