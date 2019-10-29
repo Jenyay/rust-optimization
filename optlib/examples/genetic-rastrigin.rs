@@ -14,10 +14,11 @@
 use std::io;
 
 use optlib::genetic::{
-    self, creation, cross, logging, mutation, pairing, pre_birth, selection, stopchecker,
+    self, creation, cross, mutation, pairing, pre_birth, selection, stopchecker,
 };
+use optlib::logging;
+use optlib::{GoalFromFunction, Optimizer};
 use optlib_testfunc;
-use optlib::{Optimizer, GoalFromFunction };
 
 /// Gene type
 type Gene = f32;
@@ -106,7 +107,7 @@ fn main() {
     let mut stdout_result = io::stdout();
     let mut stdout_time = io::stdout();
 
-    let loggers: Vec<Box<dyn genetic::Logger<Chromosomes>>> = vec![
+    let loggers: Vec<Box<dyn logging::Logger<Chromosomes>>> = vec![
         // Box::new(logging::VerboseLogger::new(&mut stdout_verbose, 15)),
         Box::new(logging::ResultOnlyLogger::new(&mut stdout_result, 15)),
         Box::new(logging::TimeLogger::new(&mut stdout_time)),

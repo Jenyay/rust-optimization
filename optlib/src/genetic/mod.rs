@@ -10,7 +10,6 @@
 
 pub mod creation;
 pub mod cross;
-pub mod logging;
 pub mod mutation;
 pub mod pairing;
 pub mod pre_birth;
@@ -22,7 +21,8 @@ use std::f64;
 use std::ops;
 use std::slice;
 
-use super::{Agent, AlgorithmWithAgents, Optimizer, IterativeAlgorithm, Goal};
+use super::{Agent, Optimizer, Goal, AlgorithmState};
+use super::logging::Logger;
 
 /// Struct for single point (agent) in the search space
 ///
@@ -275,6 +275,20 @@ impl<T> ops::IndexMut<usize> for Population<T> {
     }
 }
 
+
+impl<T: Clone> AlgorithmState<T> for Population<T> {
+    fn get_best_solution(&self) -> Option<(T, f64)> {
+        match &self.best_individual {
+            None => None,
+            Some(individual) => Some((individual.chromosomes.clone(), individual.fitness))
+        }
+    }
+
+    fn get_iteration(&self) -> usize {
+        self.iteration
+    }
+}
+
 /// The trait to calculate goal function.
 ///
 /// `T` - type of a point in the search space for goal function (chromosomes).
@@ -348,19 +362,19 @@ pub trait StopChecker<T> {
 /// The trait for logging of genetic algorithm.
 ///
 /// `T` - type of a point in the search space for goal function (chromosomes).
-pub trait Logger<T> {
-    /// Will be called after population initializing.
-    fn start(&mut self, _population: &Population<T>) {}
-
-    /// Will be called before run algorithm (possibly after result algorithm after pause).
-    fn resume(&mut self, _population: &Population<T>) {}
-
-    /// Will be called in the end of iteration (after selection).
-    fn next_iteration(&mut self, _population: &Population<T>) {}
-
-    /// Will be called when algorithm will be stopped.
-    fn finish(&mut self, _population: &Population<T>) {}
-}
+// pub trait Logger<T> {
+//     /// Will be called after population initializing.
+//     fn start(&mut self, _population: &Population<T>) {}
+//
+//     /// Will be called before run algorithm (possibly after result algorithm after pause).
+//     fn resume(&mut self, _population: &Population<T>) {}
+//
+//     /// Will be called in the end of iteration (after selection).
+//     fn next_iteration(&mut self, _population: &Population<T>) {}
+//
+//     /// Will be called when algorithm will be stopped.
+//     fn finish(&mut self, _population: &Population<T>) {}
+// }
 
 /// The main struct for an user. `GeneticOptimizer` implements `Optimizer` trait and keep all parts
 /// of genetic algorithm as trait objects: `Creator`, `Pairing`, `Cross`, `Mutation`, `Selection`,
@@ -521,28 +535,28 @@ impl<'a, T: Clone> Optimizer<T> for GeneticOptimizer<'a, T> {
     }
 }
 
-impl<'a, T> AlgorithmWithAgents<T> for GeneticOptimizer<'a, T> {
-    type Agent = Individual<T>;
-
-    fn get_agents(&self) -> Vec<&Self::Agent> {
-        let mut agents: Vec<&Self::Agent> = Vec::with_capacity(self.population.len());
-        for individual in self.population.iter() {
-            agents.push(individual);
-        }
-
-        agents
-    }
-
-    fn get_best_agent(&self) -> Option<&dyn Agent<T>> {
-        match &self.population.best_individual {
-            None => None,
-            Some(individual) => Some(individual)
-        }
-    }
-}
-
-impl<'a, T> IterativeAlgorithm for GeneticOptimizer<'a, T> {
-    fn get_iteration(&self) -> usize {
-        self.population.iteration
-    }
-}
+// impl<'a, T> AlgorithmWithAgents<T> for GeneticOptimizer<'a, T> {
+//     type Agent = Individual<T>;
+//
+//     fn get_agents(&self) -> Vec<&Self::Agent> {
+//         let mut agents: Vec<&Self::Agent> = Vec::with_capacity(self.population.len());
+//         for individual in self.population.iter() {
+//             agents.push(individual);
+//         }
+//
+//         agents
+//     }
+//
+//     fn get_best_agent(&self) -> Option<&dyn Agent<T>> {
+//         match &self.population.best_individual {
+//             None => None,
+//             Some(individual) => Some(individual)
+//         }
+//     }
+// }
+//
+// impl<'a, T> IterativeAlgorithm for GeneticOptimizer<'a, T> {
+//     fn get_iteration(&self) -> usize {
+//         self.population.iteration
+//     }
+// }

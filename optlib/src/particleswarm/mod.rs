@@ -3,7 +3,8 @@ use std::f64;
 
 use num::Float;
 
-use super::{Agent, AgentsLogger, AlgorithmWithAgents, Goal, IterativeAlgorithm, Optimizer};
+use super::logging::Logger;
+use super::{Agent, AgentsState, AlgorithmState, Goal, Optimizer};
 
 /// The trait to create initial particles swarm.
 ///
@@ -161,6 +162,8 @@ pub struct Swarm<T> {
 
     /// The best coordinates for current iteration.
     best_particle: Option<Particle<T>>,
+
+    iteration: usize,
 }
 
 impl<T: Clone> Swarm<T> {
@@ -168,6 +171,7 @@ impl<T: Clone> Swarm<T> {
         Swarm {
             particles: vec![],
             best_particle: None,
+            iteration: 0,
         }
     }
 
@@ -180,6 +184,11 @@ impl<T: Clone> Swarm<T> {
     fn reset(&mut self) {
         self.particles.clear();
         self.best_particle = None;
+        self.iteration = 0;
+    }
+
+    fn next_iteration(&mut self) {
+        self.iteration += 1;
     }
 
     fn replace_particles(&mut self, particles: Vec<Particle<T>>) {
@@ -247,9 +256,8 @@ pub struct ParticleSwarmOptimizer<T> {
     stop_checker: Box<dyn StopChecker<T>>,
     speed_calculator: Box<dyn SpeedCalculator<T>>,
     post_move: Vec<Box<dyn PostMove<T>>>,
-    loggers: Vec<Box<dyn AgentsLogger<Vec<T>, Particle<T>>>>,
+    loggers: Vec<Box<dyn Logger<Vec<T>>>>,
     swarm: Swarm<T>,
-    iteration: usize,
 }
 
 impl<T: Clone + Float> ParticleSwarmOptimizer<T> {
@@ -259,7 +267,7 @@ impl<T: Clone + Float> ParticleSwarmOptimizer<T> {
         creator: Box<dyn Creator<T>>,
         speed_calculator: Box<dyn SpeedCalculator<T>>,
         post_move: Vec<Box<dyn PostMove<T>>>,
-        loggers: Vec<Box<dyn AgentsLogger<Vec<T>, Particle<T>>>>,
+        loggers: Vec<Box<dyn Logger<Vec<T>>>>,
     ) -> Self {
         let swarm = Swarm::new();
 
@@ -271,7 +279,6 @@ impl<T: Clone + Float> ParticleSwarmOptimizer<T> {
             post_move,
             loggers,
             swarm,
-            iteration: 0,
         }
     }
 
@@ -303,8 +310,8 @@ impl<T: Clone + Float> ParticleSwarmOptimizer<T> {
 
     /// Main algorithm steps is here
     pub fn next_iterations(&mut self) -> Option<(Vec<T>, f64)> {
-        for logger in &self.loggers {
-            logger.resume(self);
+        for logger in &mut self.loggers {
+            logger.resume(&self.swarm);
         }
 
         while !self.stop_checker.can_stop(&self.swarm) {
@@ -335,7 +342,7 @@ impl<T: Clone + Float> ParticleSwarmOptimizer<T> {
             }
 
             self.swarm.update_best_particle();
-            self.iteration += 1;
+            self.swarm.next_iteration();
         }
 
         match &self.swarm.best_particle {
@@ -348,41 +355,39 @@ impl<T: Clone + Float> ParticleSwarmOptimizer<T> {
 impl<T: Clone + Float> Optimizer<Vec<T>> for ParticleSwarmOptimizer<T> {
     fn find_min(&mut self) -> Option<(Vec<T>, f64)> {
         self.renew_swarm();
-        self.iteration = 0;
 
-        for logger in &self.loggers {
-            logger.start(self);
+        for logger in &mut self.loggers {
+            logger.start(&self.swarm);
         }
 
         self.next_iterations()
     }
 }
 
-impl<T: Clone> AlgorithmWithAgents<Vec<T>> for ParticleSwarmOptimizer<T> {
+impl<T: Clone> AlgorithmState<Vec<T>> for Swarm<T> {
+    fn get_best_solution(&self) -> Option<(Vec<T>, f64)> {
+        match &self.best_particle {
+            None => None,
+            Some(particle) => Some((particle.coordinates.clone(), particle.value)),
+        }
+    }
+
+    fn get_iteration(&self) -> usize {
+        self.iteration
+    }
+}
+
+impl<T: Clone> AgentsState<Vec<T>> for Swarm<T> {
     type Agent = Particle<T>;
 
     /// Returns vector with references to all agents
     fn get_agents(&self) -> Vec<&Self::Agent> {
-        let mut agents: Vec<&Self::Agent> = Vec::with_capacity(self.swarm.len());
-        for particle in self.swarm.particles.iter() {
+        let mut agents: Vec<&Self::Agent> = Vec::with_capacity(self.len());
+        for particle in self.particles.iter() {
             agents.push(particle);
         }
 
         agents
-    }
-
-    /// Returns best agent at this point in time
-    fn get_best_agent(&self) -> Option<&dyn Agent<Vec<T>>> {
-        match &self.swarm.best_particle {
-            None => None,
-            Some(particle) => Some(particle),
-        }
-    }
-}
-
-impl<T> IterativeAlgorithm for ParticleSwarmOptimizer<T> {
-    fn get_iteration(&self) -> usize {
-        self.iteration
     }
 }
 

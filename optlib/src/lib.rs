@@ -4,6 +4,7 @@ extern crate num;
 
 pub mod genetic;
 pub mod particleswarm;
+pub mod logging;
 
 /// Common Optimizer trait.
 ///
@@ -19,21 +20,21 @@ pub trait Optimizer<T> {
     fn find_min(&mut self) -> Option<(T, f64)>;
 }
 
-pub trait IterativeAlgorithm {
+
+pub trait AlgorithmState<T> {
+    fn get_best_solution(&self) -> Option<(T, f64)>;
     fn get_iteration(&self) -> usize;
 }
+
 
 /// The trait for algotithms where use agents (genetic algorithm, partical swarm algorithm etc).
 ///
 /// `T` - type of a point in search space for goal function.
-pub trait AlgorithmWithAgents<T>: IterativeAlgorithm {
+pub trait AgentsState<T>: AlgorithmState<T> {
     type Agent: Agent<T>;
 
     /// Returns vector with references to all agents
     fn get_agents(&self) -> Vec<&Self::Agent>;
-
-    /// Returns best agent At this point in time
-    fn get_best_agent(&self) -> Option<&dyn Agent<T>>;
 }
 
 /// The trait for single point in search space. The trait used with `AlgorithmWithAgents`.
@@ -69,22 +70,4 @@ impl<T> Goal<T> for GoalFromFunction<T> {
     fn get(&self, x: &T) -> f64 {
         (self.function)(x)
     }
-}
-
-/// The logging trait for algorithm with the agents.
-///
-/// `T` - type of a point in the search space for goal function.
-/// `A` - agent type.
-pub trait AgentsLogger<T, A> {
-    /// Will be called after algorithm initializing.
-    fn start(&self, _algorithm: &dyn AlgorithmWithAgents<T, Agent = A>) {}
-
-    /// Will be called before run algorithm (possibly after result algorithm after pause).
-    fn resume(&self, _algorithm: &dyn AlgorithmWithAgents<T, Agent = A>) {}
-
-    /// Will be called in the end of iteration.
-    fn next_iteration(&self, _algorithm: &dyn AlgorithmWithAgents<T, Agent = A>) {}
-
-    /// Will be called when algorithm will be stopped.
-    fn finish(&self, _algorithm: &dyn AlgorithmWithAgents<T, Agent = A>) {}
 }

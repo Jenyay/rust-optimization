@@ -4,10 +4,26 @@ use std::fmt::Display;
 use std::time;
 use std::io;
 
-use super::super::Agent;
-use super::{Logger, Population};
+use super::AlgorithmState;
 
-/// The logger prints out to stdout best chromosomes and goal function for every generation.
+/// The logging trait for algorithm with the agents.
+///
+/// `T` - type of a point in the search space for goal function.
+pub trait Logger<T> {
+    /// Will be called after algorithm initializing.
+    fn start(&mut self, _state: &dyn AlgorithmState<T>) {}
+
+    /// Will be called before run algorithm (possibly after result algorithm after pause).
+    fn resume(&mut self, _state: &dyn AlgorithmState<T>) {}
+
+    /// Will be called in the end of iteration.
+    fn next_iteration(&mut self, _state: &dyn AlgorithmState<T>) {}
+
+    /// Will be called when algorithm will be stopped.
+    fn finish(&mut self, _state: &dyn AlgorithmState<T>) {}
+}
+
+/// The logger prints out current solution and goal function for every iteration.
 pub struct VerboseLogger<'a> {
     writer: &'a mut dyn io::Write,
     precision: usize,
@@ -26,16 +42,16 @@ impl<'a> VerboseLogger<'a> {
     }
 }
 
-impl<'a, G: Display> Logger<Vec<G>> for VerboseLogger<'a> {
-    fn next_iteration(&mut self, population: &Population<Vec<G>>) {
-        if let Some(individual) = population.get_best() {
+impl<'a, T: Display> Logger<Vec<T>> for VerboseLogger<'a> {
+    fn next_iteration(&mut self, state: &dyn AlgorithmState<Vec<T>>) {
+        if let Some((solution, goal)) = state.get_best_solution() {
             let mut result = String::new();
-            result = result + &format!("{:<8}", population.get_iteration());
+            result = result + &format!("{:<8}", state.get_iteration());
 
-            for chromo in individual.get_chromosomes() {
-                result = result + &format!("  {:<20.*}", self.precision, chromo);
+            for x in solution {
+                result = result + &format!("  {:<20.*}", self.precision, x);
             }
-            result = result + &format!("  {:20.*}", self.precision, individual.get_goal());
+            result = result + &format!("  {:20.*}", self.precision, goal);
 
             writeln!(&mut self.writer, "{}", result).unwrap();
         }
@@ -61,26 +77,26 @@ impl<'a> ResultOnlyLogger<'a> {
     }
 }
 
-impl<'a, G: Display> Logger<Vec<G>> for ResultOnlyLogger<'a> {
-    fn start(&mut self, _population: &Population<Vec<G>>) {}
+impl<'a, T: Display> Logger<Vec<T>> for ResultOnlyLogger<'a> {
+    fn start(&mut self, _state: &dyn AlgorithmState<Vec<T>>) {}
 
-    fn finish(&mut self, population: &Population<Vec<G>>) {
-        match population.get_best() {
+    fn finish(&mut self, state: &dyn AlgorithmState<Vec<T>>) {
+        match state.get_best_solution() {
             None => writeln!(&mut self.writer, "Solution not found").unwrap(),
-            Some(individual) => {
+            Some((solution, goal)) => {
                 let mut result = String::new();
                 result = result + "Solution:\n";
 
-                for chromo in individual.get_chromosomes() {
-                    result = result + &format!("  {:.*}\n", self.precision, chromo);
+                for x in solution {
+                    result = result + &format!("  {:.*}\n", self.precision, x);
                 }
 
                 result = result + "\n";
                 writeln!(&mut self.writer, "{}", result).unwrap();
-                writeln!(&mut self.writer, "Goal: {:.*}", self.precision, individual.get_goal()).unwrap();
+                writeln!(&mut self.writer, "Goal: {:.*}", self.precision, goal).unwrap();
             }
         }
-        writeln!(&mut self.writer, "Iterations count: {}", population.get_iteration()).unwrap();
+        writeln!(&mut self.writer, "Iterations count: {}", state.get_iteration()).unwrap();
     }
 }
 
@@ -101,12 +117,12 @@ impl<'a> TimeLogger<'a> {
     }
 }
 
-impl<'a, G: Display> Logger<Vec<G>> for TimeLogger<'a> {
-    fn resume(&mut self, _population: &Population<Vec<G>>) {
+impl<'a, T: Display> Logger<Vec<T>> for TimeLogger<'a> {
+    fn resume(&mut self, _state: &dyn AlgorithmState<Vec<T>>) {
         self.start_time = Some(time::Instant::now());
     }
 
-    fn finish(&mut self, _population: &Population<Vec<G>>) {
+    fn finish(&mut self, _state: &dyn AlgorithmState<Vec<T>>) {
         let duration = self.start_time.unwrap().elapsed();
         let time_ms = duration.as_secs() * 1000 + duration.subsec_millis() as u64;
 
