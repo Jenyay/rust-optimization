@@ -3,7 +3,7 @@ use std::io;
 use optlib::genetic::{
     self, creation, cross, mutation, pairing, pre_birth, selection, stopchecker,
 };
-use optlib::logging;
+use optlib::tools::logging;
 use optlib::{GoalFromFunction, Optimizer};
 use optlib_testfunc;
 

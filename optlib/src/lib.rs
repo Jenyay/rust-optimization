@@ -4,7 +4,7 @@ extern crate num;
 
 pub mod genetic;
 pub mod particleswarm;
-pub mod logging;
+pub mod tools;
 
 /// Common Optimizer trait.
 ///

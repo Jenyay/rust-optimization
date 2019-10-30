@@ -3,7 +3,7 @@ use std::f64;
 
 use num::Float;
 
-use super::logging::Logger;
+use super::tools::logging::Logger;
 use super::{Agent, AgentsState, AlgorithmState, Goal, Optimizer};
 
 /// The trait to create initial particles swarm.

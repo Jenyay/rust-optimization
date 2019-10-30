@@ -21,8 +21,8 @@ use std::f64;
 use std::ops;
 use std::slice;
 
-use super::{Agent, Optimizer, Goal, AlgorithmState};
-use super::logging::Logger;
+use super::tools::logging::Logger;
+use super::{Agent, AlgorithmState, Goal, Optimizer};
 
 /// Struct for single point (agent) in the search space
 ///
@@ -275,12 +275,11 @@ impl<T> ops::IndexMut<usize> for Population<T> {
     }
 }
 
-
 impl<T: Clone> AlgorithmState<T> for Population<T> {
     fn get_best_solution(&self) -> Option<(T, f64)> {
         match &self.best_individual {
             None => None,
-            Some(individual) => Some((individual.chromosomes.clone(), individual.fitness))
+            Some(individual) => Some((individual.chromosomes.clone(), individual.fitness)),
         }
     }
 
@@ -288,14 +287,6 @@ impl<T: Clone> AlgorithmState<T> for Population<T> {
         self.iteration
     }
 }
-
-/// The trait to calculate goal function.
-///
-/// `T` - type of a point in the search space for goal function (chromosomes).
-// pub trait Goal<T> {
-//     /// Must return value of goal function for `chromosomes` point in the search space.
-//     fn get(&self, chromosomes: &T) -> f64;
-// }
 
 /// The trait to create initial individuals for population.
 ///
