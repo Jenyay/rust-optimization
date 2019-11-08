@@ -4,6 +4,7 @@ use std::f64;
 use num::Float;
 
 use super::tools::logging::Logger;
+use super::tools::stopchecker::StopChecker;
 use super::{Agent, AgentsState, AlgorithmState, Goal, Optimizer};
 
 /// The trait to create initial particles swarm.
@@ -15,14 +16,6 @@ pub trait Creator<T> {
 
     /// Must return vector of speed for a new particles.
     fn get_speed(&self) -> Vec<Vec<T>>;
-}
-
-/// The trait with break criterion for particle swarm algorithm.
-///
-/// `T` - type of a point in the search space for goal function.
-pub trait StopChecker<T> {
-    /// The method must return true if the algorithm must be stopped.
-    fn can_stop(&mut self, swarm: &Swarm<T>) -> bool;
 }
 
 /// The trait may be used after moving the particle but before goal function calculating.
@@ -253,7 +246,7 @@ fn test_find_best_particle_many_02() {
 pub struct ParticleSwarmOptimizer<T> {
     goal: Box<dyn Goal<Vec<T>>>,
     creator: Box<dyn Creator<T>>,
-    stop_checker: Box<dyn StopChecker<T>>,
+    stop_checker: Box<dyn StopChecker<Vec<T>>>,
     speed_calculator: Box<dyn SpeedCalculator<T>>,
     post_move: Vec<Box<dyn PostMove<T>>>,
     loggers: Vec<Box<dyn Logger<Vec<T>>>>,
@@ -263,7 +256,7 @@ pub struct ParticleSwarmOptimizer<T> {
 impl<T: Clone + Float> ParticleSwarmOptimizer<T> {
     pub fn new(
         goal: Box<dyn Goal<Vec<T>>>,
-        stop_checker: Box<dyn StopChecker<T>>,
+        stop_checker: Box<dyn StopChecker<Vec<T>>>,
         creator: Box<dyn Creator<T>>,
         speed_calculator: Box<dyn SpeedCalculator<T>>,
         post_move: Vec<Box<dyn PostMove<T>>>,

@@ -14,7 +14,6 @@ pub mod mutation;
 pub mod pairing;
 pub mod pre_birth;
 pub mod selection;
-pub mod stopchecker;
 
 use std::cmp::Ordering;
 use std::f64;
@@ -22,6 +21,7 @@ use std::ops;
 use std::slice;
 
 use super::tools::logging::Logger;
+use super::tools::stopchecker::StopChecker;
 use super::{Agent, AlgorithmState, Goal, Optimizer};
 
 /// Struct for single point (agent) in the search space
@@ -345,27 +345,11 @@ pub trait Pairing<T> {
 /// The trait with break criterion of genetic algorithm.
 ///
 /// `T` - type of a point in the search space for goal function (chromosomes).
-pub trait StopChecker<T> {
-    /// The method must return true if genetic algorithm must be stopped.
-    fn can_stop(&mut self, population: &Population<T>) -> bool;
-}
-
-/// The trait for logging of genetic algorithm.
-///
-/// `T` - type of a point in the search space for goal function (chromosomes).
-// pub trait Logger<T> {
-//     /// Will be called after population initializing.
-//     fn start(&mut self, _population: &Population<T>) {}
-//
-//     /// Will be called before run algorithm (possibly after result algorithm after pause).
-//     fn resume(&mut self, _population: &Population<T>) {}
-//
-//     /// Will be called in the end of iteration (after selection).
-//     fn next_iteration(&mut self, _population: &Population<T>) {}
-//
-//     /// Will be called when algorithm will be stopped.
-//     fn finish(&mut self, _population: &Population<T>) {}
+// pub trait StopChecker<T> {
+//     /// The method must return true if genetic algorithm must be stopped.
+//     fn can_stop(&mut self, population: &Population<T>) -> bool;
 // }
+
 
 /// The main struct for an user. `GeneticOptimizer` implements `Optimizer` trait and keep all parts
 /// of genetic algorithm as trait objects: `Creator`, `Pairing`, `Cross`, `Mutation`, `Selection`,

@@ -13,10 +13,9 @@
 //! * `Generation` - a number of iteration of genetic algorithm.
 use std::io;
 
-use optlib::genetic::{
-    self, creation, cross, mutation, pairing, pre_birth, selection, stopchecker,
-};
+use optlib::genetic::{self, creation, cross, mutation, pairing, pre_birth, selection};
 use optlib::tools::logging;
+use optlib::tools::stopchecker;
 use optlib::{GoalFromFunction, Optimizer};
 use optlib_testfunc;
 
