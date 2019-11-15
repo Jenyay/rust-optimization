@@ -342,15 +342,6 @@ pub trait Pairing<T> {
     fn get_pairs(&mut self, population: &Population<T>) -> Vec<Vec<usize>>;
 }
 
-/// The trait with break criterion of genetic algorithm.
-///
-/// `T` - type of a point in the search space for goal function (chromosomes).
-// pub trait StopChecker<T> {
-//     /// The method must return true if genetic algorithm must be stopped.
-//     fn can_stop(&mut self, population: &Population<T>) -> bool;
-// }
-
-
 /// The main struct for an user. `GeneticOptimizer` implements `Optimizer` trait and keep all parts
 /// of genetic algorithm as trait objects: `Creator`, `Pairing`, `Cross`, `Mutation`, `Selection`,
 /// `StopChecker` and, if needed, `Logger`.
