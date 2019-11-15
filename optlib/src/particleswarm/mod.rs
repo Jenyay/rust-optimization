@@ -1,3 +1,5 @@
+pub mod initializing;
+
 use std::cmp::Ordering;
 use std::f64;
 
@@ -10,12 +12,17 @@ use super::{Agent, AgentsState, AlgorithmState, Goal, Optimizer};
 /// The trait to create initial particles swarm.
 ///
 /// `T` - type of a point in the search space for goal function.
-pub trait Creator<T> {
+pub trait CoordinatesInitializer<T> {
     /// Must return vector of the start points for a new particles.
-    fn get_coordinates(&self) -> Vec<Vec<T>>;
+    fn get_coordinates(&mut self) -> Vec<Vec<T>>;
+}
 
+/// The trait to create initial particles swarm.
+///
+/// `T` - type of a point in the search space for goal function.
+pub trait SpeedInitializer<T> {
     /// Must return vector of speed for a new particles.
-    fn get_speed(&self) -> Vec<Vec<T>>;
+    fn get_speed(&mut self) -> Vec<Vec<T>>;
 }
 
 /// The trait may be used after moving the particle but before goal function calculating.
@@ -245,7 +252,8 @@ fn test_find_best_particle_many_02() {
 
 pub struct ParticleSwarmOptimizer<T> {
     goal: Box<dyn Goal<Vec<T>>>,
-    creator: Box<dyn Creator<T>>,
+    coordinates_initializer: Box<dyn CoordinatesInitializer<T>>,
+    speed_initializer: Box<dyn SpeedInitializer<T>>,
     stop_checker: Box<dyn StopChecker<Vec<T>>>,
     speed_calculator: Box<dyn SpeedCalculator<T>>,
     post_move: Vec<Box<dyn PostMove<T>>>,
@@ -257,7 +265,8 @@ impl<T: Clone + Float> ParticleSwarmOptimizer<T> {
     pub fn new(
         goal: Box<dyn Goal<Vec<T>>>,
         stop_checker: Box<dyn StopChecker<Vec<T>>>,
-        creator: Box<dyn Creator<T>>,
+        coordinates_initializer: Box<dyn CoordinatesInitializer<T>>,
+        speed_initializer: Box<dyn SpeedInitializer<T>>,
         speed_calculator: Box<dyn SpeedCalculator<T>>,
         post_move: Vec<Box<dyn PostMove<T>>>,
         loggers: Vec<Box<dyn Logger<Vec<T>>>>,
@@ -266,7 +275,8 @@ impl<T: Clone + Float> ParticleSwarmOptimizer<T> {
 
         ParticleSwarmOptimizer {
             goal,
-            creator,
+            coordinates_initializer,
+            speed_initializer,
             stop_checker,
             speed_calculator,
             post_move,
@@ -276,8 +286,8 @@ impl<T: Clone + Float> ParticleSwarmOptimizer<T> {
     }
 
     fn renew_swarm(&mut self) {
-        let mut coordinates = self.creator.get_coordinates();
-        let speed = self.creator.get_speed();
+        let mut coordinates = self.coordinates_initializer.get_coordinates();
+        let speed = self.speed_initializer.get_speed();
         assert!(coordinates.len() == speed.len());
 
         for mut current_coordinates in &mut coordinates {
