@@ -500,29 +500,3 @@ impl<'a, T: Clone> Optimizer<T> for GeneticOptimizer<'a, T> {
         self.next_iterations()
     }
 }
-
-// impl<'a, T> AlgorithmWithAgents<T> for GeneticOptimizer<'a, T> {
-//     type Agent = Individual<T>;
-//
-//     fn get_agents(&self) -> Vec<&Self::Agent> {
-//         let mut agents: Vec<&Self::Agent> = Vec::with_capacity(self.population.len());
-//         for individual in self.population.iter() {
-//             agents.push(individual);
-//         }
-//
-//         agents
-//     }
-//
-//     fn get_best_agent(&self) -> Option<&dyn Agent<T>> {
-//         match &self.population.best_individual {
-//             None => None,
-//             Some(individual) => Some(individual)
-//         }
-//     }
-// }
-//
-// impl<'a, T> IterativeAlgorithm for GeneticOptimizer<'a, T> {
-//     fn get_iteration(&self) -> usize {
-//         self.population.iteration
-//     }
-// }
