@@ -38,7 +38,7 @@ impl RandomVectorCreator {
 
 #[cfg(test)]
 mod tests_random_vector_creator {
-    use super::*;
+    use crate::tools::RandomVectorCreator;
 
     #[test]
     fn test_empty() {

@@ -1,4 +1,5 @@
 pub mod initializing;
+pub mod postmove;
 
 use std::cmp::Ordering;
 use std::f64;
