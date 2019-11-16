@@ -6,9 +6,9 @@ use std::f64;
 
 use num::Float;
 
-use super::tools::logging::Logger;
-use super::tools::stopchecker::StopChecker;
-use super::{Agent, AgentsState, AlgorithmState, Goal, Optimizer};
+use crate::tools::logging::Logger;
+use crate::tools::stopchecker::StopChecker;
+use crate::{Agent, AgentsState, AlgorithmState, Goal, Optimizer};
 
 /// The trait to create initial particles swarm.
 ///

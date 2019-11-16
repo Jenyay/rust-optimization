@@ -6,7 +6,7 @@ use num::NumCast;
 use rand::distributions::{Distribution, Uniform};
 use rand::rngs::ThreadRng;
 
-use super::super::Creator;
+use crate::genetic::Creator;
 
 /// Creator to initialize population by individuals with random genes in the preset
 /// intervals.

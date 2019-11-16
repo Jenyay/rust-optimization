@@ -4,7 +4,7 @@ use std::fmt::Display;
 use std::time;
 use std::io;
 
-use super::super::AlgorithmState;
+use crate::AlgorithmState;
 
 /// The logging trait for algorithm with the agents.
 ///

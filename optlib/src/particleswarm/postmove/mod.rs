@@ -1,4 +1,4 @@
-use super::PostMove;
+use crate::particleswarm::PostMove;
 
 use num::Float;
 

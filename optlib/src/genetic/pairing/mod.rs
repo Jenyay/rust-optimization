@@ -1,9 +1,10 @@
 //! The module with pairing algorithm traits. The pairing algorithm selects individuals for crossing.
 
-use super::*;
-
 use rand::distributions::{Distribution, Uniform};
 use rand::rngs::ThreadRng;
+
+use crate::Agent;
+use crate::genetic:: {Pairing, Population};
 
 /// Pairing algorithm which select random individuals for crossing.
 pub struct RandomPairing {

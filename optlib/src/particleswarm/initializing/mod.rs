@@ -1,7 +1,7 @@
 use num::{NumCast, Zero};
 
-use super::super::tools::RandomVectorCreator;
-use super::{CoordinatesInitializer, SpeedInitializer};
+use crate::tools::RandomVectorCreator;
+use crate::particleswarm::{CoordinatesInitializer, SpeedInitializer};
 
 pub struct RandomCoordinatesInitializer<T> {
     intervals: Vec<(T, T)>,

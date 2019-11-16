@@ -20,9 +20,9 @@ use std::f64;
 use std::ops;
 use std::slice;
 
-use super::tools::logging::Logger;
-use super::tools::stopchecker::StopChecker;
-use super::{Agent, AlgorithmState, Goal, Optimizer};
+use crate::tools::logging::Logger;
+use crate::tools::stopchecker::StopChecker;
+use crate::{Agent, AlgorithmState, Goal, Optimizer};
 
 /// Struct for single point (agent) in the search space
 ///
