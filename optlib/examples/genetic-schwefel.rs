@@ -1,4 +1,4 @@
-//! Example of optimizing the Schwefel function.
+//! Example of optimizing the Schwefel function with genetic algorithm.
 //!
 //! y = f(x), where x = (x0, x1, ..., xi,... xn).
 //! Global minimum is x' = (420.9687, 420.9687, ...) for any xi lying in [-500.0; 500.0].

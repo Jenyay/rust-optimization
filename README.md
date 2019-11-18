@@ -6,37 +6,32 @@
 
 Optimization algorithms implemented in Rust
 
-For now optlib provides only genetic algorithm.
+For now optlib provides genetic algorithm and partcile swarm algorithm.
 
 
 ## Example of optimization
 
 ```rust
-//! Example of optimizing the Schwefel function.
+//! Example of optimizing the Schwefel function with genetic algorithm.
 //!
 //! y = f(x), where x = (x0, x1, ..., xi,... xn).
 //! Global minimum is x' = (420.9687, 420.9687, ...) for any xi lying in [-500.0; 500.0].
 //! f(x') = 0
 //!
 //! # Terms
-//! * 'Goal function' - the function for optimization. y = f(x).
+//! * `Goal function` - the function for optimization. y = f(x).
 //! * `Gene` - a single value of xi.
-//! * 'Chromosome' - a point in the search space. x = (x0, x1, x2, ..., xn).
-//! * 'Individual' - union of x and value of goal function.
-//! * 'Population' - set of the individuals.
-//! * 'Generation' - a number of iteration of genetic algorithm.
-use optlib::genetic;
-use optlib::genetic::creation;
-use optlib::genetic::cross;
-use optlib::genetic::goal;
-use optlib::genetic::logging;
-use optlib::genetic::mutation;
-use optlib::genetic::pairing;
-use optlib::genetic::pre_birth;
-use optlib::genetic::selection;
-use optlib::genetic::stopchecker;
-use optlib::testfunctions;
-use optlib::Optimizer;
+//! * `Chromosome` - a point in the search space. x = (x0, x1, x2, ..., xn).
+//! * `Individual` - union of x and value of goal function.
+//! * `Population` - set of the individuals.
+//! * `Generation` - a number of iteration of genetic algorithm.
+use std::io;
+
+use optlib::genetic::{self, creation, cross, mutation, pairing, pre_birth, selection};
+use optlib::tools::logging;
+use optlib::tools::stopchecker;
+use optlib::{GoalFromFunction, Optimizer};
+use optlib_testfunc;
 
 /// Gene type
 type Gene = f32;
@@ -51,25 +46,32 @@ fn main() {
     let minval: Gene = -500.0;
     let maxval: Gene = 500.0;
 
-    // Initial population individuals count
+    // Count individuals in initial population
     let population_size = 500;
 
-    // Count of xi in chromosomes
+    // Count of xi in the chromosomes
     let chromo_count = 15;
 
     let intervals = vec![(minval, maxval); chromo_count];
 
-    // Make a trait object for a goal function (Schwefel function)
-    let goal = goal::GoalFromFunction::new(testfunctions::schwefel);
+    // Make a trait object for goal function (Schwefel function)
+    let goal = GoalFromFunction::new(optlib_testfunc::schwefel);
 
-    // creator will generate an initial population using RandomCreator.
-    // Individuals of this population will have random chromosomes within a given interval.
+    // Make the creator to create initial population.
+    // RandomCreator will fill initial population with individuals with random chromosomes in a
+    // given interval,
     let creator = creation::vec_float::RandomCreator::new(population_size, intervals.clone());
 
     // Make a trait object for the pairing.
-    // Pairing is the algorithm of selecting individuals for crossbreeding.
-    // RandomPairing selects random individuals from the population.
-    let pairing = pairing::RandomPairing::new();
+    // Pairing is algorithm of selection individuals for crossbreeding.
+
+    // Select random individuals from the population.
+    // let pairing = pairing::RandomPairing::new();
+
+    // Tournament method.
+    let families_count = population_size / 2;
+    let rounds_count = 5;
+    let pairing = pairing::Tournament::new(families_count).rounds_count(rounds_count);
 
     // Crossbreeding algorithm.
     // Make a Cross trait object. The bitwise crossing for float genes.
@@ -83,31 +85,45 @@ fn main() {
     let single_mutation = mutation::BitwiseMutation::new(mutation_gene_count);
     let mutation = mutation::VecMutation::new(mutation_probability, Box::new(single_mutation));
 
-    // Pre birth. Throw away new child chromosomes if their genes do not lie within given intervals.
-    let pre_births: Vec<Box<genetic::PreBirth<Chromosomes>>> = vec![Box::new(
+    // Pre birth. Throw away new chlld chromosomes if their genes do not lies if given intervals.
+    let pre_births: Vec<Box<dyn genetic::PreBirth<Chromosomes>>> = vec![Box::new(
         pre_birth::vec_float::CheckChromoInterval::new(intervals.clone()),
     )];
 
     // Stop checker. Stop criterion for genetic algorithm.
-    // Stop algorithm if the value of goal function will become less than 10⁻⁴ or
+    // let change_max_iterations = 200;
+    // let change_delta = 1e-7;
+    // let stop_checker = stopchecker::GoalNotChange::new(change_max_iterations, change_delta);
+    // let stop_checker = stopchecker::MaxIterations::new(500);
+
+    // Stop algorithm if the value of goal function will become less of 1e-4 or
     // after 3000 generations (iterations).
     let stop_checker = stopchecker::CompositeAny::new(vec![
         Box::new(stopchecker::Threshold::new(1e-4)),
+        // Box::new(stopchecker::GoalNotChange::new(
+        //     change_max_iterations,
+        //     change_delta,
+        // )),
         Box::new(stopchecker::MaxIterations::new(3000)),
     ]);
 
-    // Make a trait object for selection. Selection kills the worst individuals.
+    // Make a trait object for selection. Selection is killing the worst individuals.
     // Kill all individuals if the value of goal function is NaN or Inf.
-    // Kill worst individuals to keep initial population size.
+    // Kill the worst individuals to population size remained unchanged.
     let selections: Vec<Box<dyn genetic::Selection<Chromosomes>>> = vec![
         Box::new(selection::KillFitnessNaN::new()),
         Box::new(selection::LimitPopulation::new(population_size)),
     ];
 
     // Make a loggers trait objects
-    let loggers: Vec<Box<genetic::Logger<Chromosomes>>> = vec![
-        Box::new(logging::StdoutResultOnlyLogger::new(15)),
-        Box::new(logging::TimeStdoutLogger::new()),
+    // let mut stdout_verbose = io::stdout();
+    let mut stdout_result = io::stdout();
+    let mut stdout_time = io::stdout();
+
+    let loggers: Vec<Box<dyn logging::Logger<Chromosomes>>> = vec![
+        // Box::new(logging::VerboseLogger::new(&mut stdout_verbose, 15)),
+        Box::new(logging::ResultOnlyLogger::new(&mut stdout_result, 15)),
+        Box::new(logging::TimeLogger::new(&mut stdout_time)),
     ];
 
     // Construct main optimizer struct
@@ -138,7 +154,7 @@ cargo build --release --all
 Run example:
 
 ```
-cargo run --bin genetic-schwefel --release
+cargo run --example genetic-schwefel --release
 ```
 
 Work result:
@@ -166,3 +182,15 @@ Goal: 0.000488281250000
 Iterations count: 3000
 Time elapsed: 2352 ms
 ```
+
+Also optlib library contains other optimization examples:
+
+* genetic-paraboloid.rs
+* genetic-rastrigin.rs
+* genetic-rosenbrock.rs
+* genetic-schwefel.rs
+* particleswarm-paraboloid.rs
+* particleswarm-rastrigin.rs
+* particleswarm-rosenbrock.rs
+* particleswarm-schwefel.rs
+
