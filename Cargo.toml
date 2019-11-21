@@ -1,19 +1,5 @@
-[package]
-name = "optlib"
-version = "0.2.0"
-authors = ["Eugene Ilin <jenyay.ilin@gmail.com>"]
-edition = "2018"
-keywords = ["genetic", "optimization", "math", "algorithms"]
-categories = ["algorithms", "science"]
-description = "The optimization algorithms realized in Rust. In given time optlib realized genetic algorithm only."
-license = "MIT"
-readme = "../README.md"
-homepage = "https://github.com/Jenyay/rust-optimization"
-repository = "https://github.com/Jenyay/rust-optimization"
-
-[dependencies]
-num = "0.2"
-rand = "0.6.4"
-
-[badges]
-maintenance = { status = "actively-developed" }
+[workspace]
+members = [
+	"optlib",
+	"optlib-testfunc",
+]
