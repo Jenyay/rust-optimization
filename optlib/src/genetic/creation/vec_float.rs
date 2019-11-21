@@ -66,7 +66,7 @@ impl<G: NumCast + PartialOrd> Creator<Vec<G>> for RandomCreator<G> {
 }
 
 #[cfg(test)]
-mod tests_random_creator {
+mod tests {
     use super::*;
 
     #[test]

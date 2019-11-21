@@ -108,55 +108,6 @@ impl<T: Clone + Debug> Particle<T> {
     }
 }
 
-#[test]
-fn test_particle_new() {
-    let coordinates = vec![1.0_f32, 2.0_f32];
-    let speed = vec![11.0_f32, 12.0_f32];
-    let value = 21_f64;
-
-    let particle = Particle::new(coordinates.clone(), speed.clone(), value);
-
-    assert_eq!(particle.coordinates, coordinates);
-    assert_eq!(particle.speed, speed);
-    assert_eq!(particle.value, value);
-    assert_eq!(particle.best_personal_coordinates, coordinates);
-    assert_eq!(particle.best_personal_value, value);
-}
-
-#[test]
-fn test_particle_move_to_better() {
-    let coordinates = vec![1.0_f32, 2.0_f32];
-    let speed = vec![11.0_f32, 12.0_f32];
-    let value = 21_f64;
-
-    let mut particle = Particle::new(coordinates.clone(), speed.clone(), value);
-
-    let new_coordinates = vec![1.0_f32, 2.0_f32];
-    let new_value = 10_f64;
-    particle.move_to(new_coordinates.clone(), new_value);
-
-    assert_eq!(particle.coordinates, new_coordinates);
-    assert_eq!(particle.best_personal_coordinates, new_coordinates);
-    assert_eq!(particle.best_personal_value, new_value);
-}
-
-#[test]
-fn test_particle_move_to_worse() {
-    let coordinates = vec![1.0_f32, 2.0_f32];
-    let speed = vec![11.0_f32, 12.0_f32];
-    let value = 20_f64;
-
-    let mut particle = Particle::new(coordinates.clone(), speed.clone(), value);
-
-    let new_coordinates = vec![1.0_f32, 2.0_f32];
-    let new_value = 40_f64;
-    particle.move_to(new_coordinates.clone(), new_value);
-
-    assert_eq!(particle.coordinates, new_coordinates);
-    assert_eq!(particle.best_personal_coordinates, coordinates);
-    assert_eq!(particle.best_personal_value, value);
-}
-
 /// Stores all particles.
 ///
 /// `T` - type of a point in the search space for goal function.
@@ -227,43 +178,6 @@ impl<T: Clone + Debug> Swarm<T> {
             Some(particle.clone())
         }
     }
-}
-
-#[test]
-fn test_find_best_particle_empty() {
-    let particles: Vec<Particle<f32>> = vec![];
-    assert!(Swarm::find_best_particle(&particles).is_none());
-}
-
-#[test]
-fn test_find_best_particle_single() {
-    let particles: Vec<Particle<f32>> = vec![Particle::new(
-        vec![1_f32, 2_f32],
-        vec![10_f32, 20_f32],
-        100_f64,
-    )];
-    let best_particle = Swarm::find_best_particle(&particles);
-    assert!(best_particle.is_some());
-}
-
-#[test]
-fn test_find_best_particle_many_01() {
-    let particles: Vec<Particle<f32>> = vec![
-        Particle::new(vec![1_f32, 2_f32], vec![10_f32, 20_f32], 100_f64),
-        Particle::new(vec![3_f32, 4_f32], vec![10_f32, 20_f32], 50_f64),
-    ];
-    let best_particle = Swarm::find_best_particle(&particles);
-    assert_eq!(best_particle.unwrap().value, 50_f64);
-}
-
-#[test]
-fn test_find_best_particle_many_02() {
-    let particles: Vec<Particle<f32>> = vec![
-        Particle::new(vec![3_f32, 4_f32], vec![10_f32, 20_f32], 50_f64),
-        Particle::new(vec![1_f32, 2_f32], vec![10_f32, 20_f32], 100_f64),
-    ];
-    let best_particle = Swarm::find_best_particle(&particles);
-    assert_eq!(best_particle.unwrap().value, 50_f64);
 }
 
 pub struct ParticleSwarmOptimizer<'a, T> {
@@ -441,16 +355,107 @@ fn compare_floats(x: f64, y: f64) -> Ordering {
     }
 }
 
-#[test]
-fn test_compare_floats() {
-    assert_eq!(
-        compare_floats(f64::INFINITY, f64::INFINITY),
-        Ordering::Equal
-    );
-    assert_eq!(compare_floats(f64::NAN, f64::NAN), Ordering::Equal);
-    assert_eq!(compare_floats(1.0_f64, f64::NAN), Ordering::Less);
-    assert_eq!(compare_floats(f64::NAN, 1.0_f64), Ordering::Greater);
-    assert_eq!(compare_floats(2.0_f64, 1.0_f64), Ordering::Greater);
-    assert_eq!(compare_floats(2.0_f64, 3.0_f64), Ordering::Less);
-    assert_eq!(compare_floats(3.0_f64, 3.0_f64), Ordering::Equal);
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_compare_floats() {
+        assert_eq!(
+            compare_floats(f64::INFINITY, f64::INFINITY),
+            Ordering::Equal
+        );
+        assert_eq!(compare_floats(f64::NAN, f64::NAN), Ordering::Equal);
+        assert_eq!(compare_floats(1.0_f64, f64::NAN), Ordering::Less);
+        assert_eq!(compare_floats(f64::NAN, 1.0_f64), Ordering::Greater);
+        assert_eq!(compare_floats(2.0_f64, 1.0_f64), Ordering::Greater);
+        assert_eq!(compare_floats(2.0_f64, 3.0_f64), Ordering::Less);
+        assert_eq!(compare_floats(3.0_f64, 3.0_f64), Ordering::Equal);
+    }
+
+    #[test]
+    fn test_particle_new() {
+        let coordinates = vec![1.0_f32, 2.0_f32];
+        let speed = vec![11.0_f32, 12.0_f32];
+        let value = 21_f64;
+
+        let particle = Particle::new(coordinates.clone(), speed.clone(), value);
+
+        assert_eq!(particle.coordinates, coordinates);
+        assert_eq!(particle.speed, speed);
+        assert_eq!(particle.value, value);
+        assert_eq!(particle.best_personal_coordinates, coordinates);
+        assert_eq!(particle.best_personal_value, value);
+    }
+
+    #[test]
+    fn test_particle_move_to_better() {
+        let coordinates = vec![1.0_f32, 2.0_f32];
+        let speed = vec![11.0_f32, 12.0_f32];
+        let value = 21_f64;
+
+        let mut particle = Particle::new(coordinates.clone(), speed.clone(), value);
+
+        let new_coordinates = vec![1.0_f32, 2.0_f32];
+        let new_value = 10_f64;
+        particle.move_to(new_coordinates.clone(), new_value);
+
+        assert_eq!(particle.coordinates, new_coordinates);
+        assert_eq!(particle.best_personal_coordinates, new_coordinates);
+        assert_eq!(particle.best_personal_value, new_value);
+    }
+
+    #[test]
+    fn test_particle_move_to_worse() {
+        let coordinates = vec![1.0_f32, 2.0_f32];
+        let speed = vec![11.0_f32, 12.0_f32];
+        let value = 20_f64;
+
+        let mut particle = Particle::new(coordinates.clone(), speed.clone(), value);
+
+        let new_coordinates = vec![1.0_f32, 2.0_f32];
+        let new_value = 40_f64;
+        particle.move_to(new_coordinates.clone(), new_value);
+
+        assert_eq!(particle.coordinates, new_coordinates);
+        assert_eq!(particle.best_personal_coordinates, coordinates);
+        assert_eq!(particle.best_personal_value, value);
+    }
+
+    #[test]
+    fn test_find_best_particle_empty() {
+        let particles: Vec<Particle<f32>> = vec![];
+        assert!(Swarm::find_best_particle(&particles).is_none());
+    }
+
+    #[test]
+    fn test_find_best_particle_single() {
+        let particles: Vec<Particle<f32>> = vec![Particle::new(
+            vec![1_f32, 2_f32],
+            vec![10_f32, 20_f32],
+            100_f64,
+        )];
+        let best_particle = Swarm::find_best_particle(&particles);
+        assert!(best_particle.is_some());
+    }
+
+    #[test]
+    fn test_find_best_particle_many_01() {
+        let particles: Vec<Particle<f32>> = vec![
+            Particle::new(vec![1_f32, 2_f32], vec![10_f32, 20_f32], 100_f64),
+            Particle::new(vec![3_f32, 4_f32], vec![10_f32, 20_f32], 50_f64),
+        ];
+        let best_particle = Swarm::find_best_particle(&particles);
+        assert_eq!(best_particle.unwrap().value, 50_f64);
+    }
+
+    #[test]
+    fn test_find_best_particle_many_02() {
+        let particles: Vec<Particle<f32>> = vec![
+            Particle::new(vec![3_f32, 4_f32], vec![10_f32, 20_f32], 50_f64),
+            Particle::new(vec![1_f32, 2_f32], vec![10_f32, 20_f32], 100_f64),
+        ];
+        let best_particle = Swarm::find_best_particle(&particles);
+        assert_eq!(best_particle.unwrap().value, 50_f64);
+    }
 }
