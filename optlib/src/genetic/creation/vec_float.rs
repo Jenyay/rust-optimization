@@ -6,7 +6,7 @@ use num::NumCast;
 use rand::distributions::{Distribution, Uniform};
 use rand::rngs::ThreadRng;
 
-use super::super::*;
+use crate::genetic::Creator;
 
 /// Creator to initialize population by individuals with random genes in the preset
 /// intervals.
@@ -66,7 +66,7 @@ impl<G: NumCast + PartialOrd> Creator<Vec<G>> for RandomCreator<G> {
 }
 
 #[cfg(test)]
-mod tests_random_creator {
+mod tests {
     use super::*;
 
     #[test]

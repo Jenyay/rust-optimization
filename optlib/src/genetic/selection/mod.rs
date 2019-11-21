@@ -5,7 +5,7 @@
 
 pub mod vec_float;
 
-use super::{Population, Selection};
+use crate::genetic::{Population, Selection};
 
 /// Kill individuals if value of theirs fitness (goal function) is NaN.
 /// Returns count of killed individuals.

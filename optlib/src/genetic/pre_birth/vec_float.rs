@@ -1,8 +1,8 @@
 //! The module with PreBirth trait implementations for chromosomes of Vec<T> type.
 
-use super::super::*;
-
 use num::Float;
+
+use crate::genetic::{Population, PreBirth};
 
 /// Kill individuals if theirs gene does not lie in the specified intevals.
 ///

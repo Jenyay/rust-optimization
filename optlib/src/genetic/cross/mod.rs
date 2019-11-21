@@ -4,7 +4,7 @@
 
 use std::mem;
 
-use super::Cross;
+use crate::genetic::Cross;
 use num::{Float, Num, NumCast};
 use rand::distributions::{Distribution, Uniform};
 use rand::rngs::ThreadRng;

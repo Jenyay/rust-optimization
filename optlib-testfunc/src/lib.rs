@@ -9,7 +9,7 @@ use num::Float;
 /// The min val is 0.0 for point (0.0, 1.0, 2.0, ... n).
 ///
 /// ```
-/// use optlib::testfunctions::paraboloid;
+/// use optlib_testfunc::paraboloid;
 ///
 /// let x = vec![1.0, 2.0, 3.0, 4.0, 5.0];
 /// let value = paraboloid(&x);
@@ -34,7 +34,7 @@ pub fn paraboloid<G: Float>(x: &Vec<G>) -> f64 {
 /// f(x') = 0
 ///
 /// ```
-/// use optlib::testfunctions::schwefel;
+/// use optlib_testfunc::schwefel;
 ///
 /// let x = vec![420.9687, 420.9687, 420.9687, 420.9687];
 /// let value = schwefel(&x);
@@ -53,7 +53,7 @@ pub fn schwefel<G: Float>(x: &Vec<G>) -> f64 {
 /// f(x') = 0
 ///
 /// ```
-/// use optlib::testfunctions::rastrigin;
+/// use optlib_testfunc::rastrigin;
 ///
 /// let x = vec![0.0_f32, 0.0_f32, 0.0_f32, 0.0_f32, 0.0_f32, 0.0_f32];
 /// let value = rastrigin(&x);
@@ -75,7 +75,7 @@ pub fn rastrigin<G: Float>(x: &Vec<G>) -> f64 {
 /// f(x') = 0
 ///
 /// ```
-/// use optlib::testfunctions::rosenbrock;
+/// use optlib_testfunc::rosenbrock;
 ///
 /// let x = vec![1.0_f32, 1.0_f32, 1.0_f32, 1.0_f32, 1.0_f32, 1.0_f32];
 /// let value = rosenbrock(&x);

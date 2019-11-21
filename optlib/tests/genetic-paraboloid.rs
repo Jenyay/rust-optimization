@@ -1,4 +1,4 @@
-use std::io;
+use num::abs;
 
 use optlib::genetic::{self, creation, cross, mutation, pairing, pre_birth, selection};
 use optlib::tools::logging;
@@ -9,11 +9,12 @@ use optlib_testfunc;
 type Gene = f32;
 type Chromosomes = Vec<Gene>;
 
-fn main() {
+#[test]
+fn genetic_paraboloid() {
     // General parameters
     let minval: Gene = -100.0;
     let maxval: Gene = 100.0;
-    let population_size = 200;
+    let population_size = 800;
     let chromo_count = 5;
     let intervals = vec![(minval, maxval); chromo_count];
 
@@ -41,8 +42,6 @@ fn main() {
     let mutation_probability = 15.0;
     let mutation_gene_count = 3;
     let single_mutation = mutation::BitwiseMutation::new(mutation_gene_count);
-    // let single_cross = cross::CrossMean::new();
-    // let single_cross = cross::FloatCrossGeometricMean::new();
     let mutation = mutation::VecMutation::new(mutation_probability, Box::new(single_mutation));
 
     // Pre birth
@@ -57,27 +56,19 @@ fn main() {
     ];
 
     // Stop checker
-    // let change_max_iterations = 150;
-    // let change_delta = 1e-7;
+    let change_max_iterations = 150;
+    let change_delta = 1e-7;
     let stop_checker = stopchecker::CompositeAny::new(vec![
         Box::new(stopchecker::Threshold::new(1e-6)),
-        // Box::new(stopchecker::GoalNotChange::new(
-        //     change_max_iterations,
-        //     change_delta,
-        // )),
-        Box::new(stopchecker::MaxIterations::new(3000)),
+        Box::new(stopchecker::GoalNotChange::new(
+            change_max_iterations,
+            change_delta,
+        )),
+        Box::new(stopchecker::MaxIterations::new(5000)),
     ]);
 
     // Logger
-    let mut stdout_verbose = io::stdout();
-    let mut stdout_result = io::stdout();
-    let mut stdout_time = io::stdout();
-
-    let loggers: Vec<Box<dyn logging::Logger<Chromosomes>>> = vec![
-        Box::new(logging::VerboseLogger::new(&mut stdout_verbose, 15)),
-        Box::new(logging::ResultOnlyLogger::new(&mut stdout_result, 15)),
-        Box::new(logging::TimeLogger::new(&mut stdout_time)),
-    ];
+    let loggers: Vec<Box<dyn logging::Logger<Chromosomes>>> = vec![];
 
     let mut optimizer = genetic::GeneticOptimizer::new(
         Box::new(goal),
@@ -91,5 +82,15 @@ fn main() {
         loggers,
     );
 
-    optimizer.find_min();
+    // Run genetic algorithm
+    match optimizer.find_min() {
+        None => assert!(false),
+        Some((solution, goal_value)) => {
+            for i in 0..chromo_count {
+                assert!(abs(solution[i] - (i as f32 + 1.0)) < 0.1);
+            }
+
+            assert!(abs(goal_value) < 1e-3);
+        }
+    }
 }

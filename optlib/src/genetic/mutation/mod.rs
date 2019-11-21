@@ -2,7 +2,7 @@
 //! The module contains struct which implements the `Mutation` trait to mutate
 //! chromosomes various types.
 
-use super::Mutation;
+use crate::genetic::Mutation;
 use rand::distributions::{Distribution, Uniform};
 use rand::rngs;
 use rand::rngs::ThreadRng;

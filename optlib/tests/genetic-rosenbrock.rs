@@ -1,7 +1,7 @@
-//! Example of optimizing the Rastrigin function.
+//! Example of optimizing the Rosenbrock function.
 //!
 //! y = f(x), where x = (x0, x1, ..., xi,... xn).
-//! Global minimum is x' = (0.0, 0.0, ...) for any xi lying in [-5.12; 5.12].
+//! Global minimum is x' = (1.0, 1.0, ...) for any xi.
 //! f(x') = 0
 //!
 //! # Terms
@@ -11,7 +11,7 @@
 //! * `Individual` - union of x and value of goal function.
 //! * `Population` - set of the individuals.
 //! * `Generation` - a number of iteration of genetic algorithm.
-use std::io;
+use num::abs;
 
 use optlib::genetic::{self, creation, cross, mutation, pairing, pre_birth, selection};
 use optlib::tools::logging;
@@ -25,23 +25,25 @@ type Gene = f32;
 /// Chromosomes type
 type Chromosomes = Vec<Gene>;
 
-fn main() {
+
+#[test]
+fn genetic_rosenbrock() {
     // General parameters
 
-    // Search space. Any xi lies in [-5.12; 5.12]
-    let minval: Gene = -5.12;
-    let maxval: Gene = 5.12;
+    // Search space
+    let minval: Gene = -2.0_f32;
+    let maxval: Gene = 2.0_f32;
 
     // Count individuals in initial population
-    let population_size = 20;
+    let population_size = 1000;
 
     // Count of xi in the chromosomes
-    let chromo_count = 30;
+    let chromo_count = 3;
 
     let intervals = vec![(minval, maxval); chromo_count];
 
     // Make a trait object for goal function (Schwefel function)
-    let goal = GoalFromFunction::new(optlib_testfunc::rastrigin);
+    let goal = GoalFromFunction::new(optlib_testfunc::rosenbrock);
 
     // Make the creator to create initial population.
     // RandomCreator will fill initial population with individuals with random chromosomes in a
@@ -66,7 +68,7 @@ fn main() {
 
     // Make a Mutation trait object.
     // Use bitwise mutation (change random bits with given probability).
-    let mutation_probability = 15.0;
+    let mutation_probability = 85.0;
     let mutation_gene_count = 3;
     let single_mutation = mutation::BitwiseMutation::new(mutation_gene_count);
     let mutation = mutation::VecMutation::new(mutation_probability, Box::new(single_mutation));
@@ -77,20 +79,16 @@ fn main() {
     )];
 
     // Stop checker. Stop criterion for genetic algorithm.
-    // let change_max_iterations = 200;
-    // let change_delta = 1e-7;
-    // let stop_checker = stopchecker::GoalNotChange::new(change_max_iterations, change_delta);
-    // let stop_checker = stopchecker::MaxIterations::new(500);
+    let change_max_iterations = 3000;
+    let change_delta = 1e-9;
 
     // Stop algorithm if the value of goal function will become less of 1e-4 or
     // after 3000 generations (iterations).
     let stop_checker = stopchecker::CompositeAny::new(vec![
-        Box::new(stopchecker::Threshold::new(1e-4)),
-        // Box::new(stopchecker::GoalNotChange::new(
-        //     change_max_iterations,
-        //     change_delta,
-        // )),
-        Box::new(stopchecker::MaxIterations::new(3000)),
+        Box::new(stopchecker::GoalNotChange::new(
+            change_max_iterations,
+            change_delta,
+        )),
     ]);
 
     // Make a trait object for selection. Selection is killing the worst individuals.
@@ -102,15 +100,7 @@ fn main() {
     ];
 
     // Make a loggers trait objects
-    // let mut stdout_verbose = io::stdout();
-    let mut stdout_result = io::stdout();
-    let mut stdout_time = io::stdout();
-
-    let loggers: Vec<Box<dyn logging::Logger<Chromosomes>>> = vec![
-        // Box::new(logging::VerboseLogger::new(&mut stdout_verbose, 15)),
-        Box::new(logging::ResultOnlyLogger::new(&mut stdout_result, 15)),
-        Box::new(logging::TimeLogger::new(&mut stdout_time)),
-    ];
+    let loggers: Vec<Box<dyn logging::Logger<Chromosomes>>> = vec![];
 
     // Construct main optimizer struct
     let mut optimizer = genetic::GeneticOptimizer::new(
@@ -126,5 +116,14 @@ fn main() {
     );
 
     // Run genetic algorithm
-    optimizer.find_min();
+    match optimizer.find_min() {
+        None => assert!(false),
+        Some((solution, goal_value)) => {
+            for i in 0..chromo_count {
+                assert!(abs(solution[i] - 1.0) < 0.1);
+            }
+
+            assert!(abs(goal_value) < 1e-3);
+        }
+    }
 }

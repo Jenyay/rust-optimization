@@ -10,20 +10,19 @@
 
 pub mod creation;
 pub mod cross;
-pub mod goal;
-pub mod logging;
 pub mod mutation;
 pub mod pairing;
 pub mod pre_birth;
 pub mod selection;
-pub mod stopchecker;
 
 use std::cmp::Ordering;
 use std::f64;
 use std::ops;
 use std::slice;
 
-use super::{Agent, AlgorithmWithAgents, Optimizer};
+use crate::tools::logging::Logger;
+use crate::tools::stopchecker::StopChecker;
+use crate::{Agent, AlgorithmState, Goal, Optimizer};
 
 /// Struct for single point (agent) in the search space
 ///
@@ -200,6 +199,7 @@ impl<T> Population<T> {
     pub fn get_worst(&self) -> &Option<Individual<T>> {
         &self.worst_individual
     }
+
     /// Returns count of the individuals in the population.
     pub fn len(&self) -> usize {
         self.individuals.len()
@@ -275,12 +275,17 @@ impl<T> ops::IndexMut<usize> for Population<T> {
     }
 }
 
-/// The trait to calculate goal function.
-///
-/// `T` - type of a point in the search space for goal function (chromosomes).
-pub trait Goal<T> {
-    /// Must return value of goal function for `chromosomes` point in the search space.
-    fn get(&self, chromosomes: &T) -> f64;
+impl<T: Clone> AlgorithmState<T> for Population<T> {
+    fn get_best_solution(&self) -> Option<(T, f64)> {
+        match &self.best_individual {
+            None => None,
+            Some(individual) => Some((individual.chromosomes.clone(), individual.fitness)),
+        }
+    }
+
+    fn get_iteration(&self) -> usize {
+        self.iteration
+    }
 }
 
 /// The trait to create initial individuals for population.
@@ -335,31 +340,6 @@ pub trait Pairing<T> {
     /// The method must select individuals to cross. Returns vector of vector with individuals
     /// numbers in `population`. Selected individuals will parents for new children.
     fn get_pairs(&mut self, population: &Population<T>) -> Vec<Vec<usize>>;
-}
-
-/// The trait with break criterion of genetic algorithm.
-///
-/// `T` - type of a point in the search space for goal function (chromosomes).
-pub trait StopChecker<T> {
-    /// The method must return true if genetic algorithm must be stopped.
-    fn can_stop(&mut self, population: &Population<T>) -> bool;
-}
-
-/// The trait for logging of genetic algorithm.
-///
-/// `T` - type of a point in the search space for goal function (chromosomes).
-pub trait Logger<T> {
-    /// Will be called after population initializing.
-    fn start(&mut self, _population: &Population<T>) {}
-
-    /// Will be called before run algorithm (possibly after result algorithm after pause).
-    fn resume(&mut self, _population: &Population<T>) {}
-
-    /// Will be called in the end of iteration (after selection).
-    fn next_iteration(&mut self, _population: &Population<T>) {}
-
-    /// Will be called when algorithm will be stopped.
-    fn finish(&mut self, _population: &Population<T>) {}
 }
 
 /// The main struct for an user. `GeneticOptimizer` implements `Optimizer` trait and keep all parts
@@ -437,7 +417,7 @@ impl<'a, T: Clone> GeneticOptimizer<'a, T> {
     }
 
     /// Do new iterations of genetic algorithm.
-    pub fn next_iterations(&mut self) -> Option<(&T, f64)> {
+    pub fn next_iterations(&mut self) -> Option<(T, f64)> {
         for logger in &mut self.loggers {
             logger.resume(&self.population);
         }
@@ -482,7 +462,7 @@ impl<'a, T: Clone> GeneticOptimizer<'a, T> {
 
         match &self.population.best_individual {
             None => None,
-            Some(individual) => Some((&individual.chromosomes, individual.fitness)),
+            Some(individual) => Some((individual.chromosomes.clone(), individual.fitness)),
         }
     }
 
@@ -506,7 +486,7 @@ impl<'a, T: Clone> GeneticOptimizer<'a, T> {
 
 impl<'a, T: Clone> Optimizer<T> for GeneticOptimizer<'a, T> {
     /// Run genetic algorithm
-    fn find_min(&mut self) -> Option<(&T, f64)> {
+    fn find_min(&mut self) -> Option<(T, f64)> {
         self.population.reset();
         let start_chromo_list = self.creator.create();
 
@@ -518,18 +498,5 @@ impl<'a, T: Clone> Optimizer<T> for GeneticOptimizer<'a, T> {
         }
 
         self.next_iterations()
-    }
-}
-
-impl<'a, T> AlgorithmWithAgents<T> for GeneticOptimizer<'a, T> {
-    type Agent = Individual<T>;
-
-    fn get_agents(&self) -> Vec<&Self::Agent> {
-        let mut agents: Vec<&Self::Agent> = Vec::with_capacity(self.population.len());
-        for individual in self.population.iter() {
-            agents.push(individual);
-        }
-
-        agents
     }
 }

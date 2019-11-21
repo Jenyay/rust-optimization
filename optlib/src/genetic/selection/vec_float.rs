@@ -1,8 +1,8 @@
 //! The module with selection algorithms for type chromosomes of Vec<Float>.
 
-use super::super::*;
-
 use num::Float;
+
+use crate::genetic::{Population, Selection};
 
 /// Kill individuals if theirs gene does not lie in the specified intevals.
 ///
@@ -28,7 +28,11 @@ impl<G: Float> Selection<Vec<G>> for CheckChromoInterval<G> {
         for individual in population.iter_mut() {
             assert_eq!(individual.get_chromosomes().len(), self.intervals.len());
 
-            for (chromo, interval) in individual.get_chromosomes().iter().zip(self.intervals.iter()) {
+            for (chromo, interval) in individual
+                .get_chromosomes()
+                .iter()
+                .zip(self.intervals.iter())
+            {
                 if !chromo.is_finite() || *chromo < interval.0 || *chromo > interval.1 {
                     individual.kill();
                     break;

@@ -11,7 +11,7 @@
 //! * `Individual` - union of x and value of goal function.
 //! * `Population` - set of the individuals.
 //! * `Generation` - a number of iteration of genetic algorithm.
-use std::io;
+use num::abs;
 
 use optlib::genetic::{self, creation, cross, mutation, pairing, pre_birth, selection};
 use optlib::tools::logging;
@@ -25,7 +25,8 @@ type Gene = f32;
 /// Chromosomes type
 type Chromosomes = Vec<Gene>;
 
-fn main() {
+#[test]
+fn genetic_rastrigin() {
     // General parameters
 
     // Search space. Any xi lies in [-5.12; 5.12]
@@ -77,19 +78,17 @@ fn main() {
     )];
 
     // Stop checker. Stop criterion for genetic algorithm.
-    // let change_max_iterations = 200;
-    // let change_delta = 1e-7;
-    // let stop_checker = stopchecker::GoalNotChange::new(change_max_iterations, change_delta);
-    // let stop_checker = stopchecker::MaxIterations::new(500);
+    let change_max_iterations = 200;
+    let change_delta = 1e-7;
 
     // Stop algorithm if the value of goal function will become less of 1e-4 or
     // after 3000 generations (iterations).
     let stop_checker = stopchecker::CompositeAny::new(vec![
         Box::new(stopchecker::Threshold::new(1e-4)),
-        // Box::new(stopchecker::GoalNotChange::new(
-        //     change_max_iterations,
-        //     change_delta,
-        // )),
+        Box::new(stopchecker::GoalNotChange::new(
+            change_max_iterations,
+            change_delta,
+        )),
         Box::new(stopchecker::MaxIterations::new(3000)),
     ]);
 
@@ -102,15 +101,7 @@ fn main() {
     ];
 
     // Make a loggers trait objects
-    // let mut stdout_verbose = io::stdout();
-    let mut stdout_result = io::stdout();
-    let mut stdout_time = io::stdout();
-
-    let loggers: Vec<Box<dyn logging::Logger<Chromosomes>>> = vec![
-        // Box::new(logging::VerboseLogger::new(&mut stdout_verbose, 15)),
-        Box::new(logging::ResultOnlyLogger::new(&mut stdout_result, 15)),
-        Box::new(logging::TimeLogger::new(&mut stdout_time)),
-    ];
+    let loggers: Vec<Box<dyn logging::Logger<Chromosomes>>> = vec![];
 
     // Construct main optimizer struct
     let mut optimizer = genetic::GeneticOptimizer::new(
@@ -126,5 +117,14 @@ fn main() {
     );
 
     // Run genetic algorithm
-    optimizer.find_min();
+    match optimizer.find_min() {
+        None => assert!(false),
+        Some((solution, goal_value)) => {
+            for i in 0..chromo_count {
+                assert!(abs(solution[i] - 0.0) < 0.01);
+            }
+
+            assert!(abs(goal_value) < 1e-3);
+        }
+    }
 }
