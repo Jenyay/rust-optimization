@@ -6,7 +6,7 @@ use num::Float;
 /// Paraboloid.
 ///
 /// y = (x0 - 1)^2 + (x1 - 2)^2 + (x2 - 3)^2 ... (xn - n)^2
-/// The min val is 0.0 for point (0.0, 1.0, 2.0, ... n).
+/// The min val is 0.0 for point (1.0, 2.0, 3.0, ... n).
 ///
 /// ```
 /// use optlib_testfunc::paraboloid;
@@ -30,8 +30,8 @@ pub fn paraboloid<G: Float>(x: &Vec<G>) -> f64 {
 ///
 /// # Parameters
 /// Any x lies in [-500.0; 500.0]. 
-/// Global minimum is x' = (420.9687, 420.9687, ...).
-/// f(x') = 0
+/// For any x lies in [-500.0; 500.0] global minimum located in x' = (420.9687, 420.9687, ...).
+/// f(x') = 0.
 ///
 /// ```
 /// use optlib_testfunc::schwefel;

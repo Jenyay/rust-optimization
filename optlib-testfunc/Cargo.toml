@@ -9,6 +9,7 @@ categories = ["algorithms", "science"]
 homepage = "https://github.com/Jenyay/rust-optimization"
 repository = "https://github.com/Jenyay/rust-optimization"
 license = "MIT"
+readme = "README.md"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
