@@ -185,12 +185,12 @@ Time elapsed: 2352 ms
 
 Also optlib library contains other optimization examples:
 
-* genetic-paraboloid.rs
-* genetic-rastrigin.rs
-* genetic-rosenbrock.rs
-* genetic-schwefel.rs
-* particleswarm-paraboloid.rs
-* particleswarm-rastrigin.rs
-* particleswarm-rosenbrock.rs
-* particleswarm-schwefel.rs
+* genetic-paraboloid
+* genetic-rastrigin
+* genetic-rosenbrock
+* genetic-schwefel
+* particleswarm-paraboloid
+* particleswarm-rastrigin
+* particleswarm-rosenbrock
+* particleswarm-schwefel
 
