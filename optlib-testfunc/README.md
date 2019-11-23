@@ -1,8 +1,8 @@
 # optlib-testfunc
 
-[![Current Version](https://img.shields.io/crates/v/optlib-testfunc.svg)](https://crates.io/crates/optlib-testfunc)
+[![Current Version](https://img.shields.io/crates/v/optlib_testfunc.svg)](https://crates.io/crates/optlib-testfunc)
 [![Documentation](https://docs.rs/optlib-testfunc/badge.svg)](https://docs.rs/optlib-testfunc)
-[![License](https://img.shields.io/crates/l/optlib-testfunc.svg)](https://crates.io/crates/optlib-testfunc)
+[![License](https://img.shields.io/crates/l/optlib_testfunc.svg)](https://crates.io/crates/optlib-testfunc)
 
 The crate contains functions for optimization algorithms testing. All functions have one global minimum.
 
