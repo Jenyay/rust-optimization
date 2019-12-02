@@ -1,6 +1,6 @@
 [package]
 name = "optlib"
-version = "0.2.0"
+version = "0.3.0"
 authors = ["Eugene Ilin <jenyay.ilin@gmail.com>"]
 edition = "2018"
 keywords = ["genetic", "optimization", "math", "algorithms"]
@@ -16,7 +16,7 @@ num = "0.2"
 rand = "0.6.4"
 
 [dev-dependencies]
-optlib-testfunc = { path = "../optlib-testfunc", version = "0.1.0"}
+optlib-testfunc = { path = "../optlib-testfunc", version = "*"}
 
 [badges]
 maintenance = { status = "actively-developed" }
