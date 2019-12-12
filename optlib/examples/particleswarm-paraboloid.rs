@@ -72,9 +72,9 @@ fn main() {
         Box::new(coord_initializer),
         Box::new(speed_initializer),
         Box::new(speed_calculator),
-        post_moves,
         );
     optimizer.set_loggers(loggers);
+    optimizer.set_post_moves(post_moves);
 
     optimizer.find_min();
 }

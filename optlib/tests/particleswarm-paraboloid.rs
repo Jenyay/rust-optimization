@@ -62,9 +62,9 @@ fn test_particleswarm_paraboloid() {
         Box::new(coord_initializer),
         Box::new(speed_initializer),
         Box::new(speed_calculator),
-        post_moves,
         );
     optimizer.set_loggers(loggers);
+    optimizer.set_post_moves(post_moves);
 
     match optimizer.find_min() {
         None => assert!(false),
