@@ -70,8 +70,8 @@ fn main() {
         Box::new(speed_initializer),
         Box::new(speed_calculator),
         post_moves,
-        loggers,
         );
+    optimizer.set_loggers(loggers);
 
     optimizer.find_min();
 }

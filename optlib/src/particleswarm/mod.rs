@@ -199,7 +199,6 @@ impl<'a, T: Clone + Float + Debug> ParticleSwarmOptimizer<'a, T> {
         speed_initializer: Box<dyn SpeedInitializer<T>>,
         speed_calculator: Box<dyn SpeedCalculator<T>>,
         post_move: Vec<Box<dyn PostMove<T>>>,
-        loggers: Vec<Box<dyn Logger<Vec<T>> + 'a>>,
     ) -> Self {
         let swarm = Swarm::new();
 
@@ -210,9 +209,13 @@ impl<'a, T: Clone + Float + Debug> ParticleSwarmOptimizer<'a, T> {
             speed_initializer,
             speed_calculator,
             post_move,
-            loggers,
+            loggers: vec![],
             swarm,
         }
+    }
+
+    pub fn set_loggers(&mut self, loggers: Vec<Box<dyn Logger<Vec<T>> + 'a>>) {
+        self.loggers = loggers;
     }
 
     fn renew_swarm(&mut self) {
