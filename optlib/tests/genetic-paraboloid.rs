@@ -79,8 +79,8 @@ fn genetic_paraboloid() {
         Box::new(mutation),
         selections,
         pre_births,
-        loggers,
     );
+    optimizer.set_loggers(loggers);
 
     // Run genetic algorithm
     match optimizer.find_min() {

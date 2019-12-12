@@ -371,7 +371,6 @@ impl<'a, T: Clone> GeneticOptimizer<'a, T> {
         mutation: Box<dyn Mutation<T> + 'a>,
         selections: Vec<Box<dyn Selection<T> + 'a>>,
         pre_births: Vec<Box<dyn PreBirth<T> + 'a>>,
-        loggers: Vec<Box<dyn Logger<T> + 'a>>,
     ) -> GeneticOptimizer<'a, T> {
         GeneticOptimizer {
             creator,
@@ -381,9 +380,13 @@ impl<'a, T: Clone> GeneticOptimizer<'a, T> {
             mutation,
             selections,
             pre_births,
-            loggers,
+            loggers: vec![],
             population: Population::new(goal),
         }
+    }
+
+    pub fn set_loggers(&mut self, loggers: Vec<Box<dyn Logger<T> + 'a>>) {
+        self.loggers = loggers;
     }
 
     /// Replace the trait object of pairing algorithm.

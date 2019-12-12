@@ -88,8 +88,8 @@ fn main() {
         Box::new(mutation),
         selections,
         pre_births,
-        loggers,
     );
+    optimizer.set_loggers(loggers);
 
     optimizer.find_min();
 }

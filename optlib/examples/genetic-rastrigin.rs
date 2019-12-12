@@ -122,8 +122,8 @@ fn main() {
         Box::new(mutation),
         selections,
         pre_births,
-        loggers,
     );
+    optimizer.set_loggers(loggers);
 
     // Run genetic algorithm
     optimizer.find_min();
