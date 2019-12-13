@@ -1,15 +1,11 @@
 use std::io;
 
 use optlib::{
+    particleswarm::{
+        self, initializing, postmove, postspeedcalc, speedcalc, PostMove, PostSpeedCalc,
+    },
     tools::{logging, stopchecker},
     GoalFromFunction, Optimizer,
-    particleswarm::{
-        self,
-        initializing,
-        postmove,
-        speedcalc,
-        PostMove,
-    },
 };
 
 use optlib_testfunc;
@@ -33,15 +29,24 @@ fn main() {
     let goal = GoalFromFunction::new(optlib_testfunc::paraboloid);
 
     // Particles initializers
-    let coord_initializer = initializing::RandomCoordinatesInitializer::new(intervals.clone(), particles_count);
+    let coord_initializer =
+        initializing::RandomCoordinatesInitializer::new(intervals.clone(), particles_count);
     let speed_initializer = initializing::ZeroSpeedInitializer::new(dimension, particles_count);
 
     // PostMove
-    let post_moves: Vec<Box<dyn PostMove<Coordinate>>> = vec![Box::new(postmove::MoveToBoundary::new(intervals.clone()))];
+    let post_moves: Vec<Box<dyn PostMove<Coordinate>>> =
+        vec![Box::new(postmove::MoveToBoundary::new(intervals.clone()))];
 
     // Speed calculator
     // let speed_calculator = speedcalc::ClassicSpeedCalculator::new(phi_personal, phi_global);
     let speed_calculator = speedcalc::CanonicalSpeedCalculator::new(phi_personal, phi_global, k);
+
+    // let max_speed = vec![20.0_f32; dimension];
+    // let post_speed_calc: Vec<Box<dyn PostSpeedCalc<Coordinate>>> =
+    //     vec![Box::new(postspeedcalc::MaxSpeedDimensions::new(max_speed))];
+    let max_speed = 10.0;
+    let post_speed_calc: Vec<Box<dyn PostSpeedCalc<Coordinate>>> =
+        vec![Box::new(postspeedcalc::MaxSpeedAbs::new(max_speed))];
 
     // Stop checker
     let change_max_iterations = 150;
@@ -72,9 +77,10 @@ fn main() {
         Box::new(coord_initializer),
         Box::new(speed_initializer),
         Box::new(speed_calculator),
-        );
+    );
     optimizer.set_loggers(loggers);
     optimizer.set_post_moves(post_moves);
+    optimizer.set_post_speed_calc(post_speed_calc);
 
     optimizer.find_min();
 }

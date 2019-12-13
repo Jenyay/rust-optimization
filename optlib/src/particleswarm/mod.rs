@@ -1,5 +1,6 @@
 pub mod initializing;
 pub mod postmove;
+pub mod postspeedcalc;
 pub mod speedcalc;
 
 use std::cmp::Ordering;
@@ -36,8 +37,13 @@ pub trait PostMove<T> {
     fn post_move(&self, coordinates: &mut Vec<T>);
 }
 
+/// The trait to calculate new speed vector for every particle
 pub trait SpeedCalculator<T> {
     fn calc_new_speed(&mut self, swarm: &Swarm<T>, particle: &Particle<T>) -> Vec<T>;
+}
+
+pub trait PostSpeedCalc<T> {
+    fn correct_speed(&mut self, speed: Vec<T>) -> Vec<T>;
 }
 
 /// Struct for single point (agent) in the search space
@@ -186,6 +192,7 @@ pub struct ParticleSwarmOptimizer<'a, T> {
     coordinates_initializer: Box<dyn CoordinatesInitializer<T>>,
     speed_initializer: Box<dyn SpeedInitializer<T>>,
     speed_calculator: Box<dyn SpeedCalculator<T>>,
+    post_speed_calc: Vec<Box<dyn PostSpeedCalc<T>>>,
     post_move: Vec<Box<dyn PostMove<T>>>,
     loggers: Vec<Box<dyn Logger<Vec<T>> + 'a>>,
     swarm: Swarm<T>,
@@ -207,6 +214,7 @@ impl<'a, T: Clone + Float + Debug> ParticleSwarmOptimizer<'a, T> {
             coordinates_initializer,
             speed_initializer,
             speed_calculator,
+            post_speed_calc: vec![],
             post_move: vec![],
             loggers: vec![],
             swarm,
@@ -219,6 +227,10 @@ impl<'a, T: Clone + Float + Debug> ParticleSwarmOptimizer<'a, T> {
 
     pub fn set_post_moves(&mut self, post_move: Vec<Box<dyn PostMove<T>>>) {
         self.post_move = post_move;
+    }
+
+    pub fn set_post_speed_calc(&mut self, post_speed_calc: Vec<Box<dyn PostSpeedCalc<T>>>) {
+        self.post_speed_calc = post_speed_calc;
     }
 
     fn renew_swarm(&mut self) {
@@ -254,17 +266,18 @@ impl<'a, T: Clone + Float + Debug> ParticleSwarmOptimizer<'a, T> {
         }
 
         while !self.stop_checker.can_stop(&self.swarm) {
-            // println!("-----");
-
             for n in 0..self.swarm.particles.len() {
-                // println!("{}", n);
-
                 // Calculate new speed
-                let new_speed = self
+                let mut new_speed = self
                     .speed_calculator
                     .calc_new_speed(&self.swarm, &self.swarm.particles[n]);
+
+                // Correct new speed
+                for post_speed_calc in &mut self.post_speed_calc {
+                    new_speed = post_speed_calc.correct_speed(new_speed);
+                }
+
                 self.swarm.particles[n].set_speed(new_speed);
-                // println!("{:?}", self.swarm.particles[n]);
 
                 // Calculate new coordinates
                 let mut new_coordinates: Vec<T> = self.swarm.particles[n]
