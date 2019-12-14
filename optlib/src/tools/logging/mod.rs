@@ -1,10 +1,11 @@
 //! The module with the loggers ready for using. The loggers implements the `Logger` trait.
 
+use core::cell::RefMut;
 use std::fmt::Display;
-use std::time;
 use std::io;
+use std::time;
 
-use crate::AlgorithmState;
+use crate::{AlgorithmState, Solution};
 
 /// The logging trait for algorithm with the agents.
 ///
@@ -21,6 +22,8 @@ pub trait Logger<T> {
 
     /// Will be called when algorithm will be stopped.
     fn finish(&mut self, _state: &dyn AlgorithmState<T>) {}
+
+    // fn as_any(&self) -> &dyn Any;
 }
 
 /// The logger prints out current solution and goal function for every iteration.
@@ -35,10 +38,7 @@ impl<'a> VerboseLogger<'a> {
     /// # Parameters
     /// * `precision` - count of the digits after comma for float numbers.
     pub fn new(writer: &'a mut dyn io::Write, precision: usize) -> Self {
-        Self {
-            writer,
-            precision,
-        }
+        Self { writer, precision }
     }
 }
 
@@ -70,10 +70,7 @@ impl<'a> ResultOnlyLogger<'a> {
     /// # Parameters
     /// * `precision` - count of the digits after comma for float numbers.
     pub fn new(writer: &'a mut dyn io::Write, precision: usize) -> Self {
-        Self {
-            writer,
-            precision,
-        }
+        Self { writer, precision }
     }
 }
 
@@ -96,10 +93,14 @@ impl<'a, T: Display> Logger<Vec<T>> for ResultOnlyLogger<'a> {
                 writeln!(&mut self.writer, "Goal: {:.*}", self.precision, goal).unwrap();
             }
         }
-        writeln!(&mut self.writer, "Iterations count: {}", state.get_iteration()).unwrap();
+        writeln!(
+            &mut self.writer,
+            "Iterations count: {}",
+            state.get_iteration()
+        )
+        .unwrap();
     }
 }
-
 
 /// The logger prints out time duration after finish of algorithm.
 pub struct TimeLogger<'a> {
@@ -127,5 +128,73 @@ impl<'a, T: Display> Logger<Vec<T>> for TimeLogger<'a> {
         let time_ms = duration.as_secs() * 1000 + duration.subsec_millis() as u64;
 
         writeln!(&mut self.writer, "Time elapsed: {} ms", time_ms).unwrap();
+    }
+}
+
+pub struct Statistics<T> {
+    // index - run number
+    results: Vec<Option<Solution<T>>>,
+
+    // convergence[run number][iteration]
+    convergence: Vec<Vec<Option<Solution<T>>>>,
+}
+
+impl<T: Clone> Statistics<T> {
+    pub fn new() -> Self {
+        Self {
+            results: vec![],
+            convergence: vec![],
+        }
+    }
+
+    pub fn get_run_count(&self) -> usize {
+        self.results.len()
+    }
+
+    pub fn get_results(&self) -> Vec<Option<Solution<T>>> {
+        self.results.clone()
+    }
+
+    pub fn get_convergence(&self) -> Vec<Vec<Option<Solution<T>>>> {
+        self.convergence.clone()
+    }
+
+    fn add_result(&mut self, state: &dyn AlgorithmState<T>) {
+        self.results.push(state.get_best_solution().clone());
+    }
+
+    fn add_convergence(&mut self, state: &dyn AlgorithmState<T>) {
+        let run_index = self.convergence.len() - 1;
+        self.convergence[run_index].push(state.get_best_solution().clone());
+    }
+}
+
+pub struct StatisticsLogger<'a, T> {
+    statistics: RefMut<'a, Statistics<T>>,
+}
+
+impl<'a, T> StatisticsLogger<'a, T> {
+    pub fn new(statistics: RefMut<'a, Statistics<T>>) -> Self {
+        Self { statistics }
+    }
+}
+
+impl<'a, T: Clone> Logger<T> for StatisticsLogger<'a, T> {
+    /// Will be called after algorithm initializing.
+    fn start(&mut self, _state: &dyn AlgorithmState<T>) {
+        self.statistics.convergence.push(vec![]);
+    }
+
+    /// Will be called before run algorithm (possibly after result algorithm after pause).
+    fn resume(&mut self, _state: &dyn AlgorithmState<T>) {}
+
+    /// Will be called in the end of iteration.
+    fn next_iteration(&mut self, state: &dyn AlgorithmState<T>) {
+        self.statistics.add_convergence(state);
+    }
+
+    /// Will be called when algorithm will be stopped.
+    fn finish(&mut self, state: &dyn AlgorithmState<T>) {
+        self.statistics.add_result(state);
     }
 }

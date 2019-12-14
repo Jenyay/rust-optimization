@@ -6,6 +6,10 @@ pub mod genetic;
 pub mod particleswarm;
 pub mod tools;
 
+/// First item is current solution in search space,
+/// second item is current goal value
+type Solution<T> = (T, f64);
+
 /// Common Optimizer trait.
 ///
 /// `T` - type of a point in search space for goal function.
@@ -17,15 +21,13 @@ pub trait Optimizer<T> {
     ///
     /// # Remarks
     /// All algorithms with `Optimizer` must search minimum of a goal function.
-    fn find_min(&mut self) -> Option<(T, f64)>;
+    fn find_min(&mut self) -> Option<Solution<T>>;
 }
-
 
 pub trait AlgorithmState<T> {
-    fn get_best_solution(&self) -> Option<(T, f64)>;
+    fn get_best_solution(&self) -> Option<Solution<T>>;
     fn get_iteration(&self) -> usize;
 }
-
 
 /// The trait for algotithms where use agents (genetic algorithm, partical swarm algorithm etc).
 ///
