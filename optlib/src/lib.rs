@@ -6,9 +6,11 @@ pub mod genetic;
 pub mod particleswarm;
 pub mod tools;
 
+type GoalValue = f64;
+
 /// First item is current solution in search space,
 /// second item is current goal value
-type Solution<T> = (T, f64);
+type Solution<T> = (T, GoalValue);
 
 /// Common Optimizer trait.
 ///
@@ -16,7 +18,7 @@ type Solution<T> = (T, f64);
 pub trait Optimizer<T> {
     /// Run an algorithm.
     ///
-    /// Returns `Some(x: &T, goal: f64)`, where `x` - result of optimization,
+    /// Returns `Some(x: &T, goal: GoalValue)`, where `x` - result of optimization,
     /// `goal` - value of goal function. Returns `None` if an algoritm can't find minimum of a goal function.
     ///
     /// # Remarks
@@ -47,29 +49,29 @@ pub trait Agent<T> {
     fn get_parameter(&self) -> &T;
 
     /// Returns value of a goal function for current agent.
-    fn get_goal(&self) -> f64;
+    fn get_goal(&self) -> GoalValue;
 }
 
 /// The trait for the goal function.
 pub trait Goal<T> {
     /// Must return value of goal function for the point in the search space (x).
-    fn get(&self, x: &T) -> f64;
+    fn get(&self, x: &T) -> GoalValue;
 }
 
 /// Struct to convert (wrap) function to `Goal` trait.
 pub struct GoalFromFunction<T> {
-    function: fn(&T) -> f64,
+    function: fn(&T) -> GoalValue,
 }
 
 impl<T> GoalFromFunction<T> {
     /// Constructor.
-    pub fn new(function: fn(&T) -> f64) -> Self {
+    pub fn new(function: fn(&T) -> GoalValue) -> Self {
         Self { function }
     }
 }
 
 impl<T> Goal<T> for GoalFromFunction<T> {
-    fn get(&self, x: &T) -> f64 {
+    fn get(&self, x: &T) -> GoalValue {
         (self.function)(x)
     }
 }
