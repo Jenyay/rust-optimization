@@ -3,8 +3,7 @@ use core::cell::RefCell;
 use optlib::genetic::{
     self, creation, cross, mutation, pairing, pre_birth, selection, GeneticOptimizer,
 };
-use optlib::tools::logging;
-use optlib::tools::stopchecker;
+use optlib::tools::{statistics, logging, stopchecker};
 use optlib::{GoalFromFunction, Optimizer};
 use optlib_testfunc;
 
@@ -86,11 +85,11 @@ fn genetic_paraboloid_single() {
     let result;
 
     // Logging
-    let statistics = RefCell::new(logging::Statistics::new());
+    let statistics = RefCell::new(statistics::Statistics::new());
     {
         let mut optimizer = _create_optimizer(chromo_count);
 
-        let stat_logger = Box::new(logging::StatisticsLogger::new(statistics.borrow_mut()));
+        let stat_logger = Box::new(statistics::StatisticsLogger::new(statistics.borrow_mut()));
         let loggers: Vec<Box<dyn logging::Logger<Chromosomes>>> = vec![stat_logger];
 
         optimizer.set_loggers(loggers);
@@ -118,11 +117,11 @@ fn genetic_paraboloid_two() {
     let result_2;
 
     // Logging
-    let statistics = RefCell::new(logging::Statistics::new());
+    let statistics = RefCell::new(statistics::Statistics::new());
     {
         let mut optimizer = _create_optimizer(chromo_count);
 
-        let stat_logger = Box::new(logging::StatisticsLogger::new(statistics.borrow_mut()));
+        let stat_logger = Box::new(statistics::StatisticsLogger::new(statistics.borrow_mut()));
         let loggers: Vec<Box<dyn logging::Logger<Chromosomes>>> = vec![stat_logger];
 
         optimizer.set_loggers(loggers);

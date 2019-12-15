@@ -1,5 +1,6 @@
 pub mod logging;
 pub mod stopchecker;
+pub mod statistics;
 
 use num::NumCast;
 use rand::distributions::{Distribution, Uniform};
