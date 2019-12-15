@@ -45,7 +45,7 @@ impl<T: Float> PostMove<T> for MoveToBoundary<T> {
 }
 
 #[cfg(test)]
-mod test_move_to_boundary {
+mod tests {
     use crate::particleswarm::{postmove::MoveToBoundary, PostMove};
     use num::abs;
 
