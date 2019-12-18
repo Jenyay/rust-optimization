@@ -19,6 +19,7 @@ use optlib::genetic::{
     self, creation, cross, mutation, pairing, pre_birth, selection, GeneticOptimizer,
 };
 use optlib::tools::{logging, statistics, stopchecker};
+use optlib::tools::statistics::StatFunctionsConvergence;
 use optlib::{GoalFromFunction, Optimizer};
 use optlib_testfunc;
 
@@ -113,7 +114,7 @@ fn create_optimizer<'a>(chromo_count: usize) -> GeneticOptimizer<'a, Chromosomes
 }
 
 fn print_convergence_statistics(mut writer: &mut dyn io::Write, stat: &Ref<statistics::Statistics<Chromosomes>>) {
-    let average_convergence = statistics::get_average_convergence(stat.get_convergence());
+    let average_convergence = stat.get_convergence().get_average_convergence();
     for n in 0..average_convergence.len() {
         if let Some(goal_value) = average_convergence[n] {
             writeln!(&mut writer, "{n:<8}{value:15.10e}", n = n, value = goal_value).unwrap();

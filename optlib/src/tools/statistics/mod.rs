@@ -47,73 +47,100 @@ impl<T: Clone> Statistics<T> {
     }
 }
 
-/// Calculate average goal function versus iteration number.
-/// Average by run count.
-/// Returns vector with: index - iteration, value - Option<GoalValue>.
-/// Value is None if Solution is None for any running.
-/// Length of result is minimal iterations count for all running.
-/// # Params
+/// The trait contains methods for calculate statistics for Convergance<T>
+/// type Convergence<T> = Vec<Vec<Option<Solution<T>>>>;
 /// convergence[run number][iteration]
-pub fn get_average_convergence<T>(convergence: &Convergence<T>) -> Vec<Option<GoalValue>> {
-    let run_count = convergence.len();
-    let min_iterations = get_min_iterations(convergence);
-    let mut result = Vec::with_capacity(min_iterations);
+pub trait StatFunctionsConvergence {
+    /// Calculate average goal function versus iteration number.
+    /// Average by run count.
+    /// Returns vector with: index - iteration, value - Option<GoalValue>.
+    /// Value is None if Solution is None for any running.
+    /// Length of result is minimal iterations count for all running.
+    /// # Params
+    /// self[run number][iteration]
+    fn get_average_convergence(&self) -> Vec<Option<GoalValue>>;
+    fn get_min_iterations(&self) -> usize;
+}
 
-    for i in 0..min_iterations {
-        let mut sum_count = 0;
-        let mut sum = 0 as GoalValue;
-        for run in 0..run_count {
-            if let Some(solution) = &convergence[run][i] {
-                sum += solution.1;
-                sum_count += 1;
+/// The trait contains methods for calculate statistics for Vec<Option<Solution<T>>>
+/// type Solution<T> = (T, GoalValue);
+pub trait StatFunctionsSolution {
+    /// Calculate an average value of goal function.
+    /// Returns None if `self` is empty or `self` contains `None` only.
+    fn get_average_goal(&self) -> Option<GoalValue>;
+}
+
+impl<T> StatFunctionsConvergence for Convergence<T> {
+    /// Calculate average goal function versus iteration number.
+    /// Average by run count.
+    /// Returns vector with: index - iteration, value - Option<GoalValue>.
+    /// Value is None if Solution is None for any running.
+    /// Length of result is minimal iterations count for all running.
+    /// # Params
+    /// self[run number][iteration]
+    fn get_average_convergence(&self) -> Vec<Option<GoalValue>> {
+        let run_count = self.len();
+        let min_iterations = self.get_min_iterations();
+        let mut result = Vec::with_capacity(min_iterations);
+
+        for i in 0..min_iterations {
+            let mut sum_count = 0;
+            let mut sum = 0 as GoalValue;
+            for run in 0..run_count {
+                if let Some(solution) = &self[run][i] {
+                    sum += solution.1;
+                    sum_count += 1;
+                }
+            }
+
+            if sum_count != 0 {
+                result.push(Some(sum / (sum_count as GoalValue)));
+            } else {
+                result.push(None);
             }
         }
 
-        if sum_count != 0 {
-            result.push(Some(sum / (sum_count as GoalValue)));
+        result
+    }
+
+    fn get_min_iterations(&self) -> usize {
+        if self.is_empty() {
+            0
         } else {
-            result.push(None);
+            self.iter().fold(self[0].len(), |min_len, x| {
+                if x.len() < min_len {
+                    x.len()
+                } else {
+                    min_len
+                }
+            })
         }
-    }
-
-    result
-}
-
-/// Calculate an average value of goal function.
-/// Returns None if `results` is empty or `results` contains `None` only.
-pub fn get_average_goal<T>(results: &Vec<Option<Solution<T>>>) -> Option<GoalValue> {
-    let mut sum = 0 as GoalValue;
-    let mut count = 0;
-    for current_solution in results {
-        if let Some((_, goal)) = current_solution {
-            if count == 0 {
-                sum = *goal;
-                count = 1;
-            } else {
-                sum += *goal;
-                count += 1;
-            }
-        }
-    }
-
-    if count == 0 {
-        None
-    } else {
-        Some(sum / (count as GoalValue))
     }
 }
 
-pub fn get_min_iterations<T>(convergence: &Convergence<T>) -> usize {
-    if convergence.is_empty() {
-        0
-    } else {
-        convergence.iter().fold(convergence[0].len(), |min_len, x| {
-            if x.len() < min_len {
-                x.len()
-            } else {
-                min_len
+impl<T> StatFunctionsSolution for Vec<Option<Solution<T>>> {
+    /// Calculate an average value of goal function.
+    /// Returns None if `self` is empty or `self` contains `None` only.
+    fn get_average_goal(&self) -> Option<GoalValue> {
+        let mut sum = 0 as GoalValue;
+        let mut count = 0;
+        for current_solution in self {
+            if let Some((_, goal)) = current_solution {
+                if count == 0 {
+                    sum = *goal;
+                    count = 1;
+                } else {
+                    sum += *goal;
+                    count += 1;
+                }
             }
-        })
+        }
+
+        if count == 0 {
+            None
+        } else {
+            Some(sum / (count as GoalValue))
+        }
     }
 }
 
@@ -154,7 +181,7 @@ mod tests {
     #[test]
     fn get_min_iterations_empty() {
         let convergence: Convergence<f32> = vec![];
-        assert_eq!(get_min_iterations(&convergence), 0);
+        assert_eq!(convergence.get_min_iterations(), 0);
     }
 
     #[test]
@@ -162,7 +189,7 @@ mod tests {
         let mut convergence: Convergence<f32> = vec![];
         convergence.push(vec![Some((1_f32, 0_f64))]);
 
-        assert_eq!(get_min_iterations(&convergence), 1);
+        assert_eq!(convergence.get_min_iterations(), 1);
     }
 
     #[test]
@@ -174,7 +201,7 @@ mod tests {
             Some((1_f32, 0_f64)),
         ]);
 
-        assert_eq!(get_min_iterations(&convergence), 3);
+        assert_eq!(convergence.get_min_iterations(), 3);
     }
 
     #[test]
@@ -187,7 +214,7 @@ mod tests {
         ]);
         convergence.push(vec![Some((1_f32, 0_f64))]);
 
-        assert_eq!(get_min_iterations(&convergence), 1);
+        assert_eq!(convergence.get_min_iterations(), 1);
     }
 
     #[test]
@@ -200,13 +227,13 @@ mod tests {
         ]);
         convergence.push(vec![]);
 
-        assert_eq!(get_min_iterations(&convergence), 0);
+        assert_eq!(convergence.get_min_iterations(), 0);
     }
 
     #[test]
     fn get_average_convergence_empty() {
         let convergence: Convergence<f32> = vec![];
-        assert_eq!(get_average_convergence(&convergence), vec![]);
+        assert_eq!(convergence.get_average_convergence(), vec![]);
     }
 
     #[test]
@@ -220,7 +247,7 @@ mod tests {
 
         let result = vec![Some(30_f64), Some(20_f64), Some(10_f64)];
 
-        assert_eq!(get_average_convergence(&convergence), result);
+        assert_eq!(convergence.get_average_convergence(), result);
     }
 
     #[test]
@@ -230,7 +257,7 @@ mod tests {
 
         let result = vec![Some(30_f64), None, Some(10_f64)];
 
-        assert_eq!(get_average_convergence(&convergence), result);
+        assert_eq!(convergence.get_average_convergence(), result);
     }
 
     #[test]
@@ -249,7 +276,7 @@ mod tests {
 
         let result = vec![Some(40_f64), Some(30_f64), Some(20_f64)];
 
-        assert_eq!(get_average_convergence(&convergence), result);
+        assert_eq!(convergence.get_average_convergence(), result);
     }
 
     #[test]
@@ -264,7 +291,7 @@ mod tests {
 
         let result = vec![Some(40_f64), Some(40_f64), Some(20_f64)];
 
-        assert_eq!(get_average_convergence(&convergence), result);
+        assert_eq!(convergence.get_average_convergence(), result);
     }
 
     #[test]
@@ -275,31 +302,31 @@ mod tests {
 
         let result = vec![Some(40_f64), None, Some(20_f64)];
 
-        assert_eq!(get_average_convergence(&convergence), result);
+        assert_eq!(convergence.get_average_convergence(), result);
     }
 
     #[test]
     fn get_average_goal_empty() {
         let results: Vec<Option<Solution<f32>>> = vec![];
-        assert_eq!(get_average_goal(&results), None);
+        assert_eq!(results.get_average_goal(), None);
     }
 
     #[test]
     fn get_average_goal_none_only() {
         let results: Vec<Option<Solution<f32>>> = vec![None];
-        assert_eq!(get_average_goal(&results), None);
+        assert_eq!(results.get_average_goal(), None);
     }
 
     #[test]
     fn get_average_goal_single() {
         let results: Vec<Option<Solution<f32>>> = vec![Some((1.0_f32, 10.0_f64))];
-        assert_eq!(get_average_goal(&results), Some(10.0_f64));
+        assert_eq!(results.get_average_goal(), Some(10.0_f64));
     }
 
     #[test]
     fn get_average_goal_several() {
         let results: Vec<Option<Solution<f32>>> =
             vec![Some((1.0_f32, 10.0_f64)), Some((2.0_f32, 30.0_f64))];
-        assert_eq!(get_average_goal(&results), Some(20.0_f64));
+        assert_eq!(results.get_average_goal(), Some(20.0_f64));
     }
 }
