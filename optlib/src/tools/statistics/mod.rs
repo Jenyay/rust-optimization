@@ -65,9 +65,13 @@ pub trait StatFunctionsConvergence {
 /// The trait contains methods for calculate statistics for Vec<Option<Solution<T>>>
 /// type Solution<T> = (T, GoalValue);
 pub trait StatFunctionsSolution {
-    /// Calculate an average value of goal function.
+    /// Calculate an average of goal function.
     /// Returns None if `self` is empty or `self` contains `None` only.
     fn get_average_goal(&self) -> Option<GoalValue>;
+
+    /// Calculate a standard deviation of goal function.
+    /// Returns None if length of `self` less 2 or `self` contains `None` only.
+    fn get_standard_deviation_goal(&self) -> Option<GoalValue>;
 }
 
 impl<T> StatFunctionsConvergence for Convergence<T> {
@@ -119,7 +123,7 @@ impl<T> StatFunctionsConvergence for Convergence<T> {
 }
 
 impl<T> StatFunctionsSolution for Vec<Option<Solution<T>>> {
-    /// Calculate an average value of goal function.
+    /// Calculate an average of goal function.
     /// Returns None if `self` is empty or `self` contains `None` only.
     fn get_average_goal(&self) -> Option<GoalValue> {
         let mut sum = 0 as GoalValue;
@@ -140,6 +144,36 @@ impl<T> StatFunctionsSolution for Vec<Option<Solution<T>>> {
             None
         } else {
             Some(sum / (count as GoalValue))
+        }
+    }
+
+    fn get_standard_deviation_goal(&self) -> Option<GoalValue> {
+        let average = self.get_average_goal();
+        if self.len() < 2 || average == None {
+            return None
+        }
+
+        let average_value = average.unwrap();
+
+        let mut sum = 0 as GoalValue;
+        let mut count = 0;
+
+        for current_solution in self {
+            if let Some((_, goal)) = current_solution {
+                if count == 0 {
+                    sum = (*goal - average_value) * (*goal - average_value);
+                    count = 1;
+                } else {
+                    sum += (*goal - average_value) * (*goal - average_value);
+                    count += 1;
+                }
+            }
+        }
+
+        if count < 2 {
+            None
+        } else {
+            Some((sum / ((count - 1) as GoalValue)).sqrt())
         }
     }
 }
@@ -328,5 +362,35 @@ mod tests {
         let results: Vec<Option<Solution<f32>>> =
             vec![Some((1.0_f32, 10.0_f64)), Some((2.0_f32, 30.0_f64))];
         assert_eq!(results.get_average_goal(), Some(20.0_f64));
+    }
+
+    #[test]
+    fn get_standard_deviation_goal_empty() {
+        let results: Vec<Option<Solution<f32>>> = vec![];
+        assert_eq!(results.get_standard_deviation_goal(), None);
+    }
+
+    #[test]
+    fn get_standard_deviation_goal_single() {
+        let results: Vec<Option<Solution<f32>>> = vec![Some((1.0_f32, 10.0_f64))];
+        assert_eq!(results.get_standard_deviation_goal(), None);
+    }
+
+    #[test]
+    fn get_standard_deviation_goal_none_only() {
+        let results: Vec<Option<Solution<f32>>> = vec![None; 10];
+        assert_eq!(results.get_standard_deviation_goal(), None);
+    }
+
+    #[test]
+    fn get_standard_deviation_goal_equal() {
+        let results: Vec<Option<Solution<f32>>> = vec![Some((1.0_f32, 10.0_f64)); 2];
+        assert!(results.get_standard_deviation_goal().unwrap().abs() < 1e-6);
+    }
+
+    #[test]
+    fn get_standard_deviation_goal_several() {
+        let results: Vec<Option<Solution<f32>>> = vec![Some((1.0_f32, 1.0_f64)), Some((2.0_f32, 2.0_f64)), Some((3.0_f32, 3.0_f64))];
+        assert!((results.get_standard_deviation_goal().unwrap() - 1.0_f64).abs() < 1e-6);
     }
 }
