@@ -61,7 +61,7 @@ pub fn get_average_convergence<T>(convergence: &Convergence<T>) -> Vec<Option<Go
 
     for i in 0..min_iterations {
         let mut sum_count = 0;
-        let mut sum = 0_f64;
+        let mut sum = 0 as GoalValue;
         for run in 0..run_count {
             if let Some(solution) = &convergence[run][i] {
                 sum += solution.1;
@@ -70,13 +70,37 @@ pub fn get_average_convergence<T>(convergence: &Convergence<T>) -> Vec<Option<Go
         }
 
         if sum_count != 0 {
-            result.push(Some(sum / (sum_count as f64)));
+            result.push(Some(sum / (sum_count as GoalValue)));
         } else {
             result.push(None);
         }
     }
 
     result
+}
+
+/// Calculate an average value of goal function.
+/// Returns None if `results` is empty or `results` contains `None` only.
+pub fn get_average_goal<T>(results: &Vec<Option<Solution<T>>>) -> Option<GoalValue> {
+    let mut sum = 0 as GoalValue;
+    let mut count = 0;
+    for current_solution in results {
+        if let Some((_, goal)) = current_solution {
+            if count == 0 {
+                sum = *goal;
+                count = 1;
+            } else {
+                sum += *goal;
+                count += 1;
+            }
+        }
+    }
+
+    if count == 0 {
+        None
+    } else {
+        Some(sum / (count as GoalValue))
+    }
 }
 
 pub fn get_min_iterations<T>(convergence: &Convergence<T>) -> usize {
@@ -194,9 +218,7 @@ mod tests {
             Some((1_f32, 10_f64)),
         ]);
 
-        let result = vec![
-            Some(30_f64), Some(20_f64), Some(10_f64),
-        ];
+        let result = vec![Some(30_f64), Some(20_f64), Some(10_f64)];
 
         assert_eq!(get_average_convergence(&convergence), result);
     }
@@ -204,15 +226,9 @@ mod tests {
     #[test]
     fn get_average_convergence_single_02() {
         let mut convergence: Convergence<f32> = vec![];
-        convergence.push(vec![
-            Some((3_f32, 30_f64)),
-            None,
-            Some((1_f32, 10_f64)),
-        ]);
+        convergence.push(vec![Some((3_f32, 30_f64)), None, Some((1_f32, 10_f64))]);
 
-        let result = vec![
-            Some(30_f64), None, Some(10_f64),
-        ];
+        let result = vec![Some(30_f64), None, Some(10_f64)];
 
         assert_eq!(get_average_convergence(&convergence), result);
     }
@@ -231,9 +247,7 @@ mod tests {
             Some((1_f32, 30_f64)),
         ]);
 
-        let result = vec![
-            Some(40_f64), Some(30_f64), Some(20_f64),
-        ];
+        let result = vec![Some(40_f64), Some(30_f64), Some(20_f64)];
 
         assert_eq!(get_average_convergence(&convergence), result);
     }
@@ -241,20 +255,14 @@ mod tests {
     #[test]
     fn get_average_convergence_several_02() {
         let mut convergence: Convergence<f32> = vec![];
-        convergence.push(vec![
-            Some((3_f32, 30_f64)),
-            None,
-            Some((1_f32, 10_f64)),
-        ]);
+        convergence.push(vec![Some((3_f32, 30_f64)), None, Some((1_f32, 10_f64))]);
         convergence.push(vec![
             Some((3_f32, 50_f64)),
             Some((2_f32, 40_f64)),
             Some((1_f32, 30_f64)),
         ]);
 
-        let result = vec![
-            Some(40_f64), Some(40_f64), Some(20_f64),
-        ];
+        let result = vec![Some(40_f64), Some(40_f64), Some(20_f64)];
 
         assert_eq!(get_average_convergence(&convergence), result);
     }
@@ -262,21 +270,36 @@ mod tests {
     #[test]
     fn get_average_convergence_several_03() {
         let mut convergence: Convergence<f32> = vec![];
-        convergence.push(vec![
-            Some((3_f32, 30_f64)),
-            None,
-            Some((1_f32, 10_f64)),
-        ]);
-        convergence.push(vec![
-            Some((3_f32, 50_f64)),
-            None,
-            Some((1_f32, 30_f64)),
-        ]);
+        convergence.push(vec![Some((3_f32, 30_f64)), None, Some((1_f32, 10_f64))]);
+        convergence.push(vec![Some((3_f32, 50_f64)), None, Some((1_f32, 30_f64))]);
 
-        let result = vec![
-            Some(40_f64), None, Some(20_f64),
-        ];
+        let result = vec![Some(40_f64), None, Some(20_f64)];
 
         assert_eq!(get_average_convergence(&convergence), result);
+    }
+
+    #[test]
+    fn get_average_goal_empty() {
+        let results: Vec<Option<Solution<f32>>> = vec![];
+        assert_eq!(get_average_goal(&results), None);
+    }
+
+    #[test]
+    fn get_average_goal_none_only() {
+        let results: Vec<Option<Solution<f32>>> = vec![None];
+        assert_eq!(get_average_goal(&results), None);
+    }
+
+    #[test]
+    fn get_average_goal_single() {
+        let results: Vec<Option<Solution<f32>>> = vec![Some((1.0_f32, 10.0_f64))];
+        assert_eq!(get_average_goal(&results), Some(10.0_f64));
+    }
+
+    #[test]
+    fn get_average_goal_several() {
+        let results: Vec<Option<Solution<f32>>> =
+            vec![Some((1.0_f32, 10.0_f64)), Some((2.0_f32, 30.0_f64))];
+        assert_eq!(get_average_goal(&results), Some(20.0_f64));
     }
 }
