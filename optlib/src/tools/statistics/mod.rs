@@ -2,7 +2,7 @@
 
 use core::cell::RefMut;
 
-// use num::Float;
+use num::{Float};
 
 use crate::{tools::logging::Logger, AlgorithmState, GoalValue, Solution};
 
@@ -62,9 +62,9 @@ pub trait StatFunctionsConvergence {
     fn get_min_iterations(&self) -> usize;
 }
 
-/// The trait contains methods for calculate statistics for Vec<Option<Solution<T>>>
+/// The trait contains methods for calculate goal function statistics for Vec<Option<Solution<T>>>
 /// type Solution<T> = (T, GoalValue);
-pub trait StatFunctionsSolution {
+pub trait StatFunctionsGoal {
     /// Calculate an average of goal function.
     /// Returns None if `self` is empty or `self` contains `None` only.
     fn get_average_goal(&self) -> Option<GoalValue>;
@@ -72,6 +72,14 @@ pub trait StatFunctionsSolution {
     /// Calculate a standard deviation of goal function.
     /// Returns None if length of `self` less 2 or `self` contains `None` only.
     fn get_standard_deviation_goal(&self) -> Option<GoalValue>;
+}
+
+/// The trait contains methods for calculate solution statistics for Vec<Option<Solution<T>>>
+/// type Solution<T> = (T, GoalValue);
+pub trait StatFucnctionsSolution<T>: StatFunctionsGoal {
+    /// Returns an average of solution and goal function.
+    /// Returns None if `self` is empty or `self` contains `None` only.
+    fn get_average(&self) -> Option<Solution<T>>;
 }
 
 impl<T> StatFunctionsConvergence for Convergence<T> {
@@ -122,7 +130,7 @@ impl<T> StatFunctionsConvergence for Convergence<T> {
     }
 }
 
-impl<T> StatFunctionsSolution for Vec<Option<Solution<T>>> {
+impl<T> StatFunctionsGoal for Vec<Option<Solution<T>>> {
     /// Calculate an average of goal function.
     /// Returns None if `self` is empty or `self` contains `None` only.
     fn get_average_goal(&self) -> Option<GoalValue> {
@@ -150,7 +158,7 @@ impl<T> StatFunctionsSolution for Vec<Option<Solution<T>>> {
     fn get_standard_deviation_goal(&self) -> Option<GoalValue> {
         let average = self.get_average_goal();
         if self.len() < 2 || average == None {
-            return None
+            return None;
         }
 
         let average_value = average.unwrap();
@@ -174,6 +182,48 @@ impl<T> StatFunctionsSolution for Vec<Option<Solution<T>>> {
             None
         } else {
             Some((sum / ((count - 1) as GoalValue)).sqrt())
+        }
+    }
+}
+
+impl<T: Float> StatFucnctionsSolution<Vec<T>> for Vec<Option<Solution<Vec<T>>>> {
+    fn get_average(&self) -> Option<Solution<Vec<T>>> {
+        let goal = self.get_average_goal();
+        if goal == None {
+            return None
+        }
+
+        let mut solution: Option<Vec<T>> = None;
+        let mut count = 0;
+
+        for opt_current_solution in self {
+            if *opt_current_solution == None {
+                continue;
+            }
+
+            let (current_solution, _) = opt_current_solution.as_ref().unwrap();
+
+            solution = match solution
+            {
+                None => {
+                    count = 1;
+                    Some(current_solution.clone())
+                },
+                Some(vector) => {
+                    assert_eq!(current_solution.len(), vector.len());
+                    count += 1;
+                    let sum: Vec<T> = vector.iter().zip(current_solution.iter()).map(|(x, y)| *x + *y).collect();
+                    Some(sum)
+                }
+            }
+        }
+
+        match solution {
+            None => None,
+            Some(vector) => {
+                let result = vector.iter().map(|x| *x / (T::from(count).unwrap())).collect();
+                Some((result, goal.unwrap()))
+            }
         }
     }
 }
@@ -390,7 +440,58 @@ mod tests {
 
     #[test]
     fn get_standard_deviation_goal_several() {
-        let results: Vec<Option<Solution<f32>>> = vec![Some((1.0_f32, 1.0_f64)), Some((2.0_f32, 2.0_f64)), Some((3.0_f32, 3.0_f64))];
+        let results: Vec<Option<Solution<f32>>> = vec![
+            Some((1.0_f32, 1.0_f64)),
+            Some((2.0_f32, 2.0_f64)),
+            Some((3.0_f32, 3.0_f64)),
+        ];
         assert!((results.get_standard_deviation_goal().unwrap() - 1.0_f64).abs() < 1e-6);
+    }
+
+    #[test]
+    fn get_average_empty() {
+        let results: Vec<Option<Solution<Vec<f32>>>> = vec![];
+        assert_eq!(results.get_average(), None);
+    }
+
+    #[test]
+    fn get_average_none_only() {
+        let results: Vec<Option<Solution<Vec<f32>>>> = vec![None];
+        assert_eq!(results.get_average(), None);
+    }
+
+    #[test]
+    fn get_average_single() {
+        let results: Vec<Option<Solution<Vec<f32>>>> = vec![Some((vec![1.0_f32], 10.0_f64))];
+        assert_eq!(results.get_average(), Some((vec![1.0_f32], 10.0_f64)));
+    }
+
+    #[test]
+    fn get_average_several_01() {
+        let results: Vec<Option<Solution<Vec<f32>>>> = vec![
+            Some((vec![1.0_f32], 10.0_f64)),
+            Some((vec![3.0_f32], 30.0_f64)),
+        ];
+        assert_eq!(results.get_average(), Some((vec![2.0_f32], 20.0_f64)));
+    }
+
+    #[test]
+    fn get_average_several_02() {
+        let results: Vec<Option<Solution<Vec<f32>>>> = vec![
+            None,
+            Some((vec![1.0_f32], 10.0_f64)),
+            Some((vec![3.0_f32], 30.0_f64)),
+        ];
+        assert_eq!(results.get_average(), Some((vec![2.0_f32], 20.0_f64)));
+    }
+
+    #[test]
+    fn get_average_several_03() {
+        let results: Vec<Option<Solution<Vec<f32>>>> = vec![
+            Some((vec![1.0_f32], 10.0_f64)),
+            None,
+            Some((vec![3.0_f32], 30.0_f64)),
+        ];
+        assert_eq!(results.get_average(), Some((vec![2.0_f32], 20.0_f64)));
     }
 }
