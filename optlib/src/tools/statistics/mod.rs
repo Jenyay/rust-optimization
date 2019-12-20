@@ -2,7 +2,7 @@
 
 use core::cell::RefMut;
 
-use num::{Float};
+use num::Float;
 
 use crate::{tools::logging::Logger, AlgorithmState, GoalValue, Solution};
 
@@ -134,19 +134,9 @@ impl<T> StatFunctionsGoal for Vec<Option<Solution<T>>> {
     /// Calculate an average of goal function.
     /// Returns None if `self` is empty or `self` contains `None` only.
     fn get_average_goal(&self) -> Option<GoalValue> {
-        let mut sum = 0 as GoalValue;
-        let mut count = 0;
-        for current_solution in self {
-            if let Some((_, goal)) = current_solution {
-                if count == 0 {
-                    sum = *goal;
-                    count = 1;
-                } else {
-                    sum += *goal;
-                    count += 1;
-                }
-            }
-        }
+        let success_solutions = self.iter().filter_map(|x| x.as_ref());
+        let count = success_solutions.clone().count();
+        let sum = success_solutions.fold(0 as GoalValue, |acc, (_, goal)| acc + goal);
 
         if count == 0 {
             None
@@ -163,20 +153,11 @@ impl<T> StatFunctionsGoal for Vec<Option<Solution<T>>> {
 
         let average_value = average.unwrap();
 
-        let mut sum = 0 as GoalValue;
-        let mut count = 0;
-
-        for current_solution in self {
-            if let Some((_, goal)) = current_solution {
-                if count == 0 {
-                    sum = (*goal - average_value) * (*goal - average_value);
-                    count = 1;
-                } else {
-                    sum += (*goal - average_value) * (*goal - average_value);
-                    count += 1;
-                }
-            }
-        }
+        let success_solutions = self.iter().filter_map(|x| x.as_ref());
+        let count = success_solutions.clone().count();
+        let sum = success_solutions.fold(0 as GoalValue, |acc, (_, goal)| {
+            acc + (*goal - average_value) * (*goal - average_value)
+        });
 
         if count < 2 {
             None
@@ -190,29 +171,24 @@ impl<T: Float> StatFucnctionsSolution<Vec<T>> for Vec<Option<Solution<Vec<T>>>> 
     fn get_average(&self) -> Option<Solution<Vec<T>>> {
         let goal = self.get_average_goal();
         if goal == None {
-            return None
+            return None;
         }
 
+        let success_solutions = self.iter().filter_map(|x| x.as_ref());
+        let count = success_solutions.clone().count();
+
         let mut solution: Option<Vec<T>> = None;
-        let mut count = 0;
 
-        for opt_current_solution in self {
-            if *opt_current_solution == None {
-                continue;
-            }
-
-            let (current_solution, _) = opt_current_solution.as_ref().unwrap();
-
-            solution = match solution
-            {
-                None => {
-                    count = 1;
-                    Some(current_solution.clone())
-                },
+        for (current_solution, _) in success_solutions {
+            solution = match solution {
+                None => Some(current_solution.clone()),
                 Some(vector) => {
                     assert_eq!(current_solution.len(), vector.len());
-                    count += 1;
-                    let sum: Vec<T> = vector.iter().zip(current_solution.iter()).map(|(x, y)| *x + *y).collect();
+                    let sum: Vec<T> = vector
+                        .iter()
+                        .zip(current_solution.iter())
+                        .map(|(x, y)| *x + *y)
+                        .collect();
                     Some(sum)
                 }
             }
@@ -221,7 +197,10 @@ impl<T: Float> StatFucnctionsSolution<Vec<T>> for Vec<Option<Solution<Vec<T>>>> 
         match solution {
             None => None,
             Some(vector) => {
-                let result = vector.iter().map(|x| *x / (T::from(count).unwrap())).collect();
+                let result = vector
+                    .iter()
+                    .map(|x| *x / (T::from(count).unwrap()))
+                    .collect();
                 Some((result, goal.unwrap()))
             }
         }
