@@ -77,9 +77,13 @@ pub trait StatFunctionsGoal {
 /// The trait contains methods for calculate solution statistics for Vec<Option<Solution<T>>>
 /// type Solution<T> = (T, GoalValue);
 pub trait StatFunctionsSolution<T>: StatFunctionsGoal {
-    /// Returns an average of solution and goal function.
+    /// Calculate an average of solutions and goal function.
     /// Returns None if `self` is empty or `self` contains `None` only.
     fn get_average(&self) -> Option<Solution<T>>;
+
+    /// Calculate a standard deviation of solutions goal function.
+    /// Returns None if length of `self` less 2 or `self` contains `None` only.
+    fn get_standard_deviation(&self) -> Option<Solution<T>>;
 }
 
 impl<T> StatFunctionsConvergence for Convergence<T> {
@@ -167,7 +171,7 @@ impl<T> StatFunctionsGoal for Vec<Option<Solution<T>>> {
     }
 }
 
-impl<T: Float> StatFunctionsSolution<Vec<T>> for Vec<Option<Solution<Vec<T>>>> {
+impl<T: Float + std::fmt::Debug> StatFunctionsSolution<Vec<T>> for Vec<Option<Solution<Vec<T>>>> {
     fn get_average(&self) -> Option<Solution<Vec<T>>> {
         let goal = self.get_average_goal();
         if goal == None {
@@ -184,12 +188,7 @@ impl<T: Float> StatFunctionsSolution<Vec<T>> for Vec<Option<Solution<Vec<T>>>> {
                 None => Some(current_solution.clone()),
                 Some(vector) => {
                     assert_eq!(current_solution.len(), vector.len());
-                    let sum: Vec<T> = vector
-                        .iter()
-                        .zip(current_solution.iter())
-                        .map(|(x, y)| *x + *y)
-                        .collect();
-                    Some(sum)
+                    Some(vectorize(&vector, &current_solution, |x, y| *x + *y))
                 }
             }
         }
@@ -205,6 +204,57 @@ impl<T: Float> StatFunctionsSolution<Vec<T>> for Vec<Option<Solution<Vec<T>>>> {
             }
         }
     }
+
+    fn get_standard_deviation(&self) -> Option<Solution<Vec<T>>> {
+        if let (Some(goal_deviation), Some((solution_average, _))) =
+            (self.get_standard_deviation_goal(), self.get_average())
+        {
+            let success_solutions = self.iter().filter_map(|x| x.as_ref());
+            let count = success_solutions.clone().count();
+            if count < 2 {
+                return None;
+            }
+
+            let mut sum: Option<Vec<T>> = None;
+
+            for (current_solution, _) in success_solutions {
+                sum = match sum {
+                    None => {
+                        let diff_2 = vectorize(&current_solution, &solution_average, |x, y| {
+                            (*x - *y) * (*x - *y)
+                        });
+
+                        Some(diff_2.clone())
+                    }
+                    Some(vector) => {
+                        assert_eq!(current_solution.len(), vector.len());
+                        let diff_2 = vectorize(&current_solution, &solution_average, |x, y| {
+                            (*x - *y) * (*x - *y)
+                        });
+                        Some(vectorize(&vector, &diff_2, |x, y| *x + *y))
+                    }
+                };
+            }
+
+            match sum {
+                None => None,
+                Some(vector) => {
+                    let result = vector
+                        .iter()
+                        .map(|x| (*x / (T::from(count - 1).unwrap())).sqrt())
+                        .collect();
+                    Some((result, goal_deviation))
+                }
+            }
+        } else {
+            None
+        }
+    }
+}
+
+fn vectorize<T>(v1: &Vec<T>, v2: &Vec<T>, func: fn(&T, &T) -> T) -> Vec<T> {
+    assert_eq!(v1.len(), v2.len());
+    v1.iter().zip(v2.iter()).map(|(x, y)| func(x, y)).collect()
 }
 
 pub struct StatisticsLogger<'a, T> {
@@ -481,6 +531,63 @@ mod tests {
             None,
             Some((vec![3.0_f32, 4.0_f32], 30.0_f64)),
         ];
-        assert_eq!(results.get_average(), Some((vec![2.0_f32, 3.0_f32], 20.0_f64)));
+        assert_eq!(
+            results.get_average(),
+            Some((vec![2.0_f32, 3.0_f32], 20.0_f64))
+        );
+    }
+
+    #[test]
+    fn get_standard_deviation_vec_float_empty() {
+        let results: Vec<Option<Solution<Vec<f32>>>> = vec![];
+        assert_eq!(results.get_standard_deviation(), None);
+    }
+
+    #[test]
+    fn get_standard_deviation_vec_float_single() {
+        let results: Vec<Option<Solution<Vec<f32>>>> = vec![Some((vec![1.0_f32], 10.0_f64))];
+        assert_eq!(results.get_standard_deviation(), None);
+    }
+
+    #[test]
+    fn get_standard_deviation_vec_float_none_only() {
+        let results: Vec<Option<Solution<Vec<f32>>>> = vec![None; 10];
+        assert_eq!(results.get_standard_deviation(), None);
+    }
+
+    #[test]
+    fn get_standard_deviation_vec_float_equal() {
+        let results: Vec<Option<Solution<Vec<f32>>>> = vec![Some((vec![1.0_f32], 10.0_f64)); 2];
+        let deviation = results.get_standard_deviation().unwrap();
+        assert!(deviation.0[0].abs() < 1e-6);
+        assert!(deviation.1.abs() < 1e-6);
+    }
+
+    #[test]
+    fn get_standard_deviation_goal_several_01() {
+        let results: Vec<Option<Solution<Vec<f32>>>> = vec![
+            Some((vec![10.0_f32], 1.0_f64)),
+            Some((vec![11.0_f32], 2.0_f64)),
+            Some((vec![12.0_f32], 3.0_f64)),
+        ];
+        let deviation = results.get_standard_deviation().unwrap();
+
+        // dbg!(deviation.clone());
+        assert!((deviation.0[0] - 1.0_f32).abs() < 1e-6);
+        assert!((deviation.1 - 1.0 as GoalValue).abs() < 1e-6);
+    }
+
+    #[test]
+    fn get_standard_deviation_goal_several_02() {
+        let results: Vec<Option<Solution<Vec<f32>>>> = vec![
+            Some((vec![10.0_f32, 10.0_f32], 1.0_f64)),
+            Some((vec![11.0_f32, 20.0_f32], 2.0_f64)),
+            Some((vec![12.0_f32, 30.0_f32], 3.0_f64)),
+        ];
+        let deviation = results.get_standard_deviation().unwrap();
+
+        assert!((deviation.0[0] - 1.0_f32).abs() < 1e-6);
+        assert!((deviation.0[1] - 10.0_f32).abs() < 1e-6);
+        assert!((deviation.1 - 1.0 as GoalValue).abs() < 1e-6);
     }
 }
