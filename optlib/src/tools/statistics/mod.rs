@@ -76,7 +76,7 @@ pub trait StatFunctionsGoal {
 
 /// The trait contains methods for calculate solution statistics for Vec<Option<Solution<T>>>
 /// type Solution<T> = (T, GoalValue);
-pub trait StatFucnctionsSolution<T>: StatFunctionsGoal {
+pub trait StatFunctionsSolution<T>: StatFunctionsGoal {
     /// Returns an average of solution and goal function.
     /// Returns None if `self` is empty or `self` contains `None` only.
     fn get_average(&self) -> Option<Solution<T>>;
@@ -167,7 +167,7 @@ impl<T> StatFunctionsGoal for Vec<Option<Solution<T>>> {
     }
 }
 
-impl<T: Float> StatFucnctionsSolution<Vec<T>> for Vec<Option<Solution<Vec<T>>>> {
+impl<T: Float> StatFunctionsSolution<Vec<T>> for Vec<Option<Solution<Vec<T>>>> {
     fn get_average(&self) -> Option<Solution<Vec<T>>> {
         let goal = self.get_average_goal();
         if goal == None {
@@ -428,25 +428,25 @@ mod tests {
     }
 
     #[test]
-    fn get_average_empty() {
+    fn get_average_vec_float_empty() {
         let results: Vec<Option<Solution<Vec<f32>>>> = vec![];
         assert_eq!(results.get_average(), None);
     }
 
     #[test]
-    fn get_average_none_only() {
+    fn get_average_vec_float_none_only() {
         let results: Vec<Option<Solution<Vec<f32>>>> = vec![None];
         assert_eq!(results.get_average(), None);
     }
 
     #[test]
-    fn get_average_single() {
+    fn get_average_vec_float_single() {
         let results: Vec<Option<Solution<Vec<f32>>>> = vec![Some((vec![1.0_f32], 10.0_f64))];
         assert_eq!(results.get_average(), Some((vec![1.0_f32], 10.0_f64)));
     }
 
     #[test]
-    fn get_average_several_01() {
+    fn get_average_vec_float_several_01() {
         let results: Vec<Option<Solution<Vec<f32>>>> = vec![
             Some((vec![1.0_f32], 10.0_f64)),
             Some((vec![3.0_f32], 30.0_f64)),
@@ -455,7 +455,7 @@ mod tests {
     }
 
     #[test]
-    fn get_average_several_02() {
+    fn get_average_vec_float_several_02() {
         let results: Vec<Option<Solution<Vec<f32>>>> = vec![
             None,
             Some((vec![1.0_f32], 10.0_f64)),
@@ -465,12 +465,22 @@ mod tests {
     }
 
     #[test]
-    fn get_average_several_03() {
+    fn get_average_vec_float_several_03() {
         let results: Vec<Option<Solution<Vec<f32>>>> = vec![
             Some((vec![1.0_f32], 10.0_f64)),
             None,
             Some((vec![3.0_f32], 30.0_f64)),
         ];
         assert_eq!(results.get_average(), Some((vec![2.0_f32], 20.0_f64)));
+    }
+
+    #[test]
+    fn get_average_vec_float_several_04() {
+        let results: Vec<Option<Solution<Vec<f32>>>> = vec![
+            Some((vec![1.0_f32, 2.0_f32], 10.0_f64)),
+            None,
+            Some((vec![3.0_f32, 4.0_f32], 30.0_f64)),
+        ];
+        assert_eq!(results.get_average(), Some((vec![2.0_f32, 3.0_f32], 20.0_f64)));
     }
 }
