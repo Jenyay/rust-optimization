@@ -17,6 +17,52 @@ pub struct Statistics<T> {
     convergence: Convergence<T>,
 }
 
+/// The trait contains methods for calculate statistics for Convergance<T>
+/// type Convergence<T> = Vec<Vec<Option<Solution<T>>>>;
+/// convergence[run number][iteration]
+pub trait StatFunctionsConvergence {
+    /// Calculate average goal function versus iteration number.
+    /// Average by run count.
+    /// Returns vector with: index - iteration, value - Option<GoalValue>.
+    /// Value is None if Solution is None for any running.
+    /// Length of result is minimal iterations count for all running.
+    /// # Params
+    /// self[run number][iteration]
+    fn get_average_convergence(&self) -> Vec<Option<GoalValue>>;
+    fn get_min_iterations(&self) -> usize;
+}
+
+/// The trait contains methods for calculate goal function statistics for Vec<Option<Solution<T>>>
+/// type Solution<T> = (T, GoalValue);
+pub trait StatFunctionsGoal {
+    /// Calculate an average of goal function.
+    /// Returns None if `self` is empty or `self` contains `None` only.
+    fn get_average_goal(&self) -> Option<GoalValue>;
+
+    /// Calculate a standard deviation of goal function.
+    /// Returns None if length of `self` less 2 or `self` contains `None` only.
+    fn get_standard_deviation_goal(&self) -> Option<GoalValue>;
+
+    /// Calculate success rate between 0 and 1.
+    /// Returns Some(SR) if running count > 0 and None otherwise.
+    /// # Params
+    /// `expected_goal` - valid optimal value of goal function.
+    /// `delta` - positive value. Running is success if |value - expected_goal| <= delta
+    fn get_success_rate_goal(&self, expected_goal: GoalValue, delta: GoalValue) -> Option<f64>;
+}
+
+/// The trait contains methods for calculate solution statistics for Vec<Option<Solution<T>>>
+/// type Solution<T> = (T, GoalValue);
+pub trait StatFunctionsSolution<T>: StatFunctionsGoal {
+    /// Calculate an average of solutions and goal function.
+    /// Returns None if `self` is empty or `self` contains `None` only.
+    fn get_average(&self) -> Option<Solution<T>>;
+
+    /// Calculate a standard deviation of solutions goal function.
+    /// Returns None if length of `self` less 2 or `self` contains `None` only.
+    fn get_standard_deviation(&self) -> Option<Solution<T>>;
+}
+
 impl<T: Clone> Statistics<T> {
     pub fn new() -> Self {
         Self {
@@ -45,45 +91,6 @@ impl<T: Clone> Statistics<T> {
         let run_index = self.convergence.len() - 1;
         self.convergence[run_index].push(state.get_best_solution().clone());
     }
-}
-
-/// The trait contains methods for calculate statistics for Convergance<T>
-/// type Convergence<T> = Vec<Vec<Option<Solution<T>>>>;
-/// convergence[run number][iteration]
-pub trait StatFunctionsConvergence {
-    /// Calculate average goal function versus iteration number.
-    /// Average by run count.
-    /// Returns vector with: index - iteration, value - Option<GoalValue>.
-    /// Value is None if Solution is None for any running.
-    /// Length of result is minimal iterations count for all running.
-    /// # Params
-    /// self[run number][iteration]
-    fn get_average_convergence(&self) -> Vec<Option<GoalValue>>;
-    fn get_min_iterations(&self) -> usize;
-}
-
-/// The trait contains methods for calculate goal function statistics for Vec<Option<Solution<T>>>
-/// type Solution<T> = (T, GoalValue);
-pub trait StatFunctionsGoal {
-    /// Calculate an average of goal function.
-    /// Returns None if `self` is empty or `self` contains `None` only.
-    fn get_average_goal(&self) -> Option<GoalValue>;
-
-    /// Calculate a standard deviation of goal function.
-    /// Returns None if length of `self` less 2 or `self` contains `None` only.
-    fn get_standard_deviation_goal(&self) -> Option<GoalValue>;
-}
-
-/// The trait contains methods for calculate solution statistics for Vec<Option<Solution<T>>>
-/// type Solution<T> = (T, GoalValue);
-pub trait StatFunctionsSolution<T>: StatFunctionsGoal {
-    /// Calculate an average of solutions and goal function.
-    /// Returns None if `self` is empty or `self` contains `None` only.
-    fn get_average(&self) -> Option<Solution<T>>;
-
-    /// Calculate a standard deviation of solutions goal function.
-    /// Returns None if length of `self` less 2 or `self` contains `None` only.
-    fn get_standard_deviation(&self) -> Option<Solution<T>>;
 }
 
 impl<T> StatFunctionsConvergence for Convergence<T> {
@@ -167,6 +174,25 @@ impl<T> StatFunctionsGoal for Vec<Option<Solution<T>>> {
             None
         } else {
             Some((sum / ((count - 1) as GoalValue)).sqrt())
+        }
+    }
+
+    /// Calculate success rate between 0 and 1.
+    /// Returns Some(SR) if running count > 0 and None otherwise.
+    /// # Params
+    /// `expected_goal` - valid optimal value of goal function.
+    /// `delta` - positive value. Running is success if |value - expected_goal| <= delta
+    fn get_success_rate_goal(&self, expected_goal: GoalValue, delta: GoalValue) -> Option<f64> {
+        let count = self.len();
+        match count {
+            0 => None,
+            _ => {
+                let success_solutions = self
+                    .iter()
+                    .filter_map(|x| x.as_ref())
+                    .filter(|(_, goal)| (goal - expected_goal).abs() < delta);
+                Some(success_solutions.count() as GoalValue / (count as GoalValue))
+            }
         }
     }
 }
@@ -589,5 +615,84 @@ mod tests {
         assert!((deviation.0[0] - 1.0_f32).abs() < 1e-6);
         assert!((deviation.0[1] - 10.0_f32).abs() < 1e-6);
         assert!((deviation.1 - 1.0 as GoalValue).abs() < 1e-6);
+    }
+
+    #[test]
+    fn get_success_rate_goal_empty() {
+        let results: Vec<Option<Solution<Vec<f32>>>> = vec![];
+        let proper = 1.0_f64;
+        let delta = 0.01_f64;
+
+        assert_eq!(results.get_success_rate_goal(proper, delta), None);
+    }
+
+    #[test]
+    fn get_success_rate_goal_none() {
+        let results: Vec<Option<Solution<Vec<f32>>>> = vec![None];
+        let proper = 1.0_f64;
+        let delta = 0.01_f64;
+
+        assert!((results.get_success_rate_goal(proper, delta).unwrap() - 0.0_f64).abs() < 1e-5);
+    }
+
+    #[test]
+    fn get_success_rate_goal_none_many() {
+        let results: Vec<Option<Solution<Vec<f32>>>> = vec![None; 5];
+        let proper = 1.0_f64;
+        let delta = 0.01_f64;
+
+        assert!((results.get_success_rate_goal(proper, delta).unwrap() - 0.0_f64).abs() < 1e-5);
+    }
+
+    #[test]
+    fn get_success_rate_goal_full_success_fail() {
+        let results: Vec<Option<Solution<Vec<f32>>>> = vec![Some((vec![10.0_f32], 10.0_f64))];
+        let proper = 1.0_f64;
+        let delta = 0.01_f64;
+
+        assert!((results.get_success_rate_goal(proper, delta).unwrap() - 0.0).abs() < 1e-5);
+    }
+
+    #[test]
+    fn get_success_rate_goal_full_success_01() {
+        let results: Vec<Option<Solution<Vec<f32>>>> = vec![Some((vec![10.0_f32], 1.0_f64))];
+        let proper = 1.0_f64;
+        let delta = 0.01_f64;
+
+        assert!((results.get_success_rate_goal(proper, delta).unwrap() - 1.0).abs() < 1e-5);
+    }
+
+    #[test]
+    fn get_success_rate_goal_full_success_02() {
+        let results: Vec<Option<Solution<Vec<f32>>>> = vec![Some((vec![10.0_f32], 1.00999_f64))];
+        let proper = 1.0_f64;
+        let delta = 0.01_f64;
+
+        assert!((results.get_success_rate_goal(proper, delta).unwrap() - 1.0).abs() < 1e-5);
+    }
+
+    #[test]
+    fn get_success_rate_goal_full_success_half() {
+        let results: Vec<Option<Solution<Vec<f32>>>> = vec![
+            Some((vec![10.0_f32], 1.0_f64)),
+            Some((vec![11.0_f32], 10.0_f64)),
+        ];
+        let proper = 1.0_f64;
+        let delta = 0.01_f64;
+
+        assert!((results.get_success_rate_goal(proper, delta).unwrap() - 0.5).abs() < 1e-5);
+    }
+
+    #[test]
+    fn get_success_rate_goal_full_success_two_of_three() {
+        let results: Vec<Option<Solution<Vec<f32>>>> = vec![
+            Some((vec![10.0_f32], 10.0_f64)),
+            Some((vec![11.0_f32], 1.0_f64)),
+            Some((vec![12.0_f32], 1.00001_f64)),
+        ];
+        let proper = 1.0_f64;
+        let delta = 0.01_f64;
+
+        assert!((results.get_success_rate_goal(proper, delta).unwrap() - 0.66666).abs() < 1e-5);
     }
 }
