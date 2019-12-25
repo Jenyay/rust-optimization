@@ -42,13 +42,6 @@ pub trait StatFunctionsGoal {
     /// Calculate a standard deviation of goal function.
     /// Returns None if length of `self` less 2 or `self` contains `None` only.
     fn get_standard_deviation_goal(&self) -> Option<GoalValue>;
-
-    /// Calculate success rate between 0 and 1.
-    /// Returns Some(SR) if running count > 0 and None otherwise.
-    /// # Params
-    /// `expected_goal` - valid optimal value of goal function.
-    /// `delta` - positive value. Running is success if |value - expected_goal| <= delta
-    fn get_success_rate_goal(&self, expected_goal: GoalValue, delta: GoalValue) -> Option<f64>;
 }
 
 /// The trait contains methods for calculate solution statistics for Vec<Option<Solution<T>>>
@@ -61,6 +54,21 @@ pub trait StatFunctionsSolution<T>: StatFunctionsGoal {
     /// Calculate a standard deviation of solutions goal function.
     /// Returns None if length of `self` less 2 or `self` contains `None` only.
     fn get_standard_deviation(&self) -> Option<Solution<T>>;
+
+    /// Calculate success rate between 0 and 1.
+    /// Returns Some(SR) if running count > 0 and None otherwise.
+    /// # Params
+    /// `predicate` - function must return true for success solution and false otherwise.
+    fn get_success_rate<P>(&self, predicate: P) -> Option<f64>
+    where
+        P: Fn(&Solution<T>) -> bool;
+}
+
+pub fn get_predicate_success_goal<T>(
+    expected_goal: GoalValue,
+    delta: GoalValue,
+) -> impl Fn(&Solution<T>) -> bool {
+    move |(_, goal): &(T, GoalValue)| (goal - expected_goal).abs() < delta
 }
 
 impl<T: Clone> Statistics<T> {
@@ -176,25 +184,6 @@ impl<T> StatFunctionsGoal for Vec<Option<Solution<T>>> {
             Some((sum / ((count - 1) as GoalValue)).sqrt())
         }
     }
-
-    /// Calculate success rate between 0 and 1.
-    /// Returns Some(SR) if running count > 0 and None otherwise.
-    /// # Params
-    /// `expected_goal` - valid optimal value of goal function.
-    /// `delta` - positive value. Running is success if |value - expected_goal| <= delta
-    fn get_success_rate_goal(&self, expected_goal: GoalValue, delta: GoalValue) -> Option<f64> {
-        let count = self.len();
-        match count {
-            0 => None,
-            _ => {
-                let success_solutions = self
-                    .iter()
-                    .filter_map(|x| x.as_ref())
-                    .filter(|(_, goal)| (goal - expected_goal).abs() < delta);
-                Some(success_solutions.count() as GoalValue / (count as GoalValue))
-            }
-        }
-    }
 }
 
 impl<T: Float + std::fmt::Debug> StatFunctionsSolution<Vec<T>> for Vec<Option<Solution<Vec<T>>>> {
@@ -274,6 +263,27 @@ impl<T: Float + std::fmt::Debug> StatFunctionsSolution<Vec<T>> for Vec<Option<So
             }
         } else {
             None
+        }
+    }
+
+    /// Calculate success rate between 0 and 1.
+    /// Returns Some(SR) if running count > 0 and None otherwise.
+    /// # Params
+    /// `predicate` - function must return true for success solution and false otherwise.
+    fn get_success_rate<P>(&self, predicate: P) -> Option<f64>
+    where
+        P: Fn(&Solution<Vec<T>>) -> bool,
+    {
+        let count = self.len();
+        match count {
+            0 => None,
+            _ => {
+                let success_solutions = self
+                    .iter()
+                    .filter_map(|x| x.as_ref())
+                    .filter(|solution| predicate(solution));
+                Some(success_solutions.count() as f64 / (count as f64))
+            }
         }
     }
 }
@@ -620,55 +630,49 @@ mod tests {
     #[test]
     fn get_success_rate_goal_empty() {
         let results: Vec<Option<Solution<Vec<f32>>>> = vec![];
-        let proper = 1.0_f64;
-        let delta = 0.01_f64;
+        let predicate = get_predicate_success_goal(1.0, 0.01);
 
-        assert_eq!(results.get_success_rate_goal(proper, delta), None);
+        assert_eq!(results.get_success_rate(&predicate), None);
     }
 
     #[test]
     fn get_success_rate_goal_none() {
         let results: Vec<Option<Solution<Vec<f32>>>> = vec![None];
-        let proper = 1.0_f64;
-        let delta = 0.01_f64;
+        let predicate = get_predicate_success_goal(1.0, 0.01);
 
-        assert!((results.get_success_rate_goal(proper, delta).unwrap() - 0.0_f64).abs() < 1e-5);
+        assert!((results.get_success_rate(&predicate).unwrap() - 0.0_f64).abs() < 1e-5);
     }
 
     #[test]
     fn get_success_rate_goal_none_many() {
         let results: Vec<Option<Solution<Vec<f32>>>> = vec![None; 5];
-        let proper = 1.0_f64;
-        let delta = 0.01_f64;
+        let predicate = get_predicate_success_goal(1.0, 0.01);
 
-        assert!((results.get_success_rate_goal(proper, delta).unwrap() - 0.0_f64).abs() < 1e-5);
+        assert!((results.get_success_rate(&predicate).unwrap() - 0.0_f64).abs() < 1e-5);
     }
 
     #[test]
     fn get_success_rate_goal_full_success_fail() {
         let results: Vec<Option<Solution<Vec<f32>>>> = vec![Some((vec![10.0_f32], 10.0_f64))];
-        let proper = 1.0_f64;
-        let delta = 0.01_f64;
+        let predicate = get_predicate_success_goal(1.0, 0.01);
 
-        assert!((results.get_success_rate_goal(proper, delta).unwrap() - 0.0).abs() < 1e-5);
+        assert!((results.get_success_rate(&predicate).unwrap() - 0.0).abs() < 1e-5);
     }
 
     #[test]
     fn get_success_rate_goal_full_success_01() {
         let results: Vec<Option<Solution<Vec<f32>>>> = vec![Some((vec![10.0_f32], 1.0_f64))];
-        let proper = 1.0_f64;
-        let delta = 0.01_f64;
+        let predicate = get_predicate_success_goal(1.0, 0.01);
 
-        assert!((results.get_success_rate_goal(proper, delta).unwrap() - 1.0).abs() < 1e-5);
+        assert!((results.get_success_rate(&predicate).unwrap() - 1.0).abs() < 1e-5);
     }
 
     #[test]
     fn get_success_rate_goal_full_success_02() {
         let results: Vec<Option<Solution<Vec<f32>>>> = vec![Some((vec![10.0_f32], 1.00999_f64))];
-        let proper = 1.0_f64;
-        let delta = 0.01_f64;
+        let predicate = get_predicate_success_goal(1.0, 0.01);
 
-        assert!((results.get_success_rate_goal(proper, delta).unwrap() - 1.0).abs() < 1e-5);
+        assert!((results.get_success_rate(&predicate).unwrap() - 1.0).abs() < 1e-5);
     }
 
     #[test]
@@ -677,10 +681,9 @@ mod tests {
             Some((vec![10.0_f32], 1.0_f64)),
             Some((vec![11.0_f32], 10.0_f64)),
         ];
-        let proper = 1.0_f64;
-        let delta = 0.01_f64;
+        let predicate = get_predicate_success_goal(1.0, 0.01);
 
-        assert!((results.get_success_rate_goal(proper, delta).unwrap() - 0.5).abs() < 1e-5);
+        assert!((results.get_success_rate(&predicate).unwrap() - 0.5).abs() < 1e-5);
     }
 
     #[test]
@@ -690,9 +693,8 @@ mod tests {
             Some((vec![11.0_f32], 1.0_f64)),
             Some((vec![12.0_f32], 1.00001_f64)),
         ];
-        let proper = 1.0_f64;
-        let delta = 0.01_f64;
+        let predicate = get_predicate_success_goal(1.0, 0.01);
 
-        assert!((results.get_success_rate_goal(proper, delta).unwrap() - 0.66666).abs() < 1e-5);
+        assert!((results.get_success_rate(&predicate).unwrap() - 0.66666).abs() < 1e-5);
     }
 }
