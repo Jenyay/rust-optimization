@@ -12,14 +12,17 @@
 //! * `Population` - set of the individuals.
 //! * `Generation` - a number of iteration of genetic algorithm.
 use core::cell::{Ref, RefCell};
-use std::io;
 use std::fs::File;
+use std::io;
 
 use optlib::genetic::{
     self, creation, cross, mutation, pairing, pre_birth, selection, GeneticOptimizer,
 };
+use optlib::tools::statistics::{
+    get_predicate_success_vec_solution, StatFunctionsConvergence, StatFunctionsGoal,
+    StatFunctionsSolution,
+};
 use optlib::tools::{logging, statistics, stopchecker};
-use optlib::tools::statistics::StatFunctionsConvergence;
 use optlib::{GoalFromFunction, Optimizer};
 use optlib_testfunc;
 
@@ -37,7 +40,7 @@ fn create_optimizer<'a>(chromo_count: usize) -> GeneticOptimizer<'a, Chromosomes
     let maxval: Gene = 500.0;
 
     // Count individuals in initial population
-    let population_size = 1500;
+    let population_size = 1000;
 
     let intervals = vec![(minval, maxval); chromo_count];
 
@@ -113,16 +116,25 @@ fn create_optimizer<'a>(chromo_count: usize) -> GeneticOptimizer<'a, Chromosomes
     optimizer
 }
 
-fn print_convergence_statistics(mut writer: &mut dyn io::Write, stat: &Ref<statistics::Statistics<Chromosomes>>) {
+fn print_convergence_statistics(
+    mut writer: &mut dyn io::Write,
+    stat: &Ref<statistics::Statistics<Chromosomes>>,
+) {
     let average_convergence = stat.get_convergence().get_average_convergence();
     for n in 0..average_convergence.len() {
         if let Some(goal_value) = average_convergence[n] {
-            writeln!(&mut writer, "{n:<8}{value:15.10e}", n = n, value = goal_value).unwrap();
+            writeln!(
+                &mut writer,
+                "{n:<8}{value:15.10e}",
+                n = n,
+                value = goal_value
+            )
+            .unwrap();
         }
     }
 }
 
-fn print_result_statistics(mut writer: &mut dyn io::Write, stat: &Ref<statistics::Statistics<Chromosomes>>) {
+fn print_solution(mut writer: &mut dyn io::Write, stat: &Ref<statistics::Statistics<Chromosomes>>) {
     let run_count = stat.get_run_count();
 
     // Print solutions for every running
@@ -144,11 +156,30 @@ fn print_result_statistics(mut writer: &mut dyn io::Write, stat: &Ref<statistics
     }
 }
 
+fn print_statistics(stat: &Ref<statistics::Statistics<Chromosomes>>, chromo_count: usize) {
+    let valid_answer = vec![420.9687; chromo_count];
+    let delta = vec![1.0; chromo_count];
+
+    let success_rate_answer = stat
+        .get_results()
+        .get_success_rate(get_predicate_success_vec_solution(valid_answer, delta))
+        .unwrap();
+    let average_goal = stat.get_results().get_average_goal().unwrap();
+    let standard_deviation_goal = stat.get_results().get_standard_deviation_goal().unwrap();
+
+    println!("Success rate:{:15.5}", success_rate_answer);
+    println!("Average goal:{:15.5}", average_goal);
+    println!(
+        "Standard deviation for goal:{:15.5}",
+        standard_deviation_goal
+    );
+}
+
 fn main() {
     // Count of xi in the chromosomes
     let chromo_count = 15;
 
-    let run_count = 300;
+    let run_count = 100;
 
     // Logging
     let statistics_data = RefCell::new(statistics::Statistics::new());
@@ -176,6 +207,7 @@ fn main() {
     let convergence_stat_fname = "convergence_stat.txt";
     let mut convergence_stat_file = File::create(convergence_stat_fname).unwrap();
 
-    print_result_statistics(&mut result_stat_file, &new_stat);
+    print_solution(&mut result_stat_file, &new_stat);
     print_convergence_statistics(&mut convergence_stat_file, &new_stat);
+    print_statistics(&new_stat, chromo_count);
 }
