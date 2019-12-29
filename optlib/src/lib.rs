@@ -55,7 +55,7 @@ pub trait Agent<T> {
 /// The trait for the goal function.
 pub trait Goal<T> {
     /// Must return value of goal function for the point in the search space (x).
-    fn get(&self, x: &T) -> GoalValue;
+    fn get(&mut self, x: &T) -> GoalValue;
 }
 
 /// Struct to convert (wrap) function to `Goal` trait.
@@ -71,7 +71,7 @@ impl<T> GoalFromFunction<T> {
 }
 
 impl<T> Goal<T> for GoalFromFunction<T> {
-    fn get(&self, x: &T) -> GoalValue {
+    fn get(&mut self, x: &T) -> GoalValue {
         (self.function)(x)
     }
 }

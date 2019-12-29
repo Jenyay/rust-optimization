@@ -14,16 +14,17 @@
 use core::cell::{Ref, RefCell};
 use std::fs::File;
 use std::io;
+// use std::rc::Rc;
 
 use optlib::genetic::{
     self, creation, cross, mutation, pairing, pre_birth, selection, GeneticOptimizer,
 };
 use optlib::tools::statistics::{
-    get_predicate_success_vec_solution, StatFunctionsConvergence, StatFunctionsGoal,
-    StatFunctionsSolution,
+    get_predicate_success_vec_solution, GoalCalcStatistics, StatFunctionsConvergence,
+    StatFunctionsGoal, StatFunctionsSolution,
 };
 use optlib::tools::{logging, statistics, stopchecker};
-use optlib::{GoalFromFunction, Optimizer};
+use optlib::{Goal, GoalFromFunction, Optimizer};
 use optlib_testfunc;
 
 /// Gene type
@@ -32,7 +33,10 @@ type Gene = f32;
 /// Chromosomes type
 type Chromosomes = Vec<Gene>;
 
-fn create_optimizer<'a>(chromo_count: usize) -> GeneticOptimizer<'a, Chromosomes> {
+fn create_optimizer<'a>(
+    chromo_count: usize,
+    goal: Box<dyn Goal<Chromosomes> + 'a>,
+) -> GeneticOptimizer<'a, Chromosomes> {
     // General parameters
 
     // Search space. Any xi lies in [-500.0; 500.0]
@@ -43,9 +47,6 @@ fn create_optimizer<'a>(chromo_count: usize) -> GeneticOptimizer<'a, Chromosomes
     let population_size = 1000;
 
     let intervals = vec![(minval, maxval); chromo_count];
-
-    // Make a trait object for goal function (Schwefel function)
-    let goal = GoalFromFunction::new(optlib_testfunc::schwefel);
 
     // Make the creator to create initial population.
     // RandomCreator will fill initial population with individuals with random chromosomes in a
@@ -103,7 +104,7 @@ fn create_optimizer<'a>(chromo_count: usize) -> GeneticOptimizer<'a, Chromosomes
 
     // Construct main optimizer struct
     let optimizer = genetic::GeneticOptimizer::new(
-        Box::new(goal),
+        goal,
         Box::new(stop_checker),
         Box::new(creator),
         Box::new(pairing),
@@ -156,7 +157,11 @@ fn print_solution(mut writer: &mut dyn io::Write, stat: &Ref<statistics::Statist
     }
 }
 
-fn print_statistics(stat: &Ref<statistics::Statistics<Chromosomes>>, chromo_count: usize) {
+fn print_statistics(
+    stat: &Ref<statistics::Statistics<Chromosomes>>,
+    call_count: Ref<usize>,
+    chromo_count: usize,
+) {
     let valid_answer = vec![420.9687; chromo_count];
     let delta = vec![1.0; chromo_count];
 
@@ -173,18 +178,22 @@ fn print_statistics(stat: &Ref<statistics::Statistics<Chromosomes>>, chromo_coun
         "Standard deviation for goal:{:15.5}",
         standard_deviation_goal
     );
+    println!("Goal function call count:{:15}", call_count);
 }
 
 fn main() {
     // Count of xi in the chromosomes
     let chromo_count = 15;
+    let run_count = 10;
 
-    let run_count = 100;
-
-    // Logging
+    let call_count = RefCell::new(0);
     let statistics_data = RefCell::new(statistics::Statistics::new());
     {
-        let mut optimizer = create_optimizer(chromo_count);
+        // Make a trait object for goal function (Schwefel function)
+        let goal_object = GoalFromFunction::new(optlib_testfunc::schwefel);
+        let goal = GoalCalcStatistics::new(Box::new(goal_object), call_count.borrow_mut());
+
+        let mut optimizer = create_optimizer(chromo_count, Box::new(goal));
 
         let stat_logger = Box::new(statistics::StatisticsLogger::new(
             statistics_data.borrow_mut(),
@@ -206,8 +215,7 @@ fn main() {
 
     let convergence_stat_fname = "convergence_stat.txt";
     let mut convergence_stat_file = File::create(convergence_stat_fname).unwrap();
-
     print_solution(&mut result_stat_file, &new_stat);
     print_convergence_statistics(&mut convergence_stat_file, &new_stat);
-    print_statistics(&new_stat, chromo_count);
+    print_statistics(&new_stat, call_count.borrow(), chromo_count);
 }

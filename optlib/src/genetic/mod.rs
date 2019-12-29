@@ -84,9 +84,9 @@ impl<T> Individual<T> {
 /// Stores all individuals for current generation.
 ///
 /// `T` - type of a point in the search space for goal function (chromosomes).
-pub struct Population<T> {
+pub struct Population<'a, T> {
     // Trait object for goal function.
-    goal: Box<dyn Goal<T>>,
+    goal: Box<dyn Goal<T> + 'a>,
 
     individuals: Vec<Individual<T>>,
 
@@ -100,7 +100,7 @@ pub struct Population<T> {
     iteration: usize,
 }
 
-impl<T: Clone> Population<T> {
+impl<'a, T: Clone> Population<'a, T> {
     /// Find new the best and the worst individuals
     fn update_best_worst_individuals(&mut self) {
         // Update the best individual
@@ -125,11 +125,11 @@ impl<T: Clone> Population<T> {
     }
 }
 
-impl<T> Population<T> {
+impl<'a, T> Population<'a, T> {
     /// Create new `Population` struct
     /// # Parameters
     /// * `goal` - trait object for goal function
-    fn new(goal: Box<dyn Goal<T>>) -> Self {
+    fn new(goal: Box<dyn Goal<T> + 'a>) -> Self {
         Population {
             goal,
             individuals: vec![],
@@ -260,7 +260,7 @@ impl<T> Population<T> {
 }
 
 /// Index trait implementation for Population
-impl<T> ops::Index<usize> for Population<T> {
+impl<'a, T> ops::Index<usize> for Population<'a, T> {
     type Output = Individual<T>;
 
     fn index(&self, index: usize) -> &Individual<T> {
@@ -269,13 +269,13 @@ impl<T> ops::Index<usize> for Population<T> {
 }
 
 /// IndexMut trait implementation for Population
-impl<T> ops::IndexMut<usize> for Population<T> {
-    fn index_mut<'a>(&'a mut self, index: usize) -> &'a mut Individual<T> {
+impl<'a, T> ops::IndexMut<usize> for Population<'a, T> {
+    fn index_mut<'b>(&'b mut self, index: usize) -> &'b mut Individual<T> {
         &mut self.individuals[index]
     }
 }
 
-impl<T: Clone> AlgorithmState<T> for Population<T> {
+impl<'a, T: Clone> AlgorithmState<T> for Population<'a, T> {
     fn get_best_solution(&self) -> Option<(T, f64)> {
         match &self.best_individual {
             None => None,
@@ -357,13 +357,13 @@ pub struct GeneticOptimizer<'a, T> {
     selections: Vec<Box<dyn Selection<T> + 'a>>,
     pre_births: Vec<Box<dyn PreBirth<T> + 'a>>,
     loggers: Vec<Box<dyn Logger<T> + 'a>>,
-    population: Population<T>,
+    population: Population<'a, T>,
 }
 
 impl<'a, T: Clone> GeneticOptimizer<'a, T> {
     /// Create a new `GeneticOptimizer`.
     pub fn new(
-        goal: Box<dyn Goal<T>>,
+        goal: Box<dyn Goal<T> + 'a>,
         stop_checker: Box<dyn StopChecker<T> + 'a>,
         creator: Box<dyn Creator<T> + 'a>,
         pairing: Box<dyn Pairing<T> + 'a>,

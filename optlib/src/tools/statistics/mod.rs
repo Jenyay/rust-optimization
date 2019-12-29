@@ -4,7 +4,7 @@ use core::cell::RefMut;
 
 use num::Float;
 
-use crate::{tools::logging::Logger, AlgorithmState, GoalValue, Solution};
+use crate::{tools::logging::Logger, AlgorithmState, Goal, GoalValue, Solution};
 
 /// convergence[run number][iteration]
 type Convergence<T> = Vec<Vec<Option<Solution<T>>>>;
@@ -15,6 +15,11 @@ pub struct Statistics<T> {
 
     // convergence[run number][iteration]
     convergence: Convergence<T>,
+}
+
+pub struct GoalCalcStatistics<'a, T> {
+    goal: Box<dyn Goal<T> + 'a>,
+    call_count: RefMut<'a, usize>,
 }
 
 /// The trait contains methods for calculate statistics for Convergance<T>
@@ -342,6 +347,24 @@ impl<'a, T: Clone> Logger<T> for StatisticsLogger<'a, T> {
         self.statistics.add_result(state);
     }
 }
+
+impl<'a, T> GoalCalcStatistics<'a, T> {
+    pub fn new(goal: Box<dyn Goal<T>>, call_count: RefMut<'a, usize>) -> Self {
+        Self {
+            goal,
+            call_count: call_count,
+        }
+    }
+}
+
+impl<'a, T> Goal<T> for GoalCalcStatistics<'a, T> {
+    fn get(&mut self, x: &T) -> GoalValue {
+        *self.call_count += 1;
+        self.goal.get(x)
+    }
+}
+
+impl<'a, T> Logger<T> for GoalCalcStatistics<'a, T> {}
 
 #[cfg(test)]
 mod tests {
