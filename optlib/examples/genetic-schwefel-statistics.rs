@@ -21,7 +21,7 @@ use optlib::genetic::{
 };
 use optlib::tools::statistics::{
     get_predicate_success_vec_solution, GoalCalcStatistics, StatFunctionsConvergence,
-    StatFunctionsGoal, StatFunctionsSolution,
+    StatFunctionsGoal, StatFunctionsSolution, CallCountData,
 };
 use optlib::tools::{logging, statistics, stopchecker};
 use optlib::{Goal, GoalFromFunction, Optimizer};
@@ -159,7 +159,7 @@ fn print_solution(mut writer: &mut dyn io::Write, stat: &Ref<statistics::Statist
 
 fn print_statistics(
     stat: &Ref<statistics::Statistics<Chromosomes>>,
-    call_count: Ref<usize>,
+    call_count: Ref<CallCountData>,
     chromo_count: usize,
 ) {
     let valid_answer = vec![420.9687; chromo_count];
@@ -178,17 +178,20 @@ fn print_statistics(
         "Standard deviation for goal:{:15.5}",
         standard_deviation_goal
     );
-    println!("Goal function call count:{:15}", call_count);
+    println!("Average goal function call count:{:15.5}", call_count.get_average_call_count().unwrap());
 }
 
 fn main() {
     // Count of xi in the chromosomes
     let chromo_count = 15;
-    let run_count = 10;
+    let run_count = 100;
 
-    let call_count = RefCell::new(0);
+    let call_count = RefCell::new(CallCountData::new());
     let statistics_data = RefCell::new(statistics::Statistics::new());
-    {
+
+    for n in 0..run_count {
+        call_count.borrow_mut().next_run();
+
         // Make a trait object for goal function (Schwefel function)
         let goal_object = GoalFromFunction::new(optlib_testfunc::schwefel);
         let goal = GoalCalcStatistics::new(Box::new(goal_object), call_count.borrow_mut());
@@ -201,10 +204,8 @@ fn main() {
         let loggers: Vec<Box<dyn logging::Logger<Chromosomes>>> = vec![stat_logger];
         optimizer.set_loggers(loggers);
 
-        for n in 0..run_count {
-            println!("{:} / {:}", n + 1, run_count);
-            optimizer.find_min().unwrap();
-        }
+        println!("{:} / {:}", n + 1, run_count);
+        optimizer.find_min().unwrap();
     }
 
     // Print out statistics

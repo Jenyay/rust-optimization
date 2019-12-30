@@ -9,6 +9,7 @@ use crate::{tools::logging::Logger, AlgorithmState, Goal, GoalValue, Solution};
 /// convergence[run number][iteration]
 type Convergence<T> = Vec<Vec<Option<Solution<T>>>>;
 
+#[derive(Debug)]
 pub struct Statistics<T> {
     // index - run number
     results: Vec<Option<Solution<T>>>,
@@ -17,9 +18,12 @@ pub struct Statistics<T> {
     convergence: Convergence<T>,
 }
 
+#[derive(Debug)]
+pub struct CallCountData(Vec<usize>);
+
 pub struct GoalCalcStatistics<'a, T> {
     goal: Box<dyn Goal<T> + 'a>,
-    call_count: RefMut<'a, usize>,
+    call_count: RefMut<'a, CallCountData>,
 }
 
 /// The trait contains methods for calculate statistics for Convergance<T>
@@ -93,6 +97,48 @@ pub fn get_predicate_success_vec_solution<T: Float>(
             }
         }
         true
+    }
+}
+
+impl CallCountData {
+    pub fn new() -> Self {
+        Self(vec![])
+    }
+
+    /// This method will be called before new optimization running
+    pub fn next_run(&mut self) {
+        self.0.push(0);
+    }
+
+    pub fn increment(&mut self) {
+        assert!(self.0.len() > 0);
+        let index = self.0.len() - 1;
+
+        self.0[index] += 1;
+    }
+
+    pub fn add(&mut self, n: usize) {
+        assert!(self.0.len() > 0);
+        let index = self.0.len() - 1;
+
+        self.0[index] += n;
+    }
+
+    /// Get call count for every running
+    pub fn get_call_count(&self) -> Vec<usize> {
+        self.0.clone()
+    }
+
+    /// Get average call count for all runnings
+    pub fn get_average_call_count(&self) -> Option<f64> {
+        let sum: usize= self.0.iter().sum();
+        let count = self.0.len();
+        if count == 0 {
+            None
+        }
+        else {
+            Some((sum as f64) / (count as f64) )
+        }
     }
 }
 
@@ -349,7 +395,7 @@ impl<'a, T: Clone> Logger<T> for StatisticsLogger<'a, T> {
 }
 
 impl<'a, T> GoalCalcStatistics<'a, T> {
-    pub fn new(goal: Box<dyn Goal<T>>, call_count: RefMut<'a, usize>) -> Self {
+    pub fn new(goal: Box<dyn Goal<T>>, call_count: RefMut<'a, CallCountData>) -> Self {
         Self {
             goal,
             call_count: call_count,
@@ -359,7 +405,7 @@ impl<'a, T> GoalCalcStatistics<'a, T> {
 
 impl<'a, T> Goal<T> for GoalCalcStatistics<'a, T> {
     fn get(&mut self, x: &T) -> GoalValue {
-        *self.call_count += 1;
+        self.call_count.increment();
         self.goal.get(x)
     }
 }
@@ -794,5 +840,53 @@ mod tests {
         let predicate = get_predicate_success_vec_solution(expected, delta);
 
         assert!((results.get_success_rate(&predicate).unwrap() - 0.5).abs() < 1e-5);
+    }
+
+    #[test]
+    fn call_count_data_average_empty() {
+        let data = CallCountData::new();
+        assert_eq!(data.get_call_count(), vec![]);
+        assert_eq!(data.get_average_call_count(), None);
+    }
+
+    #[test]
+    fn call_count_data_average_single_zero() {
+        let mut data = CallCountData::new();
+        data.next_run();
+
+        assert_eq!(data.get_call_count(), vec![0]);
+        assert!((data.get_average_call_count().unwrap() - 0.0) < 1e-5);
+    }
+
+    #[test]
+    fn call_count_data_average_single_one() {
+        let mut data = CallCountData::new();
+        data.next_run();
+        data.increment();
+
+        assert_eq!(data.get_call_count(), vec![1]);
+        assert!((data.get_average_call_count().unwrap() - 1.0) < 1e-5);
+    }
+
+    #[test]
+    fn call_count_data_average_single_two() {
+        let mut data = CallCountData::new();
+        data.next_run();
+        data.add(5);
+
+        assert_eq!(data.get_call_count(), vec![5]);
+        assert!((data.get_average_call_count().unwrap() - 5.0) < 1e-5);
+    }
+
+    #[test]
+    fn call_count_data_average_several() {
+        let mut data = CallCountData::new();
+        data.next_run();
+        data.add(5);
+        data.next_run();
+        data.add(7);
+
+        assert_eq!(data.get_call_count(), vec![5, 7]);
+        assert!((data.get_average_call_count().unwrap() - 6.0) < 1e-5);
     }
 }
