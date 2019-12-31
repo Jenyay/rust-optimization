@@ -187,24 +187,24 @@ impl<T: Clone + Debug> Swarm<T> {
 }
 
 pub struct ParticleSwarmOptimizer<'a, T> {
-    goal: Box<dyn Goal<Vec<T>>>,
-    stop_checker: Box<dyn StopChecker<Vec<T>>>,
-    coordinates_initializer: Box<dyn CoordinatesInitializer<T>>,
-    speed_initializer: Box<dyn SpeedInitializer<T>>,
-    speed_calculator: Box<dyn SpeedCalculator<T>>,
-    post_speed_calc: Vec<Box<dyn PostSpeedCalc<T>>>,
-    post_move: Vec<Box<dyn PostMove<T>>>,
+    goal: Box<dyn Goal<Vec<T>> + 'a>,
+    stop_checker: Box<dyn StopChecker<Vec<T>> + 'a>,
+    coordinates_initializer: Box<dyn CoordinatesInitializer<T> + 'a>,
+    speed_initializer: Box<dyn SpeedInitializer<T> + 'a>,
+    speed_calculator: Box<dyn SpeedCalculator<T> + 'a>,
+    post_speed_calc: Vec<Box<dyn PostSpeedCalc<T> + 'a>>,
+    post_move: Vec<Box<dyn PostMove<T> + 'a>>,
     loggers: Vec<Box<dyn Logger<Vec<T>> + 'a>>,
     swarm: Swarm<T>,
 }
 
 impl<'a, T: Clone + Float + Debug> ParticleSwarmOptimizer<'a, T> {
     pub fn new(
-        goal: Box<dyn Goal<Vec<T>>>,
-        stop_checker: Box<dyn StopChecker<Vec<T>>>,
-        coordinates_initializer: Box<dyn CoordinatesInitializer<T>>,
-        speed_initializer: Box<dyn SpeedInitializer<T>>,
-        speed_calculator: Box<dyn SpeedCalculator<T>>,
+        goal: Box<dyn Goal<Vec<T>> + 'a>,
+        stop_checker: Box<dyn StopChecker<Vec<T>> + 'a>,
+        coordinates_initializer: Box<dyn CoordinatesInitializer<T> + 'a>,
+        speed_initializer: Box<dyn SpeedInitializer<T> + 'a>,
+        speed_calculator: Box<dyn SpeedCalculator<T> + 'a>,
     ) -> Self {
         let swarm = Swarm::new();
 
