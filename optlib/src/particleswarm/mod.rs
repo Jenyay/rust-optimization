@@ -65,13 +65,21 @@ pub struct Particle<T> {
 
     /// Best value for this particle
     best_personal_value: f64,
+
+    /// Worst coordinates for this particle
+    worst_personal_coordinates: Vec<T>,
+
+    /// Worst value for this particle
+    worst_personal_value: f64,
 }
 
-impl<T: Clone + Debug> Clone for Particle<T> {
+impl<T: Clone> Clone for Particle<T> {
     fn clone(&self) -> Self {
         let mut particle = Particle::new(self.coordinates.clone(), self.speed.clone(), self.value);
         particle.best_personal_coordinates = self.best_personal_coordinates.clone();
         particle.best_personal_value = self.best_personal_value;
+        particle.worst_personal_coordinates = self.worst_personal_coordinates.clone();
+        particle.worst_personal_value = self.worst_personal_value;
         particle
     }
 }
@@ -86,16 +94,19 @@ impl<T> Agent<Vec<T>> for Particle<T> {
     }
 }
 
-impl<T: Clone + Debug> Particle<T> {
+impl<T: Clone> Particle<T> {
     /// Return value of the goal function.
     fn new(coordinates: Vec<T>, speed: Vec<T>, value: f64) -> Self {
         let best_personal_coordinates = coordinates.clone();
+        let worst_personal_coordinates = coordinates.clone();
         Self {
             coordinates,
             speed,
             value,
             best_personal_coordinates,
             best_personal_value: value,
+            worst_personal_coordinates,
+            worst_personal_value: value,
         }
     }
 
@@ -111,6 +122,11 @@ impl<T: Clone + Debug> Particle<T> {
             self.best_personal_coordinates = self.coordinates.clone();
             self.best_personal_value = value;
         }
+
+        if compare_floats(value, self.worst_personal_value) == Ordering::Greater {
+            self.worst_personal_coordinates = self.coordinates.clone();
+            self.worst_personal_value = value;
+        }
     }
 }
 
@@ -123,14 +139,18 @@ pub struct Swarm<T> {
     /// The best coordinates for current iteration.
     best_particle: Option<Particle<T>>,
 
+    /// The worst coordinates for current iteration.
+    worst_particle: Option<Particle<T>>,
+
     iteration: usize,
 }
 
-impl<T: Clone + Debug> Swarm<T> {
+impl<T: Clone> Swarm<T> {
     pub fn new() -> Self {
         Swarm {
             particles: vec![],
             best_particle: None,
+            worst_particle: None,
             iteration: 0,
         }
     }
@@ -144,6 +164,7 @@ impl<T: Clone + Debug> Swarm<T> {
     fn reset(&mut self) {
         self.particles.clear();
         self.best_particle = None;
+        self.worst_particle = None;
         self.iteration = 0;
     }
 
@@ -154,6 +175,7 @@ impl<T: Clone + Debug> Swarm<T> {
     fn replace_particles(&mut self, particles: Vec<Particle<T>>) {
         self.particles = particles;
         self.best_particle = Self::find_best_particle(&self.particles);
+        self.worst_particle = Self::find_worst_particle(&self.particles);
     }
 
     fn update_best_particle(&mut self) {
@@ -173,6 +195,23 @@ impl<T: Clone + Debug> Swarm<T> {
         }
     }
 
+    fn update_worst_particle(&mut self) {
+        if let Some(new_worst_particle) = Self::find_worst_particle(&self.particles) {
+            match &self.worst_particle {
+                None => {
+                    self.worst_particle = Some(new_worst_particle.clone());
+                }
+                Some(old_worst_particle) => {
+                    if compare_floats(new_worst_particle.value, old_worst_particle.value)
+                        == Ordering::Greater
+                    {
+                        self.worst_particle = Some(new_worst_particle.clone());
+                    }
+                }
+            }
+        }
+    }
+
     fn find_best_particle(particles: &Vec<Particle<T>>) -> Option<Particle<T>> {
         if particles.is_empty() {
             None
@@ -183,6 +222,26 @@ impl<T: Clone + Debug> Swarm<T> {
                 .unwrap();
             Some(particle.clone())
         }
+    }
+
+    fn find_worst_particle(particles: &Vec<Particle<T>>) -> Option<Particle<T>> {
+        if particles.is_empty() {
+            None
+        } else {
+            let particle = particles
+                .iter()
+                .max_by(|p1, p2| compare_floats(p1.value, p2.value))
+                .unwrap();
+            Some(particle.clone())
+        }
+    }
+
+    fn get_current_best_particle(&self) -> Option<Particle<T>> {
+        Self::find_best_particle(&self.particles)
+    }
+
+    fn get_current_worst_particle(&self) -> Option<Particle<T>> {
+        Self::find_worst_particle(&self.particles)
     }
 }
 
@@ -299,6 +358,7 @@ impl<'a, T: Clone + Float + Debug> ParticleSwarmOptimizer<'a, T> {
             }
 
             self.swarm.update_best_particle();
+            self.swarm.update_worst_particle();
             self.swarm.next_iteration();
 
             for logger in &mut self.loggers {

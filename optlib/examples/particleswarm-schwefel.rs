@@ -9,6 +9,8 @@ use optlib::{
         postmove,
         speedcalc,
         PostMove,
+        postspeedcalc,
+        PostSpeedCalc,
     },
 };
 
@@ -23,7 +25,7 @@ fn main() {
     let particles_count = 1500;
     let dimension = 3;
     let intervals = vec![(minval, maxval); dimension];
-    let phi_personal = 2.0;
+    let phi_personal = 4.0;
     let phi_global = 5.0;
     let k = 0.2;
 
@@ -39,6 +41,10 @@ fn main() {
 
     // Speed calculator
     let speed_calculator = speedcalc::CanonicalSpeedCalculator::new(phi_personal, phi_global, k);
+
+    let max_speed = 30.0;
+    let post_speed_calc: Vec<Box<dyn PostSpeedCalc<Coordinate>>> =
+        vec![Box::new(postspeedcalc::MaxSpeedAbs::new(max_speed))];
 
     // Stop checker
     let change_max_iterations = 150;
@@ -72,6 +78,7 @@ fn main() {
         );
     optimizer.set_loggers(loggers);
     optimizer.set_post_moves(post_moves);
+    optimizer.set_post_speed_calc(post_speed_calc);
 
     optimizer.find_min();
 }
