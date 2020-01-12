@@ -22,12 +22,12 @@ fn main() {
     // General parameters
     let minval: Coordinate = -500.0;
     let maxval: Coordinate = 500.0;
-    let particles_count = 1500;
+    let particles_count = 100;
     let dimension = 3;
     let intervals = vec![(minval, maxval); dimension];
-    let phi_personal = 4.0;
-    let phi_global = 5.0;
-    let k = 0.2;
+    let phi_personal = 3.2;
+    let phi_global = 1.0;
+    let k = 0.9;
 
     // Goal function
     let goal = GoalFromFunction::new(optlib_testfunc::schwefel);
@@ -42,7 +42,7 @@ fn main() {
     // Speed calculator
     let speed_calculator = speedcalc::CanonicalSpeedCalculator::new(phi_personal, phi_global, k);
 
-    let max_speed = 30.0;
+    let max_speed = 700.0;
     let post_speed_calc: Vec<Box<dyn PostSpeedCalc<Coordinate>>> =
         vec![Box::new(postspeedcalc::MaxSpeedAbs::new(max_speed))];
 

@@ -25,18 +25,18 @@ fn create_optimizer<'a>(
     // General parameters
     let minval: Coordinate = -500.0;
     let maxval: Coordinate = 500.0;
-    let particles_count = 2500;
+    let particles_count = 50;
     let intervals = vec![(minval, maxval); dimension];
-    let phi_personal = 3.0;
-    let phi_global = 5.0;
-    let k = 0.2;
+    let phi_personal = 3.2;
+    let phi_global = 1.0;
+    let k = 0.9;
 
     // Particles initializers
     let coord_initializer =
         initializing::RandomCoordinatesInitializer::new(intervals.clone(), particles_count);
     let speed_initializer = initializing::ZeroSpeedInitializer::new(dimension, particles_count);
 
-    let max_speed = 10.0;
+    let max_speed = 700.0;
     let post_speed_calc: Vec<Box<dyn PostSpeedCalc<Coordinate>>> =
         vec![Box::new(postspeedcalc::MaxSpeedAbs::new(max_speed))];
 
@@ -48,7 +48,7 @@ fn create_optimizer<'a>(
     let speed_calculator = speedcalc::CanonicalSpeedCalculator::new(phi_personal, phi_global, k);
 
     // Stop checker
-    let change_max_iterations = 150;
+    let change_max_iterations = 50;
     let change_delta = 1e-8;
     let stop_checker = stopchecker::CompositeAny::new(vec![
         Box::new(stopchecker::Threshold::new(1e-6)),
@@ -56,7 +56,7 @@ fn create_optimizer<'a>(
             change_max_iterations,
             change_delta,
         )),
-        Box::new(stopchecker::MaxIterations::new(3000)),
+        Box::new(stopchecker::MaxIterations::new(1000)),
     ]);
 
     let mut optimizer = particleswarm::ParticleSwarmOptimizer::new(
@@ -143,7 +143,7 @@ fn print_statistics(
 
 fn main() {
     let dimension = 3;
-    let run_count = 300;
+    let run_count = 500;
 
     let call_count = RefCell::new(CallCountData::new());
     let statistics_data = RefCell::new(statistics::Statistics::new());

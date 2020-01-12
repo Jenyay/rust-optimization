@@ -8,6 +8,13 @@ use crate::particleswarm::{Particle, SpeedCalculator, Swarm};
 /// ClassicSpeedCalculator implements the equation from the article
 /// Kennedy, J.; Eberhart, R. (1995). "Particle Swarm Optimization".
 /// Proceedings of IEEE International Conference on Neural Networks IV, pp.1942-1948.
+/// v_i = v_i + phi_p * r_p * (p_i - x_i) + phi_g * r_g * (g_i - x_i)
+/// `v_i` - speed projection for dimension i,
+/// `p_i` - personal best coordinate,
+/// `g_i` - global best coordinate,
+/// `x_i` - current coordinate,
+/// `phi_p`, `phi_g` - parameters,
+/// `r_p`, `r_g` - random values in (0, 1)
 pub struct ClassicSpeedCalculator<T> {
     phi_personal: T,
     phi_global: T,
@@ -49,7 +56,18 @@ impl<T: NumCast + Num + Copy> SpeedCalculator<T> for ClassicSpeedCalculator<T> {
     }
 }
 
-/// CanonicalSpeedCalculator implements the "canonical" equation from the article
+/// CanonicalSpeedCalculator implements the "canonical" equation:
+/// v_i = xi * (v_i + phi_p * r_p * (p_i - x_i) + phi_g * r_g * (g_i - x_i))
+/// `v_i` - speed projection for dimension i,
+/// `p_i` - personal best coordinate,
+/// `g_i` - global best coordinate,
+/// `x_i` - current coordinate,
+/// `phi_p`, `phi_g` - parameters,
+/// `r_p`, `r_g` - random values in (0, 1),
+/// `xi` = 2 * alpha / (phi - 2),
+/// `phi` = phi_p + phi_g
+/// `alpha` in (0, 1),
+/// `phi` must be greater than 4
 pub struct CanonicalSpeedCalculator<T> {
     phi_personal: T,
     phi_global: T,
@@ -59,15 +77,13 @@ pub struct CanonicalSpeedCalculator<T> {
 }
 
 impl<T: Float> CanonicalSpeedCalculator<T> {
-    pub fn new(phi_personal: T, phi_global: T, k: T) -> Self {
+    pub fn new(phi_personal: T, phi_global: T, alpha: T) -> Self {
         assert!(phi_personal + phi_global > T::from(4.0).unwrap());
-        assert!(k > T::zero());
-        assert!(k < T::one());
+        assert!(alpha > T::zero());
+        assert!(alpha < T::one());
 
         let phi = phi_global + phi_personal;
-        let xi = T::from(2.0).unwrap() * k
-            / ((T::from(2.0).unwrap() - phi - (phi * phi - T::from(4.0).unwrap() * phi).sqrt())
-                .abs());
+        let xi = T::from(2.0).unwrap() * alpha / (phi - T::from(2.0).unwrap());
         Self {
             phi_personal,
             phi_global,
@@ -105,6 +121,25 @@ impl<T: NumCast + Num + Copy> SpeedCalculator<T> for CanonicalSpeedCalculator<T>
 }
 
 /// Speed update with negative reinforcement, global and current best and worst positions.
+/// v_i = xi * (v_i
+///     + phi_best_personal * rb_p * (p_best_i - x_i)
+///     + phi_best_current * rb_c * (c_best_i - x_i)
+///     + phi_best_global * rb_g * (g_best_i - x_i)
+///     - phi_worst_personal * rw_p * (p_worst_i - x_i)
+///     - phi_worst_current * rw_c * (c_worst_i - x_i)
+///     - phi_worst_global * rw_g * (g_worst_i - x_i))
+///
+/// `v_i` - speed projection for dimension i,
+/// `p_best_i` - personal best coordinate,
+/// `c_best_i` - best coordinate for current swarm,
+/// `g_best_i` - global best coordinate,
+/// `p_worst_i` - personal worst coordinate,
+/// `c_worst_i` - worst coordinate for current swarm,
+/// `g_worst_i` - global worst coordinate,
+/// `xi` - parameter,
+/// `x_i` - current coordinate,
+/// `phi_best_personal`, `phi_best_current`, `phi_best_global`, `phi_worst_personal`, `phi_worst_current`, `phi_worst_global` - parameters,
+/// `rb_p`, `rb_c`, `rb_g`, `rw_p`, `rw_c`, `rw_g` - random values in (0, 1),
 pub struct NegativeReinforcement<T> {
     phi_best_personal: T,
     phi_best_current: T,
@@ -114,7 +149,7 @@ pub struct NegativeReinforcement<T> {
     phi_worst_current: T,
     phi_worst_global: T,
 
-    k: T,
+    xi: T,
 
     random: ThreadRng,
 }
@@ -126,7 +161,7 @@ impl<T> NegativeReinforcement<T> {
         phi_worst_personal: T,
         phi_worst_current: T,
         phi_worst_global: T,
-        k: T,
+        xi: T,
     ) -> Self {
         Self {
             phi_best_personal,
@@ -135,7 +170,7 @@ impl<T> NegativeReinforcement<T> {
             phi_worst_personal,
             phi_worst_current,
             phi_worst_global,
-            k,
+            xi,
             random: rand::thread_rng(),
         }
     }
@@ -188,7 +223,7 @@ impl<T: NumCast + Num + Copy> SpeedCalculator<T> for NegativeReinforcement<T> {
                 * r_worst_global
                 * (global_worst_solution[i] - particle.coordinates[i]);
 
-            let speed_item = self.k
+            let speed_item = self.xi
                 * (particle.speed[i] + v_best_personal + v_best_current + v_best_global
                     - v_worst_personal
                     - v_worst_current
@@ -200,17 +235,20 @@ impl<T: NumCast + Num + Copy> SpeedCalculator<T> for NegativeReinforcement<T> {
     }
 }
 
+/// The trait to calculate the inertia coefficient (w) for InertiaSpeedCalculator
 pub trait Inertia<T> {
     fn get(&mut self, iteration: usize) -> T;
 }
 
+
+/// The inertia coefficient (w) does not depend on the iteration number
 pub struct ConstInertia<T> {
     w: T,
 }
 
 impl<T> ConstInertia<T> {
     pub fn new(w: T) -> Self {
-        Self {w}
+        Self { w }
     }
 }
 
@@ -220,6 +258,7 @@ impl<T: Clone> Inertia<T> for ConstInertia<T> {
     }
 }
 
+/// The inertia coefficient decreases linearly from w_max to w_min
 pub struct LinearInertia<T> {
     w_min: T,
     w_max: T,
@@ -228,16 +267,31 @@ pub struct LinearInertia<T> {
 
 impl<T: Float> LinearInertia<T> {
     pub fn new(w_min: T, w_max: T, t_max: usize) -> Self {
-        Self {w_min, w_max, t_max}
+        Self {
+            w_min,
+            w_max,
+            t_max,
+        }
     }
 }
 
 impl<T: Float> Inertia<T> for LinearInertia<T> {
     fn get(&mut self, iteration: usize) -> T {
-        self.w_max - (self.w_max - self.w_min) * T::from(iteration).unwrap() / T::from(self.t_max).unwrap()
+        self.w_max
+            - (self.w_max - self.w_min) * T::from(iteration).unwrap() / T::from(self.t_max).unwrap()
     }
 }
 
+/// InertiaSpeedCalculator implements the equation with itertia coefficient w(t)
+/// v_i = w(t) * v_i + phi_personal * r_p * (p_i - x_i) + phi_global * r_g * (g_i - x_i)
+/// `v_i` - speed projection for dimension i,
+/// `p_i` - personal best coordinate,
+/// `g_i` - global best coordinate,
+/// `x_i` - current coordinate,
+/// `phi_personal`, `phi_global` - parameters,
+/// `r_p`, `r_g` - random values in (0, 1),
+/// `w(t)` calculate with the `Inertia` trait,
+/// `t` - iteration number,
 pub struct InertiaSpeedCalculator<'a, T> {
     phi_personal: T,
     phi_global: T,

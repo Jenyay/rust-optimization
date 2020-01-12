@@ -25,12 +25,12 @@ fn create_optimizer<'a>(
     // General parameters
     let minval: Coordinate = -500.0;
     let maxval: Coordinate = 500.0;
-    let particles_count = 40;
+    let particles_count = 50;
     let intervals = vec![(minval, maxval); dimension];
 
-    let phi_best_personal = 4.0;
+    let phi_best_personal = 3.2;
     let phi_best_current = 0.0;
-    let phi_best_global = 0.5;
+    let phi_best_global = 1.0;
 
     let phi_worst_personal = 0.0;
     let phi_worst_current = 0.0;
@@ -39,8 +39,7 @@ fn create_optimizer<'a>(
     let phi_t = phi_best_personal + phi_best_current + phi_best_global + phi_worst_current;
 
     let alpha = 0.9;
-    let k = 2.0 * alpha / (phi_t - 2.0);
-    // let k = 2.0 * alpha / (phi_t - 2.0 + (phi_t * (phi_t - 4.0_f32)).sqrt());
+    let xi = 2.0 * alpha / (phi_t - 2.0);
 
     // Particles initializers
     let coord_initializer =
@@ -50,10 +49,6 @@ fn create_optimizer<'a>(
     let max_speed = 700.0;
     let post_speed_calc: Vec<Box<dyn PostSpeedCalc<Coordinate>>> =
         vec![Box::new(postspeedcalc::MaxSpeedAbs::new(max_speed))];
-
-    // let max_speed = vec![600.0; dimension];
-    // let post_speed_calc: Vec<Box<dyn PostSpeedCalc<Coordinate>>> =
-    //     vec![Box::new(postspeedcalc::MaxSpeedDimensions::new(max_speed))];
 
     // PostMove
     let post_moves: Vec<Box<dyn PostMove<Coordinate>>> =
@@ -67,7 +62,7 @@ fn create_optimizer<'a>(
         phi_worst_personal,
         phi_worst_current,
         phi_worst_global,
-        k
+        xi
     );
 
     // Stop checker
@@ -79,7 +74,7 @@ fn create_optimizer<'a>(
             change_max_iterations,
             change_delta,
         )),
-        Box::new(stopchecker::MaxIterations::new(6000)),
+        Box::new(stopchecker::MaxIterations::new(1000)),
     ]);
 
     let mut optimizer = particleswarm::ParticleSwarmOptimizer::new(
@@ -166,7 +161,7 @@ fn print_statistics(
 
 fn main() {
     let dimension = 3;
-    let run_count = 300;
+    let run_count = 500;
 
     let call_count = RefCell::new(CallCountData::new());
     let statistics_data = RefCell::new(statistics::Statistics::new());
