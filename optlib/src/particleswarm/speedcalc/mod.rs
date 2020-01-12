@@ -80,7 +80,6 @@ impl<T: Float> CanonicalSpeedCalculator<T> {
 impl<T: NumCast + Num + Copy> SpeedCalculator<T> for CanonicalSpeedCalculator<T> {
     fn calc_new_speed(&mut self, swarm: &Swarm<T>, particle: &Particle<T>) -> Vec<T> {
         let dimension = particle.coordinates.len();
-        // let global_best_particle = swarm.get_current_best_particle().unwrap();
         let global_best_particle = swarm.best_particle.as_ref().unwrap();
         let global_best_solution = &global_best_particle.coordinates;
 
@@ -169,15 +168,113 @@ impl<T: NumCast + Num + Copy> SpeedCalculator<T> for NegativeReinforcement<T> {
             let r_worst_current = T::from(between.sample(&mut self.random)).unwrap();
             let r_worst_personal = T::from(between.sample(&mut self.random)).unwrap();
 
-            let v_best_personal = self.phi_best_personal * r_best_personal * (particle.best_personal_coordinates[i] - particle.coordinates[i]);
-            let v_best_current = self.phi_best_current * r_best_current * (current_best_solution[i] - particle.coordinates[i]);
-            let v_best_global = self.phi_best_global * r_best_global * (global_best_solution[i] - particle.coordinates[i]);
+            let v_best_personal = self.phi_best_personal
+                * r_best_personal
+                * (particle.best_personal_coordinates[i] - particle.coordinates[i]);
+            let v_best_current = self.phi_best_current
+                * r_best_current
+                * (current_best_solution[i] - particle.coordinates[i]);
+            let v_best_global = self.phi_best_global
+                * r_best_global
+                * (global_best_solution[i] - particle.coordinates[i]);
 
-            let v_worst_personal = self.phi_worst_personal * r_worst_personal * (particle.worst_personal_coordinates[i] - particle.coordinates[i]);
-            let v_worst_current = self.phi_worst_current * r_worst_current * (current_worst_solution[i] - particle.coordinates[i]);
-            let v_worst_global = self.phi_worst_global * r_worst_global * (global_worst_solution[i] - particle.coordinates[i]);
+            let v_worst_personal = self.phi_worst_personal
+                * r_worst_personal
+                * (particle.worst_personal_coordinates[i] - particle.coordinates[i]);
+            let v_worst_current = self.phi_worst_current
+                * r_worst_current
+                * (current_worst_solution[i] - particle.coordinates[i]);
+            let v_worst_global = self.phi_worst_global
+                * r_worst_global
+                * (global_worst_solution[i] - particle.coordinates[i]);
 
-            let speed_item = self.k * (particle.speed[i] + v_best_personal + v_best_current + v_best_global - v_worst_personal - v_worst_current - v_worst_global);
+            let speed_item = self.k
+                * (particle.speed[i] + v_best_personal + v_best_current + v_best_global
+                    - v_worst_personal
+                    - v_worst_current
+                    - v_worst_global);
+            new_speed.push(speed_item);
+        }
+
+        new_speed
+    }
+}
+
+pub trait Inertia<T> {
+    fn get(&mut self, iteration: usize) -> T;
+}
+
+pub struct ConstInertia<T> {
+    w: T,
+}
+
+impl<T> ConstInertia<T> {
+    pub fn new(w: T) -> Self {
+        Self {w}
+    }
+}
+
+impl<T: Clone> Inertia<T> for ConstInertia<T> {
+    fn get(&mut self, _iteration: usize) -> T {
+        self.w.clone()
+    }
+}
+
+pub struct LinearInertia<T> {
+    w_min: T,
+    w_max: T,
+    t_max: usize,
+}
+
+impl<T: Float> LinearInertia<T> {
+    pub fn new(w_min: T, w_max: T, t_max: usize) -> Self {
+        Self {w_min, w_max, t_max}
+    }
+}
+
+impl<T: Float> Inertia<T> for LinearInertia<T> {
+    fn get(&mut self, iteration: usize) -> T {
+        self.w_max - (self.w_max - self.w_min) * T::from(iteration).unwrap() / T::from(self.t_max).unwrap()
+    }
+}
+
+pub struct InertiaSpeedCalculator<'a, T> {
+    phi_personal: T,
+    phi_global: T,
+    inertia: Box<dyn Inertia<T> + 'a>,
+
+    random: ThreadRng,
+}
+
+impl<'a, T> InertiaSpeedCalculator<'a, T> {
+    pub fn new(phi_personal: T, phi_global: T, inertia: Box<dyn Inertia<T> + 'a>) -> Self {
+        Self {
+            phi_personal,
+            phi_global,
+            inertia,
+            random: rand::thread_rng(),
+        }
+    }
+}
+
+impl<'a, T: NumCast + Num + Copy> SpeedCalculator<T> for InertiaSpeedCalculator<'a, T> {
+    fn calc_new_speed(&mut self, swarm: &Swarm<T>, particle: &Particle<T>) -> Vec<T> {
+        let dimension = particle.coordinates.len();
+        let global_best_particle = swarm.best_particle.as_ref().unwrap();
+        let global_best_solution = &global_best_particle.coordinates;
+        let inertia_ratio = self.inertia.get(swarm.iteration);
+
+        let between = Uniform::new_inclusive(0.0_f32, 1.0_f32);
+        let mut new_speed = Vec::with_capacity(dimension);
+        for i in 0..dimension {
+            let r_personal = T::from(between.sample(&mut self.random)).unwrap();
+            let r_global = T::from(between.sample(&mut self.random)).unwrap();
+
+            let speed_item = inertia_ratio * particle.speed[i]
+                + self.phi_personal
+                    * r_personal
+                    * (particle.best_personal_coordinates[i] - particle.coordinates[i])
+                + self.phi_global * r_global * (global_best_solution[i] - particle.coordinates[i]);
             new_speed.push(speed_item);
         }
 
