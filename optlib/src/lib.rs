@@ -26,10 +26,18 @@ pub trait Optimizer<T> {
     fn find_min(&mut self) -> Option<Solution<T>>;
 }
 
+/// The trait for iterative algorithms.
+///
+/// `T` - type of a point in search space for goal function.
 pub trait IterativeOptimizer<T> {
+    /// The method can be called after algorithm initialization.
     fn next_iterations(&mut self) -> Option<Solution<T>>;
 }
 
+/// The trait for a struct with information about current algorithm state.
+/// For example: population for genetic algorithm, swarm for particle swarm algorithm etc
+///
+/// `T` - type of a point in search space for goal function.
 pub trait AlgorithmState<T> {
     fn get_best_solution(&self) -> Option<Solution<T>>;
     fn get_iteration(&self) -> usize;
