@@ -22,7 +22,7 @@ use std::slice;
 
 use crate::tools::logging::Logger;
 use crate::tools::stopchecker::StopChecker;
-use crate::{Agent, AlgorithmState, Goal, Optimizer};
+use crate::{Agent, AgentsState, AlgorithmState, Goal, IterativeOptimizer, Optimizer, Solution};
 
 /// Struct for single point (agent) in the search space
 ///
@@ -122,6 +122,20 @@ impl<'a, T: Clone> Population<'a, T> {
         if let Some(ref individual) = worst {
             self.worst_individual = Some((*individual).clone());
         }
+    }
+}
+
+impl<'a, T: Clone> AgentsState<T> for Population<'a, T> {
+    type Agent = Individual<T>;
+
+    /// Returns vector with references to all agents
+    fn get_agents(&self) -> Vec<&Self::Agent> {
+        let mut agents: Vec<&Self::Agent> = Vec::with_capacity(self.len());
+        for individual in self.individuals.iter() {
+            agents.push(individual);
+        }
+
+        agents
     }
 }
 
@@ -390,37 +404,56 @@ impl<'a, T: Clone> GeneticOptimizer<'a, T> {
     }
 
     /// Replace the trait object of pairing algorithm.
-    pub fn replace_pairing(&mut self, pairing: Box<dyn Pairing<T>>) {
+    pub fn set_pairing(&mut self, pairing: Box<dyn Pairing<T>>) {
         self.pairing = pairing;
     }
 
     /// Replace the trait object of cross algorithm.
-    pub fn replace_cross(&mut self, cross: Box<dyn Cross<T>>) {
+    pub fn set_cross(&mut self, cross: Box<dyn Cross<T>>) {
         self.cross = cross;
     }
 
     /// Replace the trait object of mutation algorithm.
-    pub fn replace_mutation(&mut self, mutation: Box<dyn Mutation<T>>) {
+    pub fn set_mutation(&mut self, mutation: Box<dyn Mutation<T>>) {
         self.mutation = mutation;
     }
 
     /// Replace the trait object of selection algorithm.
-    pub fn replace_selection(&mut self, selections: Vec<Box<dyn Selection<T>>>) {
+    pub fn set_selection(&mut self, selections: Vec<Box<dyn Selection<T>>>) {
         self.selections = selections;
     }
 
     /// Replace the trait object of selection algorithm.
-    pub fn replace_pre_birth(&mut self, pre_births: Vec<Box<dyn PreBirth<T>>>) {
+    pub fn set_pre_birth(&mut self, pre_births: Vec<Box<dyn PreBirth<T>>>) {
         self.pre_births = pre_births;
     }
 
     /// Replace the trait object of stop checker algorithm.
-    pub fn replace_stop_checker(&mut self, stop_checker: Box<dyn StopChecker<T>>) {
+    pub fn set_stop_checker(&mut self, stop_checker: Box<dyn StopChecker<T>>) {
         self.stop_checker = stop_checker;
     }
 
+    fn run_pairing(&mut self) -> Vec<T> {
+        let pairs: Vec<Vec<usize>> = self.pairing.get_pairs(&self.population);
+        let mut new_chromosomes: Vec<T> = Vec::with_capacity(pairs.len());
+
+        for pair in pairs {
+            let mut cross_chromosomes = Vec::with_capacity(pair.len());
+            for i in pair {
+                cross_chromosomes.push(self.population[i].get_chromosomes());
+            }
+
+            let mut child_chromosomes = self.cross.cross(&cross_chromosomes);
+            new_chromosomes.append(&mut child_chromosomes);
+        }
+
+        new_chromosomes
+    }
+}
+
+impl<'a, T: Clone> IterativeOptimizer<T> for GeneticOptimizer<'a, T> {
     /// Do new iterations of genetic algorithm.
-    pub fn next_iterations(&mut self) -> Option<(T, f64)> {
+    fn next_iterations(&mut self) -> Option<Solution<T>> {
         for logger in &mut self.loggers {
             logger.resume(&self.population);
         }
@@ -467,23 +500,6 @@ impl<'a, T: Clone> GeneticOptimizer<'a, T> {
             None => None,
             Some(individual) => Some((individual.chromosomes.clone(), individual.fitness)),
         }
-    }
-
-    fn run_pairing(&mut self) -> Vec<T> {
-        let pairs: Vec<Vec<usize>> = self.pairing.get_pairs(&self.population);
-        let mut new_chromosomes: Vec<T> = Vec::with_capacity(pairs.len());
-
-        for pair in pairs {
-            let mut cross_chromosomes = Vec::with_capacity(pair.len());
-            for i in pair {
-                cross_chromosomes.push(self.population[i].get_chromosomes());
-            }
-
-            let mut child_chromosomes = self.cross.cross(&cross_chromosomes);
-            new_chromosomes.append(&mut child_chromosomes);
-        }
-
-        new_chromosomes
     }
 }
 

@@ -5,13 +5,12 @@ pub mod speedcalc;
 
 use std::cmp::Ordering;
 use std::f64;
-use std::fmt::Debug;
 
 use num::Float;
 
 use crate::tools::logging::Logger;
 use crate::tools::stopchecker::StopChecker;
-use crate::{Agent, AgentsState, AlgorithmState, Goal, Optimizer};
+use crate::{Agent, AgentsState, AlgorithmState, Goal, IterativeOptimizer, Optimizer, Solution};
 
 /// The trait to create initial particles swarm.
 ///
@@ -49,7 +48,6 @@ pub trait PostSpeedCalc<T> {
 /// Struct for single point (agent) in the search space
 ///
 /// `T` - type of a point in the search space for goal function.
-#[derive(Debug)]
 pub struct Particle<T> {
     /// Point in the search space.
     coordinates: Vec<T>,
@@ -257,7 +255,7 @@ pub struct ParticleSwarmOptimizer<'a, T> {
     swarm: Swarm<T>,
 }
 
-impl<'a, T: Clone + Float + Debug> ParticleSwarmOptimizer<'a, T> {
+impl<'a, T: Clone + Float> ParticleSwarmOptimizer<'a, T> {
     pub fn new(
         goal: Box<dyn Goal<Vec<T>> + 'a>,
         stop_checker: Box<dyn StopChecker<Vec<T>> + 'a>,
@@ -278,6 +276,10 @@ impl<'a, T: Clone + Float + Debug> ParticleSwarmOptimizer<'a, T> {
             loggers: vec![],
             swarm,
         }
+    }
+
+    pub fn set_stop_checker(&mut self, stop_checker: Box<dyn StopChecker<Vec<T>> + 'a>) {
+        self.stop_checker = stop_checker;
     }
 
     pub fn set_loggers(&mut self, loggers: Vec<Box<dyn Logger<Vec<T>> + 'a>>) {
@@ -317,9 +319,23 @@ impl<'a, T: Clone + Float + Debug> ParticleSwarmOptimizer<'a, T> {
         self.swarm.reset();
         self.swarm.replace_particles(particles);
     }
+}
 
+impl<'a, T: Clone + Float> Optimizer<Vec<T>> for ParticleSwarmOptimizer<'a, T> {
+    fn find_min(&mut self) -> Option<(Vec<T>, f64)> {
+        self.renew_swarm();
+
+        for logger in &mut self.loggers {
+            logger.start(&self.swarm);
+        }
+
+        self.next_iterations()
+    }
+}
+
+impl<'a, T: Clone + Float> IterativeOptimizer<Vec<T>> for ParticleSwarmOptimizer<'a, T> {
     /// Main algorithm steps is here
-    pub fn next_iterations(&mut self) -> Option<(Vec<T>, f64)> {
+    fn next_iterations(&mut self) -> Option<Solution<Vec<T>>> {
         for logger in &mut self.loggers {
             logger.resume(&self.swarm);
         }
@@ -377,19 +393,7 @@ impl<'a, T: Clone + Float + Debug> ParticleSwarmOptimizer<'a, T> {
     }
 }
 
-impl<'a, T: Clone + Float + Debug> Optimizer<Vec<T>> for ParticleSwarmOptimizer<'a, T> {
-    fn find_min(&mut self) -> Option<(Vec<T>, f64)> {
-        self.renew_swarm();
-
-        for logger in &mut self.loggers {
-            logger.start(&self.swarm);
-        }
-
-        self.next_iterations()
-    }
-}
-
-impl<T: Clone + Debug> AlgorithmState<Vec<T>> for Swarm<T> {
+impl<T: Clone> AlgorithmState<Vec<T>> for Swarm<T> {
     fn get_best_solution(&self) -> Option<(Vec<T>, f64)> {
         match &self.best_particle {
             None => None,
@@ -402,7 +406,7 @@ impl<T: Clone + Debug> AlgorithmState<Vec<T>> for Swarm<T> {
     }
 }
 
-impl<T: Clone + Debug> AgentsState<Vec<T>> for Swarm<T> {
+impl<T: Clone> AgentsState<Vec<T>> for Swarm<T> {
     type Agent = Particle<T>;
 
     /// Returns vector with references to all agents

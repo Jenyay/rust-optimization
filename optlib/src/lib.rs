@@ -18,12 +18,16 @@ type Solution<T> = (T, GoalValue);
 pub trait Optimizer<T> {
     /// Run an algorithm.
     ///
-    /// Returns `Some(x: &T, goal: GoalValue)`, where `x` - result of optimization,
+    /// Returns `Some((x: &T, goal: GoalValue))`, where `x` - result of optimization,
     /// `goal` - value of goal function. Returns `None` if an algoritm can't find minimum of a goal function.
     ///
     /// # Remarks
     /// All algorithms with `Optimizer` must search minimum of a goal function.
     fn find_min(&mut self) -> Option<Solution<T>>;
+}
+
+pub trait IterativeOptimizer<T> {
+    fn next_iterations(&mut self) -> Option<Solution<T>>;
 }
 
 pub trait AlgorithmState<T> {
