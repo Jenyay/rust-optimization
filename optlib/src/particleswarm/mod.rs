@@ -12,12 +12,15 @@ use crate::tools::logging::Logger;
 use crate::tools::stopchecker::StopChecker;
 use crate::{Agent, AgentsState, AlgorithmState, Goal, IterativeOptimizer, Optimizer, Solution};
 
+type Speed<T> = Vec<T>;
+type Coordinate<T> = Vec<T>;
+
 /// The trait to create initial particles swarm.
 ///
 /// `T` - type of a point in the search space for goal function.
 pub trait CoordinatesInitializer<T> {
     /// Must return vector of the start points for a new particles.
-    fn get_coordinates(&mut self) -> Vec<Vec<T>>;
+    fn get_coordinates(&mut self) -> Vec<Coordinate<T>>;
 }
 
 /// The trait to create initial particles swarm.
@@ -25,7 +28,7 @@ pub trait CoordinatesInitializer<T> {
 /// `T` - type of a point in the search space for goal function.
 pub trait SpeedInitializer<T> {
     /// Must return vector of speed for a new particles.
-    fn get_speed(&mut self) -> Vec<Vec<T>>;
+    fn get_speed(&mut self) -> Vec<Speed<T>>;
 }
 
 /// The trait may be used after moving the particle but before goal function calculating.
@@ -33,16 +36,16 @@ pub trait SpeedInitializer<T> {
 /// `T` - type of a point in the search space for goal function.
 pub trait PostMove<T> {
     /// The method may modify coordinates list before calculate goal function
-    fn post_move(&self, coordinates: &mut Vec<T>);
+    fn post_move(&self, coordinates: &mut Coordinate<T>);
 }
 
 /// The trait to calculate new speed vector for every particle
 pub trait SpeedCalculator<T> {
-    fn calc_new_speed(&mut self, swarm: &Swarm<T>, particle: &Particle<T>) -> Vec<T>;
+    fn calc_new_speed(&mut self, swarm: &Swarm<T>, particle: &Particle<T>) -> Speed<T>;
 }
 
 pub trait PostSpeedCalc<T> {
-    fn correct_speed(&mut self, speed: Vec<T>) -> Vec<T>;
+    fn correct_speed(&mut self, speed: Speed<T>) -> Speed<T>;
 }
 
 /// Struct for single point (agent) in the search space
@@ -50,22 +53,22 @@ pub trait PostSpeedCalc<T> {
 /// `T` - type of a point in the search space for goal function.
 pub struct Particle<T> {
     /// Point in the search space.
-    coordinates: Vec<T>,
+    coordinates: Coordinate<T>,
 
     /// Speed of particle.
-    speed: Vec<T>,
+    speed: Speed<T>,
 
     /// Value of function in the current coordinates.
     value: f64,
 
     /// Best coordinates for this particle
-    best_personal_coordinates: Vec<T>,
+    best_personal_coordinates: Coordinate<T>,
 
     /// Best value for this particle
     best_personal_value: f64,
 
     /// Worst coordinates for this particle
-    worst_personal_coordinates: Vec<T>,
+    worst_personal_coordinates: Coordinate<T>,
 
     /// Worst value for this particle
     worst_personal_value: f64,
@@ -82,19 +85,19 @@ impl<T: Clone> Clone for Particle<T> {
     }
 }
 
-impl<T> Agent<Vec<T>> for Particle<T> {
+impl<T> Agent<Coordinate<T>> for Particle<T> {
     fn get_goal(&self) -> f64 {
         self.value
     }
 
-    fn get_parameter(&self) -> &Vec<T> {
+    fn get_parameter(&self) -> &Coordinate<T> {
         &self.coordinates
     }
 }
 
 impl<T: Clone> Particle<T> {
     /// Return value of the goal function.
-    fn new(coordinates: Vec<T>, speed: Vec<T>, value: f64) -> Self {
+    fn new(coordinates: Coordinate<T>, speed: Speed<T>, value: f64) -> Self {
         let best_personal_coordinates = coordinates.clone();
         let worst_personal_coordinates = coordinates.clone();
         Self {
@@ -108,11 +111,11 @@ impl<T: Clone> Particle<T> {
         }
     }
 
-    fn set_speed(&mut self, speed: Vec<T>) {
+    fn set_speed(&mut self, speed: Speed<T>) {
         self.speed = speed;
     }
 
-    fn move_to(&mut self, new_coordinates: Vec<T>, value: f64) {
+    fn move_to(&mut self, new_coordinates: Coordinate<T>, value: f64) {
         self.coordinates = new_coordinates;
         self.value = value;
 
@@ -244,21 +247,21 @@ impl<T: Clone> Swarm<T> {
 }
 
 pub struct ParticleSwarmOptimizer<'a, T> {
-    goal: Box<dyn Goal<Vec<T>> + 'a>,
-    stop_checker: Box<dyn StopChecker<Vec<T>> + 'a>,
+    goal: Box<dyn Goal<Coordinate<T>> + 'a>,
+    stop_checker: Box<dyn StopChecker<Coordinate<T>> + 'a>,
     coordinates_initializer: Box<dyn CoordinatesInitializer<T> + 'a>,
     speed_initializer: Box<dyn SpeedInitializer<T> + 'a>,
     speed_calculator: Box<dyn SpeedCalculator<T> + 'a>,
     post_speed_calc: Vec<Box<dyn PostSpeedCalc<T> + 'a>>,
     post_move: Vec<Box<dyn PostMove<T> + 'a>>,
-    loggers: Vec<Box<dyn Logger<Vec<T>> + 'a>>,
+    loggers: Vec<Box<dyn Logger<Coordinate<T>> + 'a>>,
     swarm: Swarm<T>,
 }
 
 impl<'a, T: Clone + Float> ParticleSwarmOptimizer<'a, T> {
     pub fn new(
-        goal: Box<dyn Goal<Vec<T>> + 'a>,
-        stop_checker: Box<dyn StopChecker<Vec<T>> + 'a>,
+        goal: Box<dyn Goal<Coordinate<T>> + 'a>,
+        stop_checker: Box<dyn StopChecker<Coordinate<T>> + 'a>,
         coordinates_initializer: Box<dyn CoordinatesInitializer<T> + 'a>,
         speed_initializer: Box<dyn SpeedInitializer<T> + 'a>,
         speed_calculator: Box<dyn SpeedCalculator<T> + 'a>,
@@ -278,11 +281,11 @@ impl<'a, T: Clone + Float> ParticleSwarmOptimizer<'a, T> {
         }
     }
 
-    pub fn set_stop_checker(&mut self, stop_checker: Box<dyn StopChecker<Vec<T>> + 'a>) {
+    pub fn set_stop_checker(&mut self, stop_checker: Box<dyn StopChecker<Coordinate<T>> + 'a>) {
         self.stop_checker = stop_checker;
     }
 
-    pub fn set_loggers(&mut self, loggers: Vec<Box<dyn Logger<Vec<T>> + 'a>>) {
+    pub fn set_loggers(&mut self, loggers: Vec<Box<dyn Logger<Coordinate<T>> + 'a>>) {
         self.loggers = loggers;
     }
 
@@ -321,8 +324,8 @@ impl<'a, T: Clone + Float> ParticleSwarmOptimizer<'a, T> {
     }
 }
 
-impl<'a, T: Clone + Float> Optimizer<Vec<T>> for ParticleSwarmOptimizer<'a, T> {
-    fn find_min(&mut self) -> Option<(Vec<T>, f64)> {
+impl<'a, T: Clone + Float> Optimizer<Coordinate<T>> for ParticleSwarmOptimizer<'a, T> {
+    fn find_min(&mut self) -> Option<(Coordinate<T>, f64)> {
         self.renew_swarm();
 
         for logger in &mut self.loggers {
@@ -333,9 +336,9 @@ impl<'a, T: Clone + Float> Optimizer<Vec<T>> for ParticleSwarmOptimizer<'a, T> {
     }
 }
 
-impl<'a, T: Clone + Float> IterativeOptimizer<Vec<T>> for ParticleSwarmOptimizer<'a, T> {
+impl<'a, T: Clone + Float> IterativeOptimizer<Coordinate<T>> for ParticleSwarmOptimizer<'a, T> {
     /// Main algorithm steps is here
-    fn next_iterations(&mut self) -> Option<Solution<Vec<T>>> {
+    fn next_iterations(&mut self) -> Option<Solution<Coordinate<T>>> {
         for logger in &mut self.loggers {
             logger.resume(&self.swarm);
         }
@@ -355,7 +358,7 @@ impl<'a, T: Clone + Float> IterativeOptimizer<Vec<T>> for ParticleSwarmOptimizer
                 self.swarm.particles[n].set_speed(new_speed);
 
                 // Calculate new coordinates
-                let mut new_coordinates: Vec<T> = self.swarm.particles[n]
+                let mut new_coordinates: Coordinate<T> = self.swarm.particles[n]
                     .coordinates
                     .iter()
                     .zip(self.swarm.particles[n].speed.iter())
@@ -393,8 +396,8 @@ impl<'a, T: Clone + Float> IterativeOptimizer<Vec<T>> for ParticleSwarmOptimizer
     }
 }
 
-impl<T: Clone> AlgorithmState<Vec<T>> for Swarm<T> {
-    fn get_best_solution(&self) -> Option<(Vec<T>, f64)> {
+impl<T: Clone> AlgorithmState<Coordinate<T>> for Swarm<T> {
+    fn get_best_solution(&self) -> Option<(Coordinate<T>, f64)> {
         match &self.best_particle {
             None => None,
             Some(particle) => Some((particle.coordinates.clone(), particle.value)),
@@ -406,7 +409,7 @@ impl<T: Clone> AlgorithmState<Vec<T>> for Swarm<T> {
     }
 }
 
-impl<T: Clone> AgentsState<Vec<T>> for Swarm<T> {
+impl<T: Clone> AgentsState<Coordinate<T>> for Swarm<T> {
     type Agent = Particle<T>;
 
     /// Returns vector with references to all agents
