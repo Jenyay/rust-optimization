@@ -91,19 +91,10 @@ fn main() {
     )];
 
     // Stop checker. Stop criterion for genetic algorithm.
-    // let change_max_iterations = 200;
-    // let change_delta = 1e-7;
-    // let stop_checker = stopchecker::GoalNotChange::new(change_max_iterations, change_delta);
-    // let stop_checker = stopchecker::MaxIterations::new(500);
-
     // Stop algorithm if the value of goal function will become less of 1e-4 or
     // after 3000 generations (iterations).
     let stop_checker = stopchecker::CompositeAny::new(vec![
         Box::new(stopchecker::Threshold::new(1e-4)),
-        // Box::new(stopchecker::GoalNotChange::new(
-        //     change_max_iterations,
-        //     change_delta,
-        // )),
         Box::new(stopchecker::MaxIterations::new(3000)),
     ]);
 
@@ -116,12 +107,10 @@ fn main() {
     ];
 
     // Make a loggers trait objects
-    // let mut stdout_verbose = io::stdout();
     let mut stdout_result = io::stdout();
     let mut stdout_time = io::stdout();
 
     let loggers: Vec<Box<dyn logging::Logger<Chromosomes>>> = vec![
-        // Box::new(logging::VerboseLogger::new(&mut stdout_verbose, 15)),
         Box::new(logging::ResultOnlyLogger::new(&mut stdout_result, 15)),
         Box::new(logging::TimeLogger::new(&mut stdout_time)),
     ];
@@ -136,8 +125,8 @@ fn main() {
         Box::new(mutation),
         selections,
         pre_births,
-        loggers,
     );
+    optimizer.set_loggers(loggers);
 
     // Run genetic algorithm
     optimizer.find_min();
