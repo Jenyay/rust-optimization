@@ -2,23 +2,16 @@ use crate::particleswarm::PostMove;
 
 use num::Float;
 
-pub struct NonePostMove {}
-
-impl NonePostMove {
-    pub fn new() -> Self {
-        Self {}
-    }
-}
-
-impl<T> PostMove<T> for NonePostMove {
-    fn post_move(&self, _coordinates: &mut Vec<T>) {}
-}
-
+/// The struct to limit the coordinates of particle.
 pub struct MoveToBoundary<T> {
     intervals: Vec<(T, T)>,
 }
 
 impl<T> MoveToBoundary<T> {
+    /// Constructor.
+    ///
+    /// # Parameters
+    /// `intervals` - `intervals` - vector of tuples. Size of the vector must be equal to dimension. The first value in tuple is minimum coordinate, the second value is maximum coordinate.
     pub fn new(intervals: Vec<(T, T)>) -> Self {
         Self { intervals }
     }

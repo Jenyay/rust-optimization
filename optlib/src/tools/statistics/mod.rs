@@ -9,18 +9,22 @@ use crate::{tools::logging::Logger, AlgorithmState, Goal, GoalValue, Solution};
 /// convergence[run number][iteration]
 type Convergence<T> = Vec<Vec<Option<Solution<T>>>>;
 
+/// The `Statistics` struct stores solutions for every algorithm running and every algorithm
+/// iteration.
 #[derive(Debug)]
 pub struct Statistics<T> {
-    // index - run number
+    /// The member stores final solution for every running. The index of vector is running number.
     results: Vec<Option<Solution<T>>>,
 
-    // convergence[run number][iteration]
+    /// The member stores current result for every algorithm running and every iteration. convergence[run number][iteration]
     convergence: Convergence<T>,
 }
 
+/// The `CallCountData` struct used to store call count of goal function.
 #[derive(Debug)]
 pub struct CallCountData(Vec<usize>);
 
+/// The struct to calculate call count of goal function.
 pub struct GoalCalcStatistics<'a, T> {
     goal: Box<dyn Goal<T> + 'a>,
     call_count: RefMut<'a, CallCountData>,
@@ -409,8 +413,6 @@ impl<'a, T> Goal<T> for GoalCalcStatistics<'a, T> {
         self.goal.get(x)
     }
 }
-
-impl<'a, T> Logger<T> for GoalCalcStatistics<'a, T> {}
 
 #[cfg(test)]
 mod tests {
