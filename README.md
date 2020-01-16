@@ -178,8 +178,14 @@ Also optlib library contains other optimization examples:
 * genetic-rastrigin
 * genetic-rosenbrock
 * genetic-schwefel
+* genetic-schwefel-iterative
+* genetic-schwefel-statistics
 * particleswarm-paraboloid
 * particleswarm-rastrigin
+* particleswarm-rastrigin-statistics-inertia
 * particleswarm-rosenbrock
 * particleswarm-schwefel
-
+* particleswarm-schwefel-iterative
+* particleswarm-schwefel-statistics
+* particleswarm-schwefel-statistics-full
+* particleswarm-schwefel-statistics-inertia
