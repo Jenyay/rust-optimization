@@ -4,8 +4,8 @@ use std::fs::File;
 use std::io;
 
 use optlib::particleswarm::{
-    self, initializing, postmove, postspeedcalc, speedcalc, ParticleSwarmOptimizer, PostMove,
-    PostSpeedCalc,
+    self, initializing, postmove, postvelocitycalc, velocitycalc, ParticleSwarmOptimizer, PostMove,
+    PostVelocityCalc,
 };
 use optlib::tools::statistics::{
     get_predicate_success_vec_solution, CallCountData, GoalCalcStatistics,
@@ -34,21 +34,21 @@ fn create_optimizer<'a>(
     // Particles initializers
     let coord_initializer =
         initializing::RandomCoordinatesInitializer::new(intervals.clone(), particles_count);
-    let speed_initializer = initializing::ZeroSpeedInitializer::new(dimension, particles_count);
+    let velocity_initializer = initializing::ZeroVelocityInitializer::new(dimension, particles_count);
 
-    let max_speed = 700.0;
-    let post_speed_calc: Vec<Box<dyn PostSpeedCalc<Coordinate>>> =
-        vec![Box::new(postspeedcalc::MaxSpeedAbs::new(max_speed))];
+    let max_velocity = 700.0;
+    let post_velocity_calc: Vec<Box<dyn PostVelocityCalc<Coordinate>>> =
+        vec![Box::new(postvelocitycalc::MaxVelocityAbs::new(max_velocity))];
 
     // PostMove
     let post_moves: Vec<Box<dyn PostMove<Coordinate>>> =
         vec![Box::new(postmove::MoveToBoundary::new(intervals.clone()))];
 
-    let inertia = Box::new(speedcalc::ConstInertia::new(0.85));
-    // let inertia = Box::new(speedcalc::LinearInertia::new(0.2, 0.9, 400));
+    let inertia = Box::new(velocitycalc::ConstInertia::new(0.85));
+    // let inertia = Box::new(velocitycalc::LinearInertia::new(0.2, 0.9, 400));
 
-    // Speed calculator
-    let speed_calculator = speedcalc::InertiaSpeedCalculator::new(
+    // Velocity calculator
+    let velocity_calculator = velocitycalc::InertiaVelocityCalculator::new(
         phi_personal,
         phi_global,
         inertia
@@ -70,11 +70,11 @@ fn create_optimizer<'a>(
         goal,
         Box::new(stop_checker),
         Box::new(coord_initializer),
-        Box::new(speed_initializer),
-        Box::new(speed_calculator),
+        Box::new(velocity_initializer),
+        Box::new(velocity_calculator),
     );
     optimizer.set_post_moves(post_moves);
-    optimizer.set_post_speed_calc(post_speed_calc);
+    optimizer.set_post_velocity_calc(post_velocity_calc);
     optimizer
 }
 

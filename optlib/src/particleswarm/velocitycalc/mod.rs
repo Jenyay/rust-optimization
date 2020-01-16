@@ -3,26 +3,26 @@ use rand::rngs::ThreadRng;
 
 use num::{Float, Num, NumCast};
 
-use crate::particleswarm::{Particle, SpeedCalculator, Swarm};
+use crate::particleswarm::{Particle, VelocityCalculator, Swarm};
 
-/// ClassicSpeedCalculator implements the equation from the article
+/// ClassicVelocityCalculator implements the equation from the article
 /// Kennedy, J.; Eberhart, R. (1995). "Particle Swarm Optimization".
 /// Proceedings of IEEE International Conference on Neural Networks IV, pp.1942-1948.
 /// v_i = v_i + phi_p * r_p * (p_i - x_i) + phi_g * r_g * (g_i - x_i)
-/// `v_i` - speed projection for dimension i,
+/// `v_i` - velocity projection for dimension i,
 /// `p_i` - personal best coordinate,
 /// `g_i` - global best coordinate,
 /// `x_i` - current coordinate,
 /// `phi_p`, `phi_g` - parameters,
 /// `r_p`, `r_g` - random values in (0, 1)
-pub struct ClassicSpeedCalculator<T> {
+pub struct ClassicVelocityCalculator<T> {
     phi_personal: T,
     phi_global: T,
 
     random: ThreadRng,
 }
 
-impl<T> ClassicSpeedCalculator<T> {
+impl<T> ClassicVelocityCalculator<T> {
     pub fn new(phi_personal: T, phi_global: T) -> Self {
         Self {
             phi_personal,
@@ -32,33 +32,33 @@ impl<T> ClassicSpeedCalculator<T> {
     }
 }
 
-impl<T: NumCast + Num + Copy> SpeedCalculator<T> for ClassicSpeedCalculator<T> {
-    fn calc_new_speed(&mut self, swarm: &Swarm<T>, particle: &Particle<T>) -> Vec<T> {
+impl<T: NumCast + Num + Copy> VelocityCalculator<T> for ClassicVelocityCalculator<T> {
+    fn calc_new_velocity(&mut self, swarm: &Swarm<T>, particle: &Particle<T>) -> Vec<T> {
         let dimension = particle.coordinates.len();
         let global_best_particle = swarm.best_particle.as_ref().unwrap();
         let global_best_solution = &global_best_particle.coordinates;
 
         let between = Uniform::new_inclusive(0.0_f32, 1.0_f32);
-        let mut new_speed = Vec::with_capacity(dimension);
+        let mut new_velocity = Vec::with_capacity(dimension);
         for i in 0..dimension {
             let r_personal = T::from(between.sample(&mut self.random)).unwrap();
             let r_global = T::from(between.sample(&mut self.random)).unwrap();
 
-            let speed_item = particle.speed[i]
+            let velocity_item = particle.velocity[i]
                 + self.phi_personal
                     * r_personal
                     * (particle.best_personal_coordinates[i] - particle.coordinates[i])
                 + self.phi_global * r_global * (global_best_solution[i] - particle.coordinates[i]);
-            new_speed.push(speed_item);
+            new_velocity.push(velocity_item);
         }
 
-        new_speed
+        new_velocity
     }
 }
 
-/// CanonicalSpeedCalculator implements the "canonical" equation:
+/// CanonicalVelocityCalculator implements the "canonical" equation:
 /// v_i = xi * (v_i + phi_p * r_p * (p_i - x_i) + phi_g * r_g * (g_i - x_i))
-/// `v_i` - speed projection for dimension i,
+/// `v_i` - velocity projection for dimension i,
 /// `p_i` - personal best coordinate,
 /// `g_i` - global best coordinate,
 /// `x_i` - current coordinate,
@@ -68,7 +68,7 @@ impl<T: NumCast + Num + Copy> SpeedCalculator<T> for ClassicSpeedCalculator<T> {
 /// `phi` = phi_p + phi_g
 /// `alpha` in (0, 1),
 /// `phi` must be greater than 4
-pub struct CanonicalSpeedCalculator<T> {
+pub struct CanonicalVelocityCalculator<T> {
     phi_personal: T,
     phi_global: T,
     xi: T,
@@ -76,7 +76,7 @@ pub struct CanonicalSpeedCalculator<T> {
     random: ThreadRng,
 }
 
-impl<T: Float> CanonicalSpeedCalculator<T> {
+impl<T: Float> CanonicalVelocityCalculator<T> {
     pub fn new(phi_personal: T, phi_global: T, alpha: T) -> Self {
         assert!(phi_personal + phi_global > T::from(4.0).unwrap());
         assert!(alpha > T::zero());
@@ -93,34 +93,34 @@ impl<T: Float> CanonicalSpeedCalculator<T> {
     }
 }
 
-impl<T: NumCast + Num + Copy> SpeedCalculator<T> for CanonicalSpeedCalculator<T> {
-    fn calc_new_speed(&mut self, swarm: &Swarm<T>, particle: &Particle<T>) -> Vec<T> {
+impl<T: NumCast + Num + Copy> VelocityCalculator<T> for CanonicalVelocityCalculator<T> {
+    fn calc_new_velocity(&mut self, swarm: &Swarm<T>, particle: &Particle<T>) -> Vec<T> {
         let dimension = particle.coordinates.len();
         let global_best_particle = swarm.best_particle.as_ref().unwrap();
         let global_best_solution = &global_best_particle.coordinates;
 
         let between = Uniform::new_inclusive(0.0_f32, 1.0_f32);
-        let mut new_speed = Vec::with_capacity(dimension);
+        let mut new_velocity = Vec::with_capacity(dimension);
         for i in 0..dimension {
             let r_personal = T::from(between.sample(&mut self.random)).unwrap();
             let r_global = T::from(between.sample(&mut self.random)).unwrap();
 
-            let speed_item = self.xi
-                * (particle.speed[i]
+            let velocity_item = self.xi
+                * (particle.velocity[i]
                     + self.phi_personal
                         * r_personal
                         * (particle.best_personal_coordinates[i] - particle.coordinates[i])
                     + self.phi_global
                         * r_global
                         * (global_best_solution[i] - particle.coordinates[i]));
-            new_speed.push(speed_item);
+            new_velocity.push(velocity_item);
         }
 
-        new_speed
+        new_velocity
     }
 }
 
-/// Speed update with negative reinforcement, global and current best and worst positions.
+/// Velocity update with negative reinforcement, global and current best and worst positions.
 /// v_i = xi * (v_i
 ///     + phi_best_personal * rb_p * (p_best_i - x_i)
 ///     + phi_best_current * rb_c * (c_best_i - x_i)
@@ -129,7 +129,7 @@ impl<T: NumCast + Num + Copy> SpeedCalculator<T> for CanonicalSpeedCalculator<T>
 ///     - phi_worst_current * rw_c * (c_worst_i - x_i)
 ///     - phi_worst_global * rw_g * (g_worst_i - x_i))
 ///
-/// `v_i` - speed projection for dimension i,
+/// `v_i` - velocity projection for dimension i,
 /// `p_best_i` - personal best coordinate,
 /// `c_best_i` - best coordinate for current swarm,
 /// `g_best_i` - global best coordinate,
@@ -176,8 +176,8 @@ impl<T> NegativeReinforcement<T> {
     }
 }
 
-impl<T: NumCast + Num + Copy> SpeedCalculator<T> for NegativeReinforcement<T> {
-    fn calc_new_speed(&mut self, swarm: &Swarm<T>, particle: &Particle<T>) -> Vec<T> {
+impl<T: NumCast + Num + Copy> VelocityCalculator<T> for NegativeReinforcement<T> {
+    fn calc_new_velocity(&mut self, swarm: &Swarm<T>, particle: &Particle<T>) -> Vec<T> {
         let dimension = particle.coordinates.len();
 
         let global_best_particle = swarm.best_particle.as_ref().unwrap();
@@ -193,7 +193,7 @@ impl<T: NumCast + Num + Copy> SpeedCalculator<T> for NegativeReinforcement<T> {
         let current_worst_solution = current_worst_particle.coordinates;
 
         let between = Uniform::new_inclusive(0.0, 1.0);
-        let mut new_speed = Vec::with_capacity(dimension);
+        let mut new_velocity = Vec::with_capacity(dimension);
         for i in 0..dimension {
             let r_best_global = T::from(between.sample(&mut self.random)).unwrap();
             let r_best_current = T::from(between.sample(&mut self.random)).unwrap();
@@ -223,19 +223,19 @@ impl<T: NumCast + Num + Copy> SpeedCalculator<T> for NegativeReinforcement<T> {
                 * r_worst_global
                 * (global_worst_solution[i] - particle.coordinates[i]);
 
-            let speed_item = self.xi
-                * (particle.speed[i] + v_best_personal + v_best_current + v_best_global
+            let velocity_item = self.xi
+                * (particle.velocity[i] + v_best_personal + v_best_current + v_best_global
                     - v_worst_personal
                     - v_worst_current
                     - v_worst_global);
-            new_speed.push(speed_item);
+            new_velocity.push(velocity_item);
         }
 
-        new_speed
+        new_velocity
     }
 }
 
-/// The trait to calculate the inertia coefficient (w) for InertiaSpeedCalculator
+/// The trait to calculate the inertia coefficient (w) for InertiaVelocityCalculator
 pub trait Inertia<T> {
     fn get(&mut self, iteration: usize) -> T;
 }
@@ -282,9 +282,9 @@ impl<T: Float> Inertia<T> for LinearInertia<T> {
     }
 }
 
-/// InertiaSpeedCalculator implements the equation with itertia coefficient w(t)
+/// InertiaVelocityCalculator implements the equation with itertia coefficient w(t)
 /// v_i = w(t) * v_i + phi_personal * r_p * (p_i - x_i) + phi_global * r_g * (g_i - x_i)
-/// `v_i` - speed projection for dimension i,
+/// `v_i` - velocity projection for dimension i,
 /// `p_i` - personal best coordinate,
 /// `g_i` - global best coordinate,
 /// `x_i` - current coordinate,
@@ -292,7 +292,7 @@ impl<T: Float> Inertia<T> for LinearInertia<T> {
 /// `r_p`, `r_g` - random values in (0, 1),
 /// `w(t)` calculate with the `Inertia` trait,
 /// `t` - iteration number,
-pub struct InertiaSpeedCalculator<'a, T> {
+pub struct InertiaVelocityCalculator<'a, T> {
     phi_personal: T,
     phi_global: T,
     inertia: Box<dyn Inertia<T> + 'a>,
@@ -300,7 +300,7 @@ pub struct InertiaSpeedCalculator<'a, T> {
     random: ThreadRng,
 }
 
-impl<'a, T> InertiaSpeedCalculator<'a, T> {
+impl<'a, T> InertiaVelocityCalculator<'a, T> {
     pub fn new(phi_personal: T, phi_global: T, inertia: Box<dyn Inertia<T> + 'a>) -> Self {
         Self {
             phi_personal,
@@ -311,27 +311,27 @@ impl<'a, T> InertiaSpeedCalculator<'a, T> {
     }
 }
 
-impl<'a, T: NumCast + Num + Copy> SpeedCalculator<T> for InertiaSpeedCalculator<'a, T> {
-    fn calc_new_speed(&mut self, swarm: &Swarm<T>, particle: &Particle<T>) -> Vec<T> {
+impl<'a, T: NumCast + Num + Copy> VelocityCalculator<T> for InertiaVelocityCalculator<'a, T> {
+    fn calc_new_velocity(&mut self, swarm: &Swarm<T>, particle: &Particle<T>) -> Vec<T> {
         let dimension = particle.coordinates.len();
         let global_best_particle = swarm.best_particle.as_ref().unwrap();
         let global_best_solution = &global_best_particle.coordinates;
         let inertia_ratio = self.inertia.get(swarm.iteration);
 
         let between = Uniform::new_inclusive(0.0_f32, 1.0_f32);
-        let mut new_speed = Vec::with_capacity(dimension);
+        let mut new_velocity = Vec::with_capacity(dimension);
         for i in 0..dimension {
             let r_personal = T::from(between.sample(&mut self.random)).unwrap();
             let r_global = T::from(between.sample(&mut self.random)).unwrap();
 
-            let speed_item = inertia_ratio * particle.speed[i]
+            let velocity_item = inertia_ratio * particle.velocity[i]
                 + self.phi_personal
                     * r_personal
                     * (particle.best_personal_coordinates[i] - particle.coordinates[i])
                 + self.phi_global * r_global * (global_best_solution[i] - particle.coordinates[i]);
-            new_speed.push(speed_item);
+            new_velocity.push(velocity_item);
         }
 
-        new_speed
+        new_velocity
     }
 }

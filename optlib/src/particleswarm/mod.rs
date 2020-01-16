@@ -1,7 +1,7 @@
 pub mod initializing;
 pub mod postmove;
-pub mod postspeedcalc;
-pub mod speedcalc;
+pub mod postvelocitycalc;
+pub mod velocitycalc;
 
 use std::cmp::Ordering;
 use std::f64;
@@ -12,7 +12,7 @@ use crate::tools::logging::Logger;
 use crate::tools::stopchecker::StopChecker;
 use crate::{Agent, AgentsState, AlgorithmState, Goal, IterativeOptimizer, Optimizer, Solution};
 
-type Speed<T> = Vec<T>;
+type Velocity<T> = Vec<T>;
 type Coordinate<T> = Vec<T>;
 
 /// The trait to create initial particles swarm.
@@ -26,9 +26,9 @@ pub trait CoordinatesInitializer<T> {
 /// The trait to create initial particles swarm.
 ///
 /// `T` - type of a point in the search space for goal function.
-pub trait SpeedInitializer<T> {
-    /// Must return vector of speed for a new particles.
-    fn get_speed(&mut self) -> Vec<Speed<T>>;
+pub trait VelocityInitializer<T> {
+    /// Must return vector of velocity for a new particles.
+    fn get_velocity(&mut self) -> Vec<Velocity<T>>;
 }
 
 /// The trait may be used after moving the particle but before goal function calculating.
@@ -39,13 +39,13 @@ pub trait PostMove<T> {
     fn post_move(&self, coordinates: &mut Coordinate<T>);
 }
 
-/// The trait to calculate new speed vector for every particle
-pub trait SpeedCalculator<T> {
-    fn calc_new_speed(&mut self, swarm: &Swarm<T>, particle: &Particle<T>) -> Speed<T>;
+/// The trait to calculate new velocity vector for every particle
+pub trait VelocityCalculator<T> {
+    fn calc_new_velocity(&mut self, swarm: &Swarm<T>, particle: &Particle<T>) -> Velocity<T>;
 }
 
-pub trait PostSpeedCalc<T> {
-    fn correct_speed(&mut self, speed: Speed<T>) -> Speed<T>;
+pub trait PostVelocityCalc<T> {
+    fn correct_velocity(&mut self, velocity: Velocity<T>) -> Velocity<T>;
 }
 
 /// Struct for single point (agent) in the search space
@@ -55,8 +55,8 @@ pub struct Particle<T> {
     /// Point in the search space.
     coordinates: Coordinate<T>,
 
-    /// Speed of particle.
-    speed: Speed<T>,
+    /// Velocity of particle.
+    velocity: Velocity<T>,
 
     /// Value of function in the current coordinates.
     value: f64,
@@ -76,7 +76,7 @@ pub struct Particle<T> {
 
 impl<T: Clone> Clone for Particle<T> {
     fn clone(&self) -> Self {
-        let mut particle = Particle::new(self.coordinates.clone(), self.speed.clone(), self.value);
+        let mut particle = Particle::new(self.coordinates.clone(), self.velocity.clone(), self.value);
         particle.best_personal_coordinates = self.best_personal_coordinates.clone();
         particle.best_personal_value = self.best_personal_value;
         particle.worst_personal_coordinates = self.worst_personal_coordinates.clone();
@@ -97,12 +97,12 @@ impl<T> Agent<Coordinate<T>> for Particle<T> {
 
 impl<T: Clone> Particle<T> {
     /// Return value of the goal function.
-    fn new(coordinates: Coordinate<T>, speed: Speed<T>, value: f64) -> Self {
+    fn new(coordinates: Coordinate<T>, velocity: Velocity<T>, value: f64) -> Self {
         let best_personal_coordinates = coordinates.clone();
         let worst_personal_coordinates = coordinates.clone();
         Self {
             coordinates,
-            speed,
+            velocity,
             value,
             best_personal_coordinates,
             best_personal_value: value,
@@ -111,8 +111,8 @@ impl<T: Clone> Particle<T> {
         }
     }
 
-    fn set_speed(&mut self, speed: Speed<T>) {
-        self.speed = speed;
+    fn set_velocity(&mut self, velocity: Velocity<T>) {
+        self.velocity = velocity;
     }
 
     fn move_to(&mut self, new_coordinates: Coordinate<T>, value: f64) {
@@ -250,9 +250,9 @@ pub struct ParticleSwarmOptimizer<'a, T> {
     goal: Box<dyn Goal<Coordinate<T>> + 'a>,
     stop_checker: Box<dyn StopChecker<Coordinate<T>> + 'a>,
     coordinates_initializer: Box<dyn CoordinatesInitializer<T> + 'a>,
-    speed_initializer: Box<dyn SpeedInitializer<T> + 'a>,
-    speed_calculator: Box<dyn SpeedCalculator<T> + 'a>,
-    post_speed_calc: Vec<Box<dyn PostSpeedCalc<T> + 'a>>,
+    velocity_initializer: Box<dyn VelocityInitializer<T> + 'a>,
+    velocity_calculator: Box<dyn VelocityCalculator<T> + 'a>,
+    post_velocity_calc: Vec<Box<dyn PostVelocityCalc<T> + 'a>>,
     post_move: Vec<Box<dyn PostMove<T> + 'a>>,
     loggers: Vec<Box<dyn Logger<Coordinate<T>> + 'a>>,
     swarm: Swarm<T>,
@@ -263,8 +263,8 @@ impl<'a, T: Clone + Float> ParticleSwarmOptimizer<'a, T> {
         goal: Box<dyn Goal<Coordinate<T>> + 'a>,
         stop_checker: Box<dyn StopChecker<Coordinate<T>> + 'a>,
         coordinates_initializer: Box<dyn CoordinatesInitializer<T> + 'a>,
-        speed_initializer: Box<dyn SpeedInitializer<T> + 'a>,
-        speed_calculator: Box<dyn SpeedCalculator<T> + 'a>,
+        velocity_initializer: Box<dyn VelocityInitializer<T> + 'a>,
+        velocity_calculator: Box<dyn VelocityCalculator<T> + 'a>,
     ) -> Self {
         let swarm = Swarm::new();
 
@@ -272,9 +272,9 @@ impl<'a, T: Clone + Float> ParticleSwarmOptimizer<'a, T> {
             goal,
             stop_checker,
             coordinates_initializer,
-            speed_initializer,
-            speed_calculator,
-            post_speed_calc: vec![],
+            velocity_initializer,
+            velocity_calculator,
+            post_velocity_calc: vec![],
             post_move: vec![],
             loggers: vec![],
             swarm,
@@ -293,14 +293,14 @@ impl<'a, T: Clone + Float> ParticleSwarmOptimizer<'a, T> {
         self.post_move = post_move;
     }
 
-    pub fn set_post_speed_calc(&mut self, post_speed_calc: Vec<Box<dyn PostSpeedCalc<T>>>) {
-        self.post_speed_calc = post_speed_calc;
+    pub fn set_post_velocity_calc(&mut self, post_velocity_calc: Vec<Box<dyn PostVelocityCalc<T>>>) {
+        self.post_velocity_calc = post_velocity_calc;
     }
 
     fn renew_swarm(&mut self) {
         let mut coordinates = self.coordinates_initializer.get_coordinates();
-        let speed = self.speed_initializer.get_speed();
-        assert!(coordinates.len() == speed.len());
+        let velocity = self.velocity_initializer.get_velocity();
+        assert!(coordinates.len() == velocity.len());
 
         for mut current_coordinates in &mut coordinates {
             self.post_move
@@ -310,12 +310,12 @@ impl<'a, T: Clone + Float> ParticleSwarmOptimizer<'a, T> {
 
         let particles: Vec<Particle<T>> = coordinates
             .iter()
-            .zip(speed.iter())
+            .zip(velocity.iter())
             .map(|cs| {
                 let particle_coordinate = cs.0.clone();
-                let particle_speed = cs.1.clone();
+                let particle_velocity = cs.1.clone();
                 let particle_value = self.goal.get(cs.0);
-                Particle::new(particle_coordinate, particle_speed, particle_value)
+                Particle::new(particle_coordinate, particle_velocity, particle_value)
             })
             .collect();
 
@@ -345,24 +345,24 @@ impl<'a, T: Clone + Float> IterativeOptimizer<Coordinate<T>> for ParticleSwarmOp
 
         while !self.stop_checker.can_stop(&self.swarm) {
             for n in 0..self.swarm.particles.len() {
-                // Calculate new speed
-                let mut new_speed = self
-                    .speed_calculator
-                    .calc_new_speed(&self.swarm, &self.swarm.particles[n]);
+                // Calculate new velocity
+                let mut new_velocity = self
+                    .velocity_calculator
+                    .calc_new_velocity(&self.swarm, &self.swarm.particles[n]);
 
-                // Correct new speed
-                for post_speed_calc in &mut self.post_speed_calc {
-                    new_speed = post_speed_calc.correct_speed(new_speed);
+                // Correct new velocity
+                for post_velocity_calc in &mut self.post_velocity_calc {
+                    new_velocity = post_velocity_calc.correct_velocity(new_velocity);
                 }
 
-                self.swarm.particles[n].set_speed(new_speed);
+                self.swarm.particles[n].set_velocity(new_velocity);
 
                 // Calculate new coordinates
                 let mut new_coordinates: Coordinate<T> = self.swarm.particles[n]
                     .coordinates
                     .iter()
-                    .zip(self.swarm.particles[n].speed.iter())
-                    .map(|(coord, speed)| *coord + *speed)
+                    .zip(self.swarm.particles[n].velocity.iter())
+                    .map(|(coord, velocity)| *coord + *velocity)
                     .collect();
 
                 // Correct coordinates
@@ -462,13 +462,13 @@ mod tests {
     #[test]
     fn test_particle_new() {
         let coordinates = vec![1.0_f32, 2.0_f32];
-        let speed = vec![11.0_f32, 12.0_f32];
+        let velocity = vec![11.0_f32, 12.0_f32];
         let value = 21_f64;
 
-        let particle = Particle::new(coordinates.clone(), speed.clone(), value);
+        let particle = Particle::new(coordinates.clone(), velocity.clone(), value);
 
         assert_eq!(particle.coordinates, coordinates);
-        assert_eq!(particle.speed, speed);
+        assert_eq!(particle.velocity, velocity);
         assert_eq!(particle.value, value);
         assert_eq!(particle.best_personal_coordinates, coordinates);
         assert_eq!(particle.best_personal_value, value);
@@ -477,10 +477,10 @@ mod tests {
     #[test]
     fn test_particle_move_to_better() {
         let coordinates = vec![1.0_f32, 2.0_f32];
-        let speed = vec![11.0_f32, 12.0_f32];
+        let velocity = vec![11.0_f32, 12.0_f32];
         let value = 21_f64;
 
-        let mut particle = Particle::new(coordinates.clone(), speed.clone(), value);
+        let mut particle = Particle::new(coordinates.clone(), velocity.clone(), value);
 
         let new_coordinates = vec![1.0_f32, 2.0_f32];
         let new_value = 10_f64;
@@ -494,10 +494,10 @@ mod tests {
     #[test]
     fn test_particle_move_to_worse() {
         let coordinates = vec![1.0_f32, 2.0_f32];
-        let speed = vec![11.0_f32, 12.0_f32];
+        let velocity = vec![11.0_f32, 12.0_f32];
         let value = 20_f64;
 
-        let mut particle = Particle::new(coordinates.clone(), speed.clone(), value);
+        let mut particle = Particle::new(coordinates.clone(), velocity.clone(), value);
 
         let new_coordinates = vec![1.0_f32, 2.0_f32];
         let new_value = 40_f64;

@@ -7,10 +7,10 @@ use optlib::{
         self,
         initializing,
         postmove,
-        speedcalc,
+        velocitycalc,
         PostMove,
-        postspeedcalc,
-        PostSpeedCalc,
+        postvelocitycalc,
+        PostVelocityCalc,
     },
 };
 
@@ -34,17 +34,17 @@ fn main() {
 
     // Particles initializers
     let coord_initializer = initializing::RandomCoordinatesInitializer::new(intervals.clone(), particles_count);
-    let speed_initializer = initializing::ZeroSpeedInitializer::new(dimension, particles_count);
+    let velocity_initializer = initializing::ZeroVelocityInitializer::new(dimension, particles_count);
 
     // PostMove
     let post_moves: Vec<Box<dyn PostMove<Coordinate>>> = vec![Box::new(postmove::MoveToBoundary::new(intervals.clone()))];
 
-    // Speed calculator
-    let speed_calculator = speedcalc::CanonicalSpeedCalculator::new(phi_personal, phi_global, k);
+    // Velocity calculator
+    let velocity_calculator = velocitycalc::CanonicalVelocityCalculator::new(phi_personal, phi_global, k);
 
-    let max_speed = 700.0;
-    let post_speed_calc: Vec<Box<dyn PostSpeedCalc<Coordinate>>> =
-        vec![Box::new(postspeedcalc::MaxSpeedAbs::new(max_speed))];
+    let max_velocity = 700.0;
+    let post_velocity_calc: Vec<Box<dyn PostVelocityCalc<Coordinate>>> =
+        vec![Box::new(postvelocitycalc::MaxVelocityAbs::new(max_velocity))];
 
     // Stop checker
     let change_max_iterations = 150;
@@ -73,12 +73,12 @@ fn main() {
         Box::new(goal),
         Box::new(stop_checker),
         Box::new(coord_initializer),
-        Box::new(speed_initializer),
-        Box::new(speed_calculator),
+        Box::new(velocity_initializer),
+        Box::new(velocity_calculator),
         );
     optimizer.set_loggers(loggers);
     optimizer.set_post_moves(post_moves);
-    optimizer.set_post_speed_calc(post_speed_calc);
+    optimizer.set_post_velocity_calc(post_velocity_calc);
 
     optimizer.find_min();
 }
