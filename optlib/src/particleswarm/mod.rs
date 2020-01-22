@@ -36,7 +36,7 @@ pub trait VelocityInitializer<T> {
 /// `T` - type of a point in the search space for goal function.
 pub trait PostMove<T> {
     /// The method may modify coordinates list before calculate goal function
-    fn post_move(&self, coordinates: &mut Coordinate<T>);
+    fn post_move(&mut self, coordinates: &mut Coordinate<T>);
 }
 
 /// The trait to calculate new velocity vector for every particle
@@ -304,7 +304,7 @@ impl<'a, T: Clone + Float> ParticleSwarmOptimizer<'a, T> {
 
         for mut current_coordinates in &mut coordinates {
             self.post_move
-                .iter()
+                .iter_mut()
                 .for_each(|post_move| post_move.post_move(&mut current_coordinates));
         }
 
@@ -367,7 +367,7 @@ impl<'a, T: Clone + Float> IterativeOptimizer<Coordinate<T>> for ParticleSwarmOp
 
                 // Correct coordinates
                 self.post_move
-                    .iter()
+                    .iter_mut()
                     .for_each(|post_move| post_move.post_move(&mut new_coordinates));
 
                 // Calculate new value for the particle

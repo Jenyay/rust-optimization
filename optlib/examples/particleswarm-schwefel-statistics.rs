@@ -1,4 +1,4 @@
-//! Example of optimizing the Schwefel function with particle sqwarm algorithm.
+//! Example of optimizing the Schwefel function with particle swarm algorithm.
 use core::cell::{Ref, RefCell};
 use std::fs::File;
 use std::io;
@@ -25,7 +25,7 @@ fn create_optimizer<'a>(
     // General parameters
     let minval: Coordinate = -500.0;
     let maxval: Coordinate = 500.0;
-    let particles_count = 50;
+    let particles_count = 30;
     let intervals = vec![(minval, maxval); dimension];
     let phi_personal = 3.2;
     let phi_global = 1.0;
@@ -34,29 +34,38 @@ fn create_optimizer<'a>(
     // Particles initializers
     let coord_initializer =
         initializing::RandomCoordinatesInitializer::new(intervals.clone(), particles_count);
-    let velocity_initializer = initializing::ZeroVelocityInitializer::new(dimension, particles_count);
+    let velocity_initializer =
+        initializing::ZeroVelocityInitializer::new(dimension, particles_count);
 
     let max_velocity = 700.0;
-    let post_velocity_calc: Vec<Box<dyn PostVelocityCalc<Coordinate>>> =
-        vec![Box::new(postvelocitycalc::MaxVelocityAbs::new(max_velocity))];
+    let post_velocity_calc: Vec<Box<dyn PostVelocityCalc<Coordinate>>> = vec![Box::new(
+        postvelocitycalc::MaxVelocityAbs::new(max_velocity),
+    )];
 
     // PostMove
-    let post_moves: Vec<Box<dyn PostMove<Coordinate>>> =
-        vec![Box::new(postmove::MoveToBoundary::new(intervals.clone()))];
+    let teleport_probability = 0.05;
+    let post_moves: Vec<Box<dyn PostMove<Coordinate>>> = vec![
+        Box::new(postmove::RandomTeleport::new(
+            intervals.clone(),
+            teleport_probability,
+        )),
+        Box::new(postmove::MoveToBoundary::new(intervals.clone())),
+    ];
 
     // Velocity calculator
-    let velocity_calculator = velocitycalc::CanonicalVelocityCalculator::new(phi_personal, phi_global, k);
+    let velocity_calculator =
+        velocitycalc::CanonicalVelocityCalculator::new(phi_personal, phi_global, k);
 
     // Stop checker
-    let change_max_iterations = 50;
-    let change_delta = 1e-8;
+    // let change_max_iterations = 300;
+    // let change_delta = 1e-10;
     let stop_checker = stopchecker::CompositeAny::new(vec![
-        Box::new(stopchecker::Threshold::new(1e-6)),
-        Box::new(stopchecker::GoalNotChange::new(
-            change_max_iterations,
-            change_delta,
-        )),
-        Box::new(stopchecker::MaxIterations::new(1000)),
+        Box::new(stopchecker::Threshold::new(1e-8)),
+        // Box::new(stopchecker::GoalNotChange::new(
+        //     change_max_iterations,
+        //     change_delta,
+        // )),
+        Box::new(stopchecker::MaxIterations::new(3000)),
     ]);
 
     let mut optimizer = particleswarm::ParticleSwarmOptimizer::new(
@@ -143,7 +152,7 @@ fn print_statistics(
 
 fn main() {
     let dimension = 3;
-    let run_count = 500;
+    let run_count = 1000;
 
     let call_count = RefCell::new(CallCountData::new());
     let statistics_data = RefCell::new(statistics::Statistics::new());

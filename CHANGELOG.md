@@ -1,5 +1,11 @@
 # Optlib changelog
 
+## 0.4.0
+
+### Particle swarm optimization
+1. Add RandomTeleport structure to move particle to random point with given probability.
+
+
 ## 0.3.0
 
 ### API
@@ -27,7 +33,6 @@
 1. Add new examples with statistics gathering for particle swarm optimization.
 
 
----
 
 ## 0.2.0
 
@@ -45,7 +50,6 @@
 1. Add new example for optimization of Schwefel function with particle swarm optimization.
 1. Add new example for optimization of Rastrigin function with particle swarm optimization.
 
----
 
 ## 0.1.0
 
