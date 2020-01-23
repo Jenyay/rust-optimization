@@ -11,7 +11,7 @@ type Convergence<T> = Vec<Vec<Option<Solution<T>>>>;
 
 /// The `Statistics` struct stores solutions for every algorithm running and every algorithm
 /// iteration.
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Statistics<T> {
     /// The member stores final solution for every running. The index of vector is running number.
     results: Vec<Option<Solution<T>>>,
@@ -22,6 +22,7 @@ pub struct Statistics<T> {
 
 /// The `CallCountData` struct used to store call count of goal function.
 #[derive(Debug)]
+#[derive(Clone)]
 pub struct CallCountData(Vec<usize>);
 
 /// The struct to calculate call count of goal function.
@@ -115,14 +116,18 @@ impl CallCountData {
     }
 
     pub fn increment(&mut self) {
-        assert!(self.0.len() > 0);
+        if self.0.len() == 0 {
+            self.0.push(0);
+        }
         let index = self.0.len() - 1;
 
         self.0[index] += 1;
     }
 
     pub fn add(&mut self, n: usize) {
-        assert!(self.0.len() > 0);
+        if self.0.len() == 0 {
+            self.0.push(0);
+        }
         let index = self.0.len() - 1;
 
         self.0[index] += n;
@@ -135,14 +140,17 @@ impl CallCountData {
 
     /// Get average call count for all runnings
     pub fn get_average_call_count(&self) -> Option<f64> {
-        let sum: usize= self.0.iter().sum();
+        let sum: usize = self.0.iter().sum();
         let count = self.0.len();
         if count == 0 {
             None
+        } else {
+            Some((sum as f64) / (count as f64))
         }
-        else {
-            Some((sum as f64) / (count as f64) )
-        }
+    }
+
+    pub fn unite(&mut self, mut other: Self) {
+        self.0.append(&mut other.0);
     }
 }
 
@@ -173,6 +181,11 @@ impl<T: Clone> Statistics<T> {
     fn add_convergence(&mut self, state: &dyn AlgorithmState<T>) {
         let run_index = self.convergence.len() - 1;
         self.convergence[run_index].push(state.get_best_solution().clone());
+    }
+
+    pub fn unite(&mut self, mut other: Self) {
+        self.results.append(&mut other.results);
+        self.convergence.append(&mut other.convergence);
     }
 }
 
