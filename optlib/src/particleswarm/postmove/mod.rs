@@ -94,7 +94,7 @@ mod tests {
         let intervals: Vec<(f32, f32)> = vec![];
         let mut coordinates = vec![];
 
-        let postmove = MoveToBoundary::new(intervals);
+        let mut postmove = MoveToBoundary::new(intervals);
         postmove.post_move(&mut coordinates);
     }
 
@@ -103,7 +103,7 @@ mod tests {
         let intervals = vec![(0.0_f32, 1.0_f32)];
         let mut coordinates = vec![0.6_f32];
 
-        let postmove = MoveToBoundary::new(intervals);
+        let mut postmove = MoveToBoundary::new(intervals);
         postmove.post_move(&mut coordinates);
 
         assert!(abs(coordinates[0] - 0.6_f32) < 1e-6);
@@ -114,7 +114,7 @@ mod tests {
         let intervals = vec![(0.0_f32, 1.0_f32)];
         let mut coordinates = vec![-1.0_f32];
 
-        let postmove = MoveToBoundary::new(intervals);
+        let mut postmove = MoveToBoundary::new(intervals);
         postmove.post_move(&mut coordinates);
 
         assert!(abs(coordinates[0]) < 1e-6);
@@ -125,7 +125,7 @@ mod tests {
         let intervals = vec![(0.0_f32, 1.0_f32)];
         let mut coordinates = vec![3.0_f32];
 
-        let postmove = MoveToBoundary::new(intervals);
+        let mut postmove = MoveToBoundary::new(intervals);
         postmove.post_move(&mut coordinates);
 
         assert!(abs(coordinates[0] - 1.0_f32) < 1e-6);
@@ -136,7 +136,7 @@ mod tests {
         let intervals = vec![(0.0_f32, 1.0_f32), (1.0_f32, 3.0_f32), (5.0_f32, 10.0_f32)];
         let mut coordinates = vec![-3.0_f32, 4.0_f32, 6.0_f32];
 
-        let postmove = MoveToBoundary::new(intervals);
+        let mut postmove = MoveToBoundary::new(intervals);
         postmove.post_move(&mut coordinates);
 
         assert!(abs(coordinates[0] - 0.0_f32) < 1e-6);
