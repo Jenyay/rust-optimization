@@ -192,6 +192,10 @@ fn main() {
     // Running count per CPU
     let run_count = 1000 / cpu;
 
+    println!("CPUs:{:15}", cpu);
+    println!("Run count per CPU:{:8}", run_count);
+    print!("Run optimizations... ");
+
     // Statistics from all runnings
     let mut full_stat = statistics::Statistics::new();
     let mut full_call_count = CallCountData::new();
@@ -242,6 +246,8 @@ fn main() {
         full_stat.unite(statistics_data);
         full_call_count.unite(call_count);
     }
+
+    println!("OK");
 
     // Print out statistics
     let result_stat_fname = "result_stat.txt";

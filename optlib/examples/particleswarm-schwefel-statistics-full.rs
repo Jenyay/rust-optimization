@@ -147,6 +147,7 @@ fn print_statistics(
     let average_goal = stat.get_results().get_average_goal().unwrap();
     let standard_deviation_goal = stat.get_results().get_standard_deviation_goal().unwrap();
 
+    println!("Run count{:15}", stat.get_run_count());
     println!("Success rate:{:15.5}", success_rate_answer);
     println!("Average goal:{:15.5}", average_goal);
     println!(
@@ -165,6 +166,10 @@ fn main() {
 
     // Running count per CPU
     let run_count = 1000 / cpu;
+
+    println!("CPUs:{:15}", cpu);
+    println!("Run count per CPU:{:8}", run_count);
+    print!("Run optimizations... ");
 
     // Statistics from all runnings
     let mut full_stat = statistics::Statistics::new();
@@ -216,6 +221,8 @@ fn main() {
         full_stat.unite(statistics_data);
         full_call_count.unite(call_count);
     }
+
+    println!("OK");
 
     // Print out statistics
     let result_stat_fname = "result_stat.txt";
