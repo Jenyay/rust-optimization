@@ -11,17 +11,15 @@
 //! * `Individual` - union of x and value of goal function.
 //! * `Population` - set of the individuals.
 //! * `Generation` - a number of iteration of genetic algorithm.
-use core::cell::{Ref, RefCell};
 use std::fs::File;
 use std::io;
-// use std::rc::Rc;
 
 use optlib::genetic::{
     self, creation, cross, mutation, pairing, pre_birth, selection, GeneticOptimizer,
 };
 use optlib::tools::statistics::{
-    get_predicate_success_vec_solution, GoalCalcStatistics, StatFunctionsConvergence,
-    StatFunctionsGoal, StatFunctionsSolution, CallCountData,
+    get_predicate_success_vec_solution, CallCountData, GoalCalcStatistics,
+    StatFunctionsConvergence, StatFunctionsGoal, StatFunctionsSolution,
 };
 use optlib::tools::{logging, statistics, stopchecker};
 use optlib::{Goal, GoalFromFunction, Optimizer};
@@ -44,7 +42,7 @@ fn create_optimizer<'a>(
     let maxval: Gene = 500.0;
 
     // Count individuals in initial population
-    let population_size = 1000;
+    let population_size = 100;
 
     let intervals = vec![(minval, maxval); chromo_count];
 
@@ -91,7 +89,7 @@ fn create_optimizer<'a>(
         //     change_max_iterations,
         //     change_delta,
         // )),
-        Box::new(stopchecker::MaxIterations::new(1000)),
+        Box::new(stopchecker::MaxIterations::new(3000)),
     ]);
 
     // Make a trait object for selection. Selection is killing the worst individuals.
@@ -119,7 +117,7 @@ fn create_optimizer<'a>(
 
 fn print_convergence_statistics(
     mut writer: &mut dyn io::Write,
-    stat: &Ref<statistics::Statistics<Chromosomes>>,
+    stat: &statistics::Statistics<Chromosomes>,
 ) {
     let average_convergence = stat.get_convergence().get_average_convergence();
     for n in 0..average_convergence.len() {
@@ -135,7 +133,7 @@ fn print_convergence_statistics(
     }
 }
 
-fn print_solution(mut writer: &mut dyn io::Write, stat: &Ref<statistics::Statistics<Chromosomes>>) {
+fn print_solution(mut writer: &mut dyn io::Write, stat: &statistics::Statistics<Chromosomes>) {
     let run_count = stat.get_run_count();
 
     // Print solutions for every running
@@ -158,8 +156,8 @@ fn print_solution(mut writer: &mut dyn io::Write, stat: &Ref<statistics::Statist
 }
 
 fn print_statistics(
-    stat: &Ref<statistics::Statistics<Chromosomes>>,
-    call_count: Ref<CallCountData>,
+    stat: &statistics::Statistics<Chromosomes>,
+    call_count: &CallCountData,
     chromo_count: usize,
 ) {
     let valid_answer = vec![420.9687; chromo_count];
@@ -178,45 +176,47 @@ fn print_statistics(
         "Standard deviation for goal:{:15.5}",
         standard_deviation_goal
     );
-    println!("Average goal function call count:{:15.5}", call_count.get_average_call_count().unwrap());
+    println!(
+        "Average goal function call count:{:15.5}",
+        call_count.get_average_call_count().unwrap()
+    );
 }
 
 fn main() {
-    // Count of xi in the chromosomes
-    let chromo_count = 15;
-    let run_count = 100;
+    let chromo_count = 3;
+    let run_count = 30;
 
-    let call_count = RefCell::new(CallCountData::new());
-    let statistics_data = RefCell::new(statistics::Statistics::new());
+    let mut full_stat = statistics::Statistics::new();
+    let mut full_call_count = CallCountData::new();
 
     for n in 0..run_count {
-        call_count.borrow_mut().next_run();
+        let mut statistics_data = statistics::Statistics::new();
+        let mut call_count = CallCountData::new();
+        {
+            // Make a trait object for goal function (Schwefel function)
+            let mut goal_object = GoalFromFunction::new(optlib_testfunc::schwefel);
+            let goal = GoalCalcStatistics::new(&mut goal_object, &mut call_count);
 
-        // Make a trait object for goal function (Schwefel function)
-        let goal_object = GoalFromFunction::new(optlib_testfunc::schwefel);
-        let goal = GoalCalcStatistics::new(Box::new(goal_object), call_count.borrow_mut());
+            let mut optimizer = create_optimizer(chromo_count, Box::new(goal));
 
-        let mut optimizer = create_optimizer(chromo_count, Box::new(goal));
+            let stat_logger = Box::new(statistics::StatisticsLogger::new(&mut statistics_data));
+            let loggers: Vec<Box<dyn logging::Logger<Chromosomes>>> = vec![stat_logger];
+            optimizer.set_loggers(loggers);
 
-        let stat_logger = Box::new(statistics::StatisticsLogger::new(
-            statistics_data.borrow_mut(),
-        ));
-        let loggers: Vec<Box<dyn logging::Logger<Chromosomes>>> = vec![stat_logger];
-        optimizer.set_loggers(loggers);
-
-        println!("{:} / {:}", n + 1, run_count);
-        optimizer.find_min().unwrap();
+            println!("{:} / {:}", n + 1, run_count);
+            optimizer.find_min().unwrap();
+        }
+        full_stat.unite(statistics_data);
+        full_call_count.unite(call_count);
     }
 
     // Print out statistics
-    let new_stat = statistics_data.borrow();
-
     let result_stat_fname = "result_stat.txt";
     let mut result_stat_file = File::create(result_stat_fname).unwrap();
 
     let convergence_stat_fname = "convergence_stat.txt";
     let mut convergence_stat_file = File::create(convergence_stat_fname).unwrap();
-    print_solution(&mut result_stat_file, &new_stat);
-    print_convergence_statistics(&mut convergence_stat_file, &new_stat);
-    print_statistics(&new_stat, call_count.borrow(), chromo_count);
+    print_solution(&mut result_stat_file, &full_stat);
+    print_convergence_statistics(&mut convergence_stat_file, &full_stat);
+    print_statistics(&full_stat, &full_call_count, chromo_count);
 }

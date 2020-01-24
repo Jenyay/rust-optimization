@@ -1,5 +1,4 @@
 //! Example of optimizing the Schwefel function with particle sqwarm algorithm.
-use core::cell::{Ref, RefCell};
 use std::fs::File;
 use std::io;
 
@@ -80,7 +79,7 @@ fn create_optimizer<'a>(
 
 fn print_convergence_statistics(
     mut writer: &mut dyn io::Write,
-    stat: &Ref<statistics::Statistics<Vec<Coordinate>>>,
+    stat: &statistics::Statistics<Vec<Coordinate>>,
 ) {
     let average_convergence = stat.get_convergence().get_average_convergence();
     for n in 0..average_convergence.len() {
@@ -98,7 +97,7 @@ fn print_convergence_statistics(
 
 fn print_solution(
     mut writer: &mut dyn io::Write,
-    stat: &Ref<statistics::Statistics<Vec<Coordinate>>>,
+    stat: &statistics::Statistics<Vec<Coordinate>>,
 ) {
     let run_count = stat.get_run_count();
 
@@ -122,8 +121,8 @@ fn print_solution(
 }
 
 fn print_statistics(
-    stat: &Ref<statistics::Statistics<Vec<Coordinate>>>,
-    call_count: Ref<CallCountData>,
+    stat: &statistics::Statistics<Vec<Coordinate>>,
+    call_count: &CallCountData,
     dimension: usize,
 ) {
     let valid_answer = vec![0.0; dimension];
@@ -150,39 +149,39 @@ fn print_statistics(
 
 fn main() {
     let dimension = 3;
-    let run_count = 500;
+    let run_count = 1000;
 
-    let call_count = RefCell::new(CallCountData::new());
-    let statistics_data = RefCell::new(statistics::Statistics::new());
+    let mut full_stat = statistics::Statistics::new();
+    let mut full_call_count = CallCountData::new();
 
     for n in 0..run_count {
-        call_count.borrow_mut().next_run();
+        let mut statistics_data = statistics::Statistics::new();
+        let mut call_count = CallCountData::new();
+        {
+            // Make a trait object for goal function (Rastrigin function)
+            let mut goal_object = GoalFromFunction::new(optlib_testfunc::rastrigin);
+            let goal = GoalCalcStatistics::new(&mut goal_object, &mut call_count);
 
-        // Make a trait object for goal function (Rastrigin function)
-        let goal_object = GoalFromFunction::new(optlib_testfunc::rastrigin);
-        let goal = GoalCalcStatistics::new(Box::new(goal_object), call_count.borrow_mut());
+            let mut optimizer = create_optimizer(dimension, Box::new(goal));
 
-        let mut optimizer = create_optimizer(dimension, Box::new(goal));
+            let stat_logger = Box::new(statistics::StatisticsLogger::new(&mut statistics_data));
+            let loggers: Vec<Box<dyn logging::Logger<Vec<Coordinate>>>> = vec![stat_logger];
+            optimizer.set_loggers(loggers);
 
-        let stat_logger = Box::new(statistics::StatisticsLogger::new(
-            statistics_data.borrow_mut(),
-        ));
-        let loggers: Vec<Box<dyn logging::Logger<Vec<Coordinate>>>> = vec![stat_logger];
-        optimizer.set_loggers(loggers);
-
-        println!("{:} / {:}", n + 1, run_count);
-        optimizer.find_min().unwrap();
+            println!("{:} / {:}", n + 1, run_count);
+            optimizer.find_min().unwrap();
+        }
+        full_stat.unite(statistics_data);
+        full_call_count.unite(call_count);
     }
 
     // Print out statistics
-    let new_stat = statistics_data.borrow();
-
     let result_stat_fname = "result_stat.txt";
     let mut result_stat_file = File::create(result_stat_fname).unwrap();
 
     let convergence_stat_fname = "convergence_stat.txt";
     let mut convergence_stat_file = File::create(convergence_stat_fname).unwrap();
-    print_solution(&mut result_stat_file, &new_stat);
-    print_convergence_statistics(&mut convergence_stat_file, &new_stat);
-    print_statistics(&new_stat, call_count.borrow(), dimension);
+    print_solution(&mut result_stat_file, &full_stat);
+    print_convergence_statistics(&mut convergence_stat_file, &full_stat);
+    print_statistics(&full_stat, &full_call_count, dimension);
 }

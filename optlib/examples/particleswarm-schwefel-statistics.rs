@@ -1,5 +1,4 @@
 //! Example of optimizing the Schwefel function with particle swarm algorithm.
-use core::cell::RefCell;
 use std::fs::File;
 use std::io;
 
@@ -155,29 +154,24 @@ fn main() {
     let mut full_call_count = CallCountData::new();
 
     for n in 0..run_count {
-        let statistics_data = RefCell::new(statistics::Statistics::new());
-        let call_count = RefCell::new(CallCountData::new());
+        let mut statistics_data = statistics::Statistics::new();
+        let mut call_count = CallCountData::new();
         {
             // Make a trait object for goal function (Schwefel function)
-            let goal_object = GoalFromFunction::new(optlib_testfunc::schwefel);
-            let goal = GoalCalcStatistics::new(Box::new(goal_object), call_count.borrow_mut());
+            let mut goal_object = GoalFromFunction::new(optlib_testfunc::schwefel);
+            let goal = GoalCalcStatistics::new(&mut goal_object, &mut call_count);
 
             let mut optimizer = create_optimizer(dimension, Box::new(goal));
 
-            let stat_logger = Box::new(statistics::StatisticsLogger::new(
-                statistics_data.borrow_mut(),
-            ));
+            let stat_logger = Box::new(statistics::StatisticsLogger::new(&mut statistics_data));
             let loggers: Vec<Box<dyn logging::Logger<Vec<Coordinate>>>> = vec![stat_logger];
             optimizer.set_loggers(loggers);
 
             println!("{:} / {:}", n + 1, run_count);
             optimizer.find_min().unwrap();
         }
-        let stat_data = (*statistics_data.borrow()).clone();
-        full_stat.unite(stat_data);
-
-        let call_count_data = (*call_count.borrow()).clone();
-        full_call_count.unite(call_count_data);
+        full_stat.unite(statistics_data);
+        full_call_count.unite(call_count);
     }
 
     // Print out statistics

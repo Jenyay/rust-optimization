@@ -1,7 +1,5 @@
 //! The module with the loggers ready for using. The loggers implements the `Logger` trait.
 
-use core::cell::RefMut;
-
 use num::Float;
 
 use crate::{tools::logging::Logger, AlgorithmState, Goal, GoalValue, Solution};
@@ -27,8 +25,8 @@ pub struct CallCountData(Vec<usize>);
 
 /// The struct to calculate call count of goal function.
 pub struct GoalCalcStatistics<'a, T> {
-    goal: Box<dyn Goal<T> + 'a>,
-    call_count: RefMut<'a, CallCountData>,
+    goal: &'a mut dyn Goal<T>,
+    call_count: &'a mut CallCountData,
 }
 
 /// The trait contains methods for calculate statistics for Convergance<T>
@@ -382,11 +380,11 @@ fn vectorize<T>(v1: &Vec<T>, v2: &Vec<T>, func: fn(&T, &T) -> T) -> Vec<T> {
 }
 
 pub struct StatisticsLogger<'a, T> {
-    statistics: RefMut<'a, Statistics<T>>,
+    statistics: &'a mut Statistics<T>,
 }
 
 impl<'a, T> StatisticsLogger<'a, T> {
-    pub fn new(statistics: RefMut<'a, Statistics<T>>) -> Self {
+    pub fn new(statistics: &'a mut Statistics<T>) -> Self {
         Self { statistics }
     }
 }
@@ -412,10 +410,10 @@ impl<'a, T: Clone> Logger<T> for StatisticsLogger<'a, T> {
 }
 
 impl<'a, T> GoalCalcStatistics<'a, T> {
-    pub fn new(goal: Box<dyn Goal<T>>, call_count: RefMut<'a, CallCountData>) -> Self {
+    pub fn new(goal: &'a mut dyn Goal<T>, call_count: &'a mut CallCountData) -> Self {
         Self {
             goal,
-            call_count: call_count,
+            call_count,
         }
     }
 }
