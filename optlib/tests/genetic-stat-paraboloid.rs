@@ -1,5 +1,3 @@
-use core::cell::RefCell;
-
 use optlib::genetic::{
     self, creation, cross, mutation, pairing, pre_birth, selection, GeneticOptimizer,
 };
@@ -85,11 +83,11 @@ fn genetic_paraboloid_single() {
     let result;
 
     // Logging
-    let statistics = RefCell::new(statistics::Statistics::new());
+    let mut statistics = statistics::Statistics::new();
     {
         let mut optimizer = _create_optimizer(chromo_count);
 
-        let stat_logger = Box::new(statistics::StatisticsLogger::new(statistics.borrow_mut()));
+        let stat_logger = Box::new(statistics::StatisticsLogger::new(&mut statistics));
         let loggers: Vec<Box<dyn logging::Logger<Chromosomes>>> = vec![stat_logger];
 
         optimizer.set_loggers(loggers);
@@ -97,12 +95,11 @@ fn genetic_paraboloid_single() {
         result = optimizer.find_min().unwrap();
     }
 
-    let new_stat = statistics.borrow();
-    assert_eq!(new_stat.get_run_count(), run_count);
-    assert_eq!(new_stat.get_results().len(), run_count);
-    assert_eq!(new_stat.get_convergence().len(), run_count);
+    assert_eq!(statistics.get_run_count(), run_count);
+    assert_eq!(statistics.get_results().len(), run_count);
+    assert_eq!(statistics.get_convergence().len(), run_count);
 
-    let stat_results = new_stat.get_results();
+    let stat_results = statistics.get_results();
     let (stat_solution, stat_goal) = stat_results[0].as_ref().unwrap();
 
     assert_eq!(result.0, *stat_solution);
@@ -117,11 +114,11 @@ fn genetic_paraboloid_two() {
     let result_2;
 
     // Logging
-    let statistics = RefCell::new(statistics::Statistics::new());
+    let mut statistics = statistics::Statistics::new();
     {
         let mut optimizer = _create_optimizer(chromo_count);
 
-        let stat_logger = Box::new(statistics::StatisticsLogger::new(statistics.borrow_mut()));
+        let stat_logger = Box::new(statistics::StatisticsLogger::new(&mut statistics));
         let loggers: Vec<Box<dyn logging::Logger<Chromosomes>>> = vec![stat_logger];
 
         optimizer.set_loggers(loggers);
@@ -130,12 +127,11 @@ fn genetic_paraboloid_two() {
         result_2 = optimizer.find_min().unwrap();
     }
 
-    let new_stat = statistics.borrow();
-    assert_eq!(new_stat.get_run_count(), run_count);
-    assert_eq!(new_stat.get_results().len(), run_count);
-    assert_eq!(new_stat.get_convergence().len(), run_count);
+    assert_eq!(statistics.get_run_count(), run_count);
+    assert_eq!(statistics.get_results().len(), run_count);
+    assert_eq!(statistics.get_convergence().len(), run_count);
 
-    let stat_results = new_stat.get_results();
+    let stat_results = statistics.get_results();
     let (stat_solution_1, stat_goal_1) = stat_results[0].as_ref().unwrap();
     let (stat_solution_2, stat_goal_2) = stat_results[1].as_ref().unwrap();
 
