@@ -5,6 +5,9 @@
 ### Particle swarm optimization
 1. Add RandomTeleport structure to move particle to random point with given probability.
 
+### Examples
+1. Examples with statistics gathering use parallelism.
+
 
 ## 0.3.0
 
