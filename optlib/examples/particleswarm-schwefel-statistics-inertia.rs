@@ -1,6 +1,8 @@
 //! Example of optimizing the Schwefel function with particle sqwarm algorithm.
 use std::fs::File;
 use std::io;
+use std::sync::mpsc;
+use std::thread;
 
 use optlib::particleswarm::{
     self, initializing, postmove, postvelocitycalc, velocitycalc, ParticleSwarmOptimizer, PostMove,
@@ -148,29 +150,59 @@ fn print_statistics(
 }
 
 fn main() {
+    let cpu = num_cpus::get();
     let dimension = 3;
-    let run_count = 1000;
 
+    // Running count per CPU
+    let run_count = 1000 / cpu;
+
+    // Statistics from all runnings
     let mut full_stat = statistics::Statistics::new();
     let mut full_call_count = CallCountData::new();
 
-    for n in 0..run_count {
-        let mut statistics_data = statistics::Statistics::new();
-        let mut call_count = CallCountData::new();
-        {
-            // Make a trait object for goal function (Schwefel function)
-            let mut goal_object = GoalFromFunction::new(optlib_testfunc::schwefel);
-            let goal = GoalCalcStatistics::new(&mut goal_object, &mut call_count);
+    let (tx, rx) = mpsc::channel();
 
-            let mut optimizer = create_optimizer(dimension, Box::new(goal));
+    for _ in 0..cpu {
+        let current_tx = mpsc::Sender::clone(&tx);
 
-            let stat_logger = Box::new(statistics::StatisticsLogger::new(&mut statistics_data));
-            let loggers: Vec<Box<dyn logging::Logger<Vec<Coordinate>>>> = vec![stat_logger];
-            optimizer.set_loggers(loggers);
+        thread::spawn(move || {
+            let mut local_full_stat = statistics::Statistics::new();
+            let mut local_full_call_count = CallCountData::new();
 
-            println!("{:} / {:}", n + 1, run_count);
-            optimizer.find_min().unwrap();
-        }
+            for _ in 0..run_count {
+                // Statistics from single run
+                let mut statistics_data = statistics::Statistics::new();
+                let mut call_count = CallCountData::new();
+                {
+                    // Make a trait object for goal function
+                    let mut goal_object = GoalFromFunction::new(optlib_testfunc::schwefel);
+                    let goal = GoalCalcStatistics::new(&mut goal_object, &mut call_count);
+
+                    let mut optimizer = create_optimizer(dimension, Box::new(goal));
+
+                    // Add logger to collect statistics
+                    let stat_logger =
+                        Box::new(statistics::StatisticsLogger::new(&mut statistics_data));
+                    let loggers: Vec<Box<dyn logging::Logger<Vec<Coordinate>>>> = vec![stat_logger];
+                    optimizer.set_loggers(loggers);
+
+                    // Run optimization
+                    optimizer.find_min();
+                }
+
+                // Add current running statistics to full statistics
+                local_full_stat.unite(statistics_data);
+                local_full_call_count.unite(call_count);
+            }
+            current_tx
+                .send((local_full_stat, local_full_call_count))
+                .unwrap();
+        });
+    }
+
+    // Collect data from threads
+    for _ in 0..cpu {
+        let (statistics_data, call_count) = rx.recv().unwrap();
         full_stat.unite(statistics_data);
         full_call_count.unite(call_count);
     }

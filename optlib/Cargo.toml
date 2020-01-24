@@ -17,6 +17,7 @@ rand = "0.6.4"
 
 [dev-dependencies]
 optlib-testfunc = { path = "../optlib-testfunc", version = "0.1.0"}
+num_cpus = "1.12.0"
 
 [badges]
 maintenance = { status = "actively-developed" }
