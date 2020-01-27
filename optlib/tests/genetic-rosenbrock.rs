@@ -11,12 +11,15 @@
 //! * `Individual` - union of x and value of goal function.
 //! * `Population` - set of the individuals.
 //! * `Generation` - a number of iteration of genetic algorithm.
-use num::abs;
+use std::sync::mpsc;
+use std::thread;
 
-use optlib::genetic::{self, creation, cross, mutation, pairing, pre_birth, selection};
-use optlib::tools::logging;
-use optlib::tools::stopchecker;
-use optlib::{GoalFromFunction, Optimizer};
+use optlib::genetic::{
+    self, creation, cross, mutation, pairing, pre_birth, selection, GeneticOptimizer,
+};
+use optlib::tools::statistics::{get_predicate_success_vec_solution, StatFunctionsSolution};
+use optlib::tools::{logging, statistics, stopchecker};
+use optlib::{Goal, GoalFromFunction, Optimizer};
 use optlib_testfunc;
 
 /// Gene type
@@ -25,25 +28,20 @@ type Gene = f32;
 /// Chromosomes type
 type Chromosomes = Vec<Gene>;
 
-
-#[test]
-fn genetic_rosenbrock() {
+fn create_optimizer<'a>(
+    chromo_count: usize,
+    goal: Box<dyn Goal<Chromosomes> + 'a>,
+) -> GeneticOptimizer<'a, Chromosomes> {
     // General parameters
 
-    // Search space
-    let minval: Gene = -2.0_f32;
-    let maxval: Gene = 2.0_f32;
+    // Search space. Any xi lies in [-500.0; 500.0]
+    let minval: Gene = -2.0;
+    let maxval: Gene = 2.0;
 
     // Count individuals in initial population
-    let population_size = 1000;
-
-    // Count of xi in the chromosomes
-    let chromo_count = 3;
+    let population_size = 700;
 
     let intervals = vec![(minval, maxval); chromo_count];
-
-    // Make a trait object for goal function (Schwefel function)
-    let goal = GoalFromFunction::new(optlib_testfunc::rosenbrock);
 
     // Make the creator to create initial population.
     // RandomCreator will fill initial population with individuals with random chromosomes in a
@@ -53,13 +51,8 @@ fn genetic_rosenbrock() {
     // Make a trait object for the pairing.
     // Pairing is algorithm of selection individuals for crossbreeding.
 
-    // Select random individuals from the population.
-    // let pairing = pairing::RandomPairing::new();
-
     // Tournament method.
-    let families_count = population_size / 2;
-    let rounds_count = 5;
-    let pairing = pairing::Tournament::new(families_count).rounds_count(rounds_count);
+    let pairing = pairing::RandomPairing::new();
 
     // Crossbreeding algorithm.
     // Make a Cross trait object. The bitwise crossing for float genes.
@@ -68,7 +61,7 @@ fn genetic_rosenbrock() {
 
     // Make a Mutation trait object.
     // Use bitwise mutation (change random bits with given probability).
-    let mutation_probability = 85.0;
+    let mutation_probability = 80.0;
     let mutation_gene_count = 3;
     let single_mutation = mutation::BitwiseMutation::new(mutation_gene_count);
     let mutation = mutation::VecMutation::new(mutation_probability, Box::new(single_mutation));
@@ -79,12 +72,11 @@ fn genetic_rosenbrock() {
     )];
 
     // Stop checker. Stop criterion for genetic algorithm.
-    let change_max_iterations = 3000;
-    let change_delta = 1e-9;
-
-    // Stop algorithm if the value of goal function will become less of 1e-4 or
-    // after 3000 generations (iterations).
+    // Stop algorithm after 3000 generation (iteration).
+    let change_max_iterations = 2000;
+    let change_delta = 1e-7;
     let stop_checker = stopchecker::CompositeAny::new(vec![
+        Box::new(stopchecker::Threshold::new(1e-6)),
         Box::new(stopchecker::GoalNotChange::new(
             change_max_iterations,
             change_delta,
@@ -99,12 +91,9 @@ fn genetic_rosenbrock() {
         Box::new(selection::LimitPopulation::new(population_size)),
     ];
 
-    // Make a loggers trait objects
-    let loggers: Vec<Box<dyn logging::Logger<Chromosomes>>> = vec![];
-
     // Construct main optimizer struct
-    let mut optimizer = genetic::GeneticOptimizer::new(
-        Box::new(goal),
+    let optimizer = genetic::GeneticOptimizer::new(
+        goal,
         Box::new(stop_checker),
         Box::new(creator),
         Box::new(pairing),
@@ -113,17 +102,68 @@ fn genetic_rosenbrock() {
         selections,
         pre_births,
     );
-    optimizer.set_loggers(loggers);
 
-    // Run genetic algorithm
-    match optimizer.find_min() {
-        None => assert!(false),
-        Some((solution, goal_value)) => {
-            for i in 0..chromo_count {
-                assert!(abs(solution[i] - 1.0) < 0.1);
+    optimizer
+}
+
+#[test]
+fn genetic_rosenbrock() {
+    let cpu = num_cpus::get();
+    let dimension = 3;
+
+    // Running count per CPU
+    let run_count = 100 / cpu;
+
+    // Statistics from all runnings
+    let mut full_stat = statistics::Statistics::new();
+
+    let (tx, rx) = mpsc::channel();
+
+    for _ in 0..cpu {
+        let current_tx = mpsc::Sender::clone(&tx);
+
+        thread::spawn(move || {
+            let mut local_full_stat = statistics::Statistics::new();
+
+            for _ in 0..run_count {
+                // Statistics from single run
+                let mut statistics_data = statistics::Statistics::new();
+                {
+                    // Make a trait object for goal function
+                    let goal = GoalFromFunction::new(optlib_testfunc::rosenbrock);
+
+                    let mut optimizer = create_optimizer(dimension, Box::new(goal));
+
+                    // Add logger to collect statistics
+                    let stat_logger =
+                        Box::new(statistics::StatisticsLogger::new(&mut statistics_data));
+                    let loggers: Vec<Box<dyn logging::Logger<Chromosomes>>> = vec![stat_logger];
+                    optimizer.set_loggers(loggers);
+
+                    // Run optimization
+                    optimizer.find_min();
+                }
+
+                // Add current running statistics to full statistics
+                local_full_stat.unite(statistics_data);
             }
-
-            assert!(abs(goal_value) < 1e-3);
-        }
+            current_tx.send(local_full_stat).unwrap();
+        });
     }
+
+    // Collect data from threads
+    for _ in 0..cpu {
+        let statistics_data = rx.recv().unwrap();
+        full_stat.unite(statistics_data);
+    }
+
+    let valid_answer = vec![1.0; dimension];
+    let delta = vec![1e-2; dimension];
+
+    let success_rate = full_stat
+        .get_results()
+        .get_success_rate(get_predicate_success_vec_solution(valid_answer, delta))
+        .unwrap();
+
+    assert!(success_rate >= 0.75);
 }
