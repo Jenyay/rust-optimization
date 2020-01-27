@@ -7,6 +7,7 @@
 
 ### Examples
 1. Examples with statistics gathering use parallelism.
+1. Add more examples.
 
 
 ## 0.3.0
