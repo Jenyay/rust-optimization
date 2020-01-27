@@ -12,8 +12,8 @@ homepage = "https://github.com/Jenyay/rust-optimization"
 repository = "https://github.com/Jenyay/rust-optimization"
 
 [dependencies]
-num = "0.2"
-rand = "0.6.4"
+num = "0.2.1"
+rand = "0.7.3"
 
 [dev-dependencies]
 optlib-testfunc = { path = "../optlib-testfunc", version = "0.1.0"}
