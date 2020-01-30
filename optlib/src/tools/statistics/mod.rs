@@ -19,8 +19,7 @@ pub struct Statistics<T> {
 }
 
 /// The `CallCountData` struct used to store call count of goal function.
-#[derive(Debug)]
-#[derive(Clone)]
+#[derive(Debug, Clone)]
 pub struct CallCountData(Vec<usize>);
 
 /// The struct to calculate call count of goal function.
@@ -411,10 +410,7 @@ impl<'a, T: Clone> Logger<T> for StatisticsLogger<'a, T> {
 
 impl<'a, T> GoalCalcStatistics<'a, T> {
     pub fn new(goal: &'a mut dyn Goal<T>, call_count: &'a mut CallCountData) -> Self {
-        Self {
-            goal,
-            call_count,
-        }
+        Self { goal, call_count }
     }
 }
 
@@ -901,5 +897,111 @@ mod tests {
 
         assert_eq!(data.get_call_count(), vec![5, 7]);
         assert!((data.get_average_call_count().unwrap() - 6.0) < 1e-5);
+    }
+
+    #[test]
+    fn statistics_convergence_unite_empty() {
+        let mut stat_1: Statistics<f32> = Statistics::new();
+        let stat_2: Statistics<f32> = Statistics::new();
+
+        let valid_results: Vec<Option<Solution<f32>>> = vec![];
+        let valid_convergence: Convergence<f32> = vec![];
+
+        stat_1.unite(stat_2);
+        assert_eq!(stat_1.results, valid_results);
+        assert_eq!(stat_1.convergence, valid_convergence);
+    }
+
+    #[test]
+    fn statistics_unite_results_01() {
+        let mut stat_1: Statistics<f32> = Statistics::new();
+        let stat_2: Statistics<f32> = Statistics::new();
+
+        let valid_results: Vec<Option<Solution<f32>>> = vec![Some((1.0_f32, 0.0))];
+        stat_1.results.push(Some((1.0_f32, 0.0)));
+
+        stat_1.unite(stat_2);
+        assert_eq!(stat_1.results, valid_results);
+    }
+
+    #[test]
+    fn statistics_unite_results_02() {
+        let mut stat_1: Statistics<f32> = Statistics::new();
+        let mut stat_2: Statistics<f32> = Statistics::new();
+
+        let valid_results: Vec<Option<Solution<f32>>> = vec![Some((1.0_f32, 0.0))];
+        stat_2.results.push(Some((1.0_f32, 0.0)));
+
+        stat_1.unite(stat_2);
+        assert_eq!(stat_1.results, valid_results);
+    }
+
+    #[test]
+    fn statistics_unite_results_03() {
+        let mut stat_1: Statistics<f32> = Statistics::new();
+        let mut stat_2: Statistics<f32> = Statistics::new();
+
+        let valid_results: Vec<Option<Solution<f32>>> =
+            vec![Some((1.0_f32, 0.0)), Some((2.0_f32, 1.0))];
+
+        stat_1.results.push(Some((1.0_f32, 0.0)));
+        stat_2.results.push(Some((2.0_f32, 1.0)));
+
+        stat_1.unite(stat_2);
+        assert_eq!(stat_1.results, valid_results);
+    }
+
+    #[test]
+    fn convergence_unite_01() {
+        let mut stat_1: Statistics<f32> = Statistics::new();
+        let stat_2: Statistics<f32> = Statistics::new();
+
+        let valid_convergence: Convergence<f32> =
+            vec![vec![Some((1.0_f32, 0.0)), Some((2.0_f32, 1.0))]];
+
+        stat_1
+            .convergence
+            .push(vec![Some((1.0_f32, 0.0)), Some((2.0_f32, 1.0))]);
+
+        stat_1.unite(stat_2);
+        assert_eq!(stat_1.convergence, valid_convergence);
+    }
+
+    #[test]
+    fn convergence_unite_02() {
+        let mut stat_1: Statistics<f32> = Statistics::new();
+        let mut stat_2: Statistics<f32> = Statistics::new();
+
+        let valid_convergence: Convergence<f32> =
+            vec![vec![Some((1.0_f32, 0.0)), Some((2.0_f32, 1.0))]];
+
+        stat_2
+            .convergence
+            .push(vec![Some((1.0_f32, 0.0)), Some((2.0_f32, 1.0))]);
+
+        stat_1.unite(stat_2);
+        assert_eq!(stat_1.convergence, valid_convergence);
+    }
+
+    #[test]
+    fn convergence_unite_04() {
+        let mut stat_1: Statistics<f32> = Statistics::new();
+        let mut stat_2: Statistics<f32> = Statistics::new();
+
+        let valid_convergence: Convergence<f32> = vec![
+            vec![Some((1.0_f32, 0.0)), Some((2.0_f32, 1.0))],
+            vec![Some((10.0_f32, 10.0)), Some((20.0_f32, 2.0))],
+        ];
+
+        stat_1
+            .convergence
+            .push(vec![Some((1.0_f32, 0.0)), Some((2.0_f32, 1.0))]);
+
+        stat_2
+            .convergence
+            .push(vec![Some((10.0_f32, 10.0)), Some((20.0_f32, 2.0))]);
+
+        stat_1.unite(stat_2);
+        assert_eq!(stat_1.convergence, valid_convergence);
     }
 }
