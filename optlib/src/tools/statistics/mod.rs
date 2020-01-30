@@ -1004,4 +1004,57 @@ mod tests {
         stat_1.unite(stat_2);
         assert_eq!(stat_1.convergence, valid_convergence);
     }
+
+    #[test]
+    fn call_count_data_unite_empty() {
+        let mut call_count_1 = CallCountData::new();
+        let call_count_2 = CallCountData::new();
+
+        let valid_call_count_stat: Vec<usize> = vec![];
+
+        call_count_1.unite(call_count_2);
+
+        assert_eq!(call_count_1.0, valid_call_count_stat);
+    }
+
+    #[test]
+    fn call_count_data_unite_01() {
+        let mut call_count_1 = CallCountData::new();
+        let call_count_2 = CallCountData::new();
+
+        let valid_call_count_stat: Vec<usize> = vec![100];
+
+        call_count_1.0.push(100);
+        call_count_1.unite(call_count_2);
+
+        assert_eq!(call_count_1.0, valid_call_count_stat);
+    }
+
+    #[test]
+    fn call_count_data_unite_02() {
+        let mut call_count_1 = CallCountData::new();
+        let mut call_count_2 = CallCountData::new();
+
+        let valid_call_count_stat: Vec<usize> = vec![100];
+
+        call_count_2.0.push(100);
+        call_count_1.unite(call_count_2);
+
+        assert_eq!(call_count_1.0, valid_call_count_stat);
+    }
+
+    #[test]
+    fn call_count_data_unite_03() {
+        let mut call_count_1 = CallCountData::new();
+        let mut call_count_2 = CallCountData::new();
+
+        let valid_call_count_stat: Vec<usize> = vec![100, 200];
+
+        call_count_1.0.push(100);
+        call_count_2.0.push(200);
+
+        call_count_1.unite(call_count_2);
+
+        assert_eq!(call_count_1.0, valid_call_count_stat);
+    }
 }
