@@ -4,6 +4,7 @@ extern crate num;
 
 pub mod genetic;
 pub mod particleswarm;
+pub mod diffevolution;
 pub mod tools;
 
 type GoalValue = f64;
